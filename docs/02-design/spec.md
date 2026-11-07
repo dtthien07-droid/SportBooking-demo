@@ -7,7 +7,7 @@
 - [1. Công nghệ và kiến trúc](#1-công-nghệ-và-kiến-trúc)
 - [2. Trang và điều hướng](#2-trang-và-điều-hướng)
 - [3. Thiết kế giao diện](#3-thiết-kế-giao-diện)
-- [4. Mô hình dữ liệu MySQL](#4-mô-hình-dữ-liệu-mysql)
+- [4. Mô hình dữ liệu MariaDB 10.4](#4-mô-hình-dữ-liệu-mariadb-104)
 - [5. API](#5-api)
 - [6. Tác vụ nền và cập nhật trạng thái](#6-tác-vụ-nền-và-cập-nhật-trạng-thái)
 - [7. Chống đặt trùng và xử lý đồng thời](#7-chống-đặt-trùng-và-xử-lý-đồng-thời)
@@ -21,14 +21,14 @@
 |---|---|
 | Backend | Node.js; cung cấp API và xử lý nghiệp vụ. Framework Node.js chưa được chốt. |
 | Frontend | HTML, CSS và JavaScript thuần, không dùng framework. |
-| Database | MySQL, database/schema `sportbooking_system`. |
+| Database | Máy chủ thực tế là MariaDB 10.4 trong XAMPP; driver `mysql2` dùng được. `sportbooking_system` là database chứa dữ liệu khảo sát, không dùng cho phát triển/kiểm thử; dùng `sportbooking_dev` và `sportbooking_test`. Migration phải tương thích MariaDB 10.4: hỗ trợ `DATETIME(3)`, có thể lưu JSON bằng `LONGTEXT` kèm kiểm tra hợp lệ, và `CHECK` được thực thi từ MariaDB 10.2.1. |
 | Realtime | Polling tối đa mỗi 5 giây cho lịch khung giờ, trạng thái đơn, tìm đối và số thông báo chưa đọc. |
 | Giao tiếp | Frontend chỉ gọi backend qua API HTTP/JSON. Frontend không chứa thông tin kết nối hoặc truy vấn database. |
-| Truy cập dữ liệu | Chỉ backend kết nối MySQL; mọi quyền sở hữu, vai trò, trạng thái và thời hạn được kiểm tra lại ở server trước khi ghi. |
+| Truy cập dữ liệu | Chỉ backend kết nối MariaDB; mọi quyền sở hữu, vai trò, trạng thái và thời hạn được kiểm tra lại ở server trước khi ghi. |
 | Múi giờ | Múi giờ nghiệp vụ là `Asia/Ho_Chi_Minh` (UTC+7). Cách lưu và chuyển đổi thời điểm được nêu tại [10. Giả định và câu hỏi mở](#10-giả-định-và-câu-hỏi-mở). |
 
 ```text
-Browser (HTML/CSS/JS) -- HTTP/JSON --> Backend Node.js -- MySQL --> sportbooking_system
+Browser (HTML/CSS/JS) -- HTTP/JSON --> Backend Node.js -- MariaDB 10.4 --> sportbooking_dev / sportbooking_test
 ```
 
 ## 2. Trang và điều hướng
@@ -122,7 +122,7 @@ Các giá trị dùng làm design tokens; có thể bổ sung theo nhu cầu com
 }
 ```
 
-## 4. Mô hình dữ liệu MySQL
+## 4. Mô hình dữ liệu MariaDB 10.4
 
 Các bảng dưới đây là mô hình đích đề xuất; bảng/cột đang có trong `sportbooking_system` cần được đối chiếu trước khi migration/import. Dùng InnoDB, `utf8mb4`, khóa ngoại cho quan hệ; số tiền VND lưu số nguyên `DECIMAL(12,0)`. Tên enum trong database dùng giá trị tiếng Anh ổn định, giao diện ánh xạ sang nhãn tiếng Việt.
 
@@ -134,10 +134,10 @@ Do `time_slots.current_booking_id` tham chiếu `bookings.id`, migration tạo b
 |---|---|
 | `users` | `id BIGINT UNSIGNED PK`; `full_name VARCHAR(120) NOT NULL`; `email VARCHAR(254) NOT NULL UNIQUE`; `password_hash VARCHAR(255) NOT NULL`; `phone VARCHAR(20) NULL UNIQUE`; `gender ENUM('MALE','FEMALE','OTHER') NULL`; `skill_level ENUM('BEGINNER','INTERMEDIATE','GOOD') NULL`; `role ENUM('USER','ADMIN') NOT NULL DEFAULT 'USER'`; `account_status ENUM('ACTIVE','ADMIN_LOCKED') NOT NULL DEFAULT 'ACTIVE'`; `failed_login_count TINYINT UNSIGNED NOT NULL DEFAULT 0`; `login_locked_until DATETIME(3) NULL`; `terms_accepted_at DATETIME(3) NULL`; `created_at DATETIME(3) NOT NULL`; `updated_at DATETIME(3) NOT NULL`. Index: `(role, account_status)`. Khóa tạm do sai mật khẩu tách khỏi `account_status`. |
 | `user_sessions` | `id BIGINT UNSIGNED PK`; `user_id BIGINT UNSIGNED NOT NULL FK -> users.id`; `token_hash CHAR(64) NOT NULL UNIQUE`; `expires_at DATETIME(3) NOT NULL`; `revoked_at DATETIME(3) NULL`; `created_at DATETIME(3) NOT NULL`. Index: `(user_id, expires_at)`. Chỉ lưu hash session/token, không lưu token thô. |
-| `facilities` | `id BIGINT UNSIGNED PK`; `name VARCHAR(160) NOT NULL`; `address VARCHAR(500) NOT NULL`; `district VARCHAR(120) NOT NULL`; `opening_time TIME NULL`; `closing_time TIME NULL`; `hotline VARCHAR(30) NULL`; `latitude DECIMAL(10,7) NULL`; `longitude DECIMAL(10,7) NULL`; `map_url VARCHAR(1000) NULL`; `description TEXT NULL`; `amenities JSON NULL`; `rules TEXT NULL`; `cancellation_policy TEXT NULL`; `image_url VARCHAR(1000) NULL`; `is_active BOOLEAN NOT NULL DEFAULT TRUE`; `is_seed BOOLEAN NOT NULL DEFAULT FALSE`; `created_at DATETIME(3) NOT NULL`; `updated_at DATETIME(3) NOT NULL`. Index: `(district, is_active)`, `(is_active, name)`. Khu vực lọc lấy từ `district` đã tách/chuẩn hóa từ địa chỉ cơ sở. |
+| `facilities` | `id BIGINT UNSIGNED PK`; `name VARCHAR(160) NOT NULL`; `address VARCHAR(500) NOT NULL`; `district VARCHAR(120) NOT NULL`; `opening_time TIME NULL`; `closing_time TIME NULL`; `hotline VARCHAR(30) NULL`; `latitude DECIMAL(10,7) NULL`; `longitude DECIMAL(10,7) NULL`; `map_url VARCHAR(1000) NULL`; `description TEXT NULL`; `amenities LONGTEXT NULL`; `rules TEXT NULL`; `cancellation_policy TEXT NULL`; `image_url VARCHAR(1000) NULL`; `is_active BOOLEAN NOT NULL DEFAULT TRUE`; `is_seed BOOLEAN NOT NULL DEFAULT FALSE`; `created_at DATETIME(3) NOT NULL`; `updated_at DATETIME(3) NOT NULL`. Index: `(district, is_active)`, `(is_active, name)`. `amenities` lưu JSON array dạng văn bản và phải được xác thực bằng `JSON_VALID`. Khu vực lọc lấy từ `district` đã tách/chuẩn hóa từ địa chỉ cơ sở. |
 | `courts` | `id BIGINT UNSIGNED PK`; `facility_id BIGINT UNSIGNED NOT NULL FK -> facilities.id`; `name VARCHAR(120) NOT NULL`; `sport_type ENUM('FOOTBALL_MINI','BADMINTON','PICKLEBALL') NOT NULL`; `price_normal DECIMAL(12,0) NOT NULL`; `price_peak DECIMAL(12,0) NOT NULL`; `survey_price_min DECIMAL(12,0) NULL`; `survey_price_max DECIMAL(12,0) NULL`; `initial_rating DECIMAL(2,1) NULL`; `description TEXT NULL`; `is_active BOOLEAN NOT NULL DEFAULT TRUE`; `is_seed BOOLEAN NOT NULL DEFAULT FALSE`; `created_at DATETIME(3) NOT NULL`; `updated_at DATETIME(3) NOT NULL`. Index: `(sport_type, is_active)`, `(facility_id, is_active)`. `initial_rating` nhận giá trị 1.0–5.0; giá khảo sát tối thiểu/tối đa được lưu riêng, không dùng thay `price_normal`/`price_peak`. Mỗi cơ sở có ít nhất một sân; dữ liệu khởi tạo có một sân mặc định/cơ sở. |
-| `time_slots` | `id BIGINT UNSIGNED PK`; `court_id BIGINT UNSIGNED NOT NULL FK -> courts.id`; `service_date DATE NOT NULL`; `starts_at TIME NOT NULL`; `ends_at TIME NOT NULL`; `price DECIMAL(12,0) NOT NULL`; `status ENUM('AVAILABLE','LOCKED','BOOKED') NOT NULL DEFAULT 'AVAILABLE'`; `current_booking_id BIGINT UNSIGNED NULL FK -> bookings.id`; `lock_expires_at DATETIME(3) NULL`; `created_at DATETIME(3) NOT NULL`; `updated_at DATETIME(3) NOT NULL`. `UNIQUE(court_id, service_date, starts_at)` ngăn tạo trùng định danh khung; index `(service_date, status, court_id)` và `(current_booking_id)`. Khung một tiếng; giờ vàng 17:00–21:00 có giá cấu hình cao hơn. `LOCKED` quá hạn được xem là trống theo thời điểm hiện tại, không chờ tác vụ nền. |
-| `bookings` | `id BIGINT UNSIGNED PK`; `booking_code VARCHAR(40) NOT NULL UNIQUE`; `user_id BIGINT UNSIGNED NOT NULL FK -> users.id`; `status ENUM('PENDING','CONFIRMED','COMPLETED','EXPIRED','CANCELLED') NOT NULL`; `total_amount DECIMAL(12,0) NOT NULL`; `cancelled_by ENUM('USER','ADMIN') NULL`; `cancellation_reason VARCHAR(500) NULL`; `confirmed_at DATETIME(3) NULL`; `cancelled_at DATETIME(3) NULL`; `lock_expires_at DATETIME(3) NULL`; `created_at DATETIME(3) NOT NULL`; `updated_at DATETIME(3) NOT NULL`. Index `(user_id, status, created_at)`, `(status, lock_expires_at)`. Mỗi user tối đa một `PENDING`, kiểm soát bằng transaction/khóa user ở mục 7; MySQL không có partial unique index trực tiếp cho điều kiện này. Thông tin số tiền đã trả và lựa chọn thanh toán được đọc qua `payments`. |
+| `time_slots` | `id BIGINT UNSIGNED PK`; `court_id BIGINT UNSIGNED NOT NULL FK -> courts.id`; `service_date DATE NOT NULL`; `starts_at TIME NOT NULL`; `ends_at TIME NOT NULL`; `price DECIMAL(12,0) NOT NULL`; `status ENUM('AVAILABLE','LOCKED','BOOKED') NOT NULL DEFAULT 'AVAILABLE'`; `current_booking_id BIGINT UNSIGNED NULL`; `lock_expires_at DATETIME(3) NULL`; `created_at DATETIME(3) NOT NULL`; `updated_at DATETIME(3) NOT NULL`. Migration tạo `time_slots` ban đầu chưa tạo FK cho `current_booking_id`; migration tạo `bookings` bổ sung FK này sau khi bảng `bookings` tồn tại. `UNIQUE(court_id, service_date, starts_at)` ngăn tạo trùng định danh khung; index `(service_date, status, court_id)` và `(current_booking_id)`. Khung một tiếng; giờ vàng 17:00–21:00 có giá cấu hình cao hơn. `LOCKED` quá hạn được xem là trống theo thời điểm hiện tại, không chờ tác vụ nền. |
+| `bookings` | `id BIGINT UNSIGNED PK`; `booking_code VARCHAR(40) NOT NULL UNIQUE`; `user_id BIGINT UNSIGNED NOT NULL FK -> users.id`; `status ENUM('PENDING','CONFIRMED','COMPLETED','EXPIRED','CANCELLED') NOT NULL`; `total_amount DECIMAL(12,0) NOT NULL`; `cancelled_by ENUM('USER','ADMIN') NULL`; `cancellation_reason VARCHAR(500) NULL`; `confirmed_at DATETIME(3) NULL`; `cancelled_at DATETIME(3) NULL`; `lock_expires_at DATETIME(3) NULL`; `created_at DATETIME(3) NOT NULL`; `updated_at DATETIME(3) NOT NULL`. Index `(user_id, status, created_at)`, `(status, lock_expires_at)`. Mỗi user tối đa một `PENDING`, kiểm soát bằng transaction/khóa user ở mục 7; MariaDB 10.4 không hỗ trợ partial unique index trực tiếp cho điều kiện này. Thông tin số tiền đã trả và lựa chọn thanh toán được đọc qua `payments`. |
 | `booking_slots` | `id BIGINT UNSIGNED PK`; `booking_id BIGINT UNSIGNED NOT NULL FK -> bookings.id`; `time_slot_id BIGINT UNSIGNED NOT NULL FK -> time_slots.id`; `price_at_booking DECIMAL(12,0) NOT NULL`; `created_at DATETIME(3) NOT NULL`. `UNIQUE(booking_id, time_slot_id)`; index `(time_slot_id, booking_id)`. Giữ lịch sử các khung và giá snapshot; ràng buộc khả dụng hiện tại nằm ở `time_slots` và được khóa trong transaction. |
 | `booking_tickets` | `id BIGINT UNSIGNED PK`; `booking_id BIGINT UNSIGNED NOT NULL UNIQUE FK -> bookings.id`; `qr_code VARCHAR(80) NOT NULL UNIQUE`; `created_at DATETIME(3) NOT NULL`. Một ticket cho một booking. Mã QR có dạng `QR-` + chuỗi ngẫu nhiên, QR chứa mã đơn để nhân viên đối chiếu; không có API check-in/quét QR. |
 | `payments` | `id BIGINT UNSIGNED PK`; `booking_id BIGINT UNSIGNED NOT NULL UNIQUE FK -> bookings.id`; `status ENUM('PENDING','PAID','REFUNDED') NOT NULL`; `amount_due DECIMAL(12,0) NOT NULL`; `paid_amount DECIMAL(12,0) NOT NULL DEFAULT 0`; `refunded_amount DECIMAL(12,0) NOT NULL DEFAULT 0`; `payment_option ENUM('DEPOSIT_50','FULL') NOT NULL`; `paid_at DATETIME(3) NULL`; `refunded_at DATETIME(3) NULL`; `created_at DATETIME(3) NOT NULL`; `updated_at DATETIME(3) NOT NULL`. Index `(status, updated_at)`. Hoàn 0đ giữ `PAID`; có hoàn tiền thì `REFUNDED`, kể cả hoàn một phần. |
@@ -238,7 +238,7 @@ Tất cả tác vụ có thể chạy lặp an toàn: chỉ chuyển trạng th�
 
 ## 7. Chống đặt trùng và xử lý đồng thời
 
-1. Dùng MySQL InnoDB transaction cho tạo booking và khóa khung. Khóa các hàng `time_slots` theo ID tăng dần (`SELECT ... FOR UPDATE`) để giảm deadlock.
+1. Dùng MariaDB 10.4 InnoDB transaction cho tạo booking và khóa khung. Khóa các hàng `time_slots` theo ID tăng dần (`SELECT ... FOR UPDATE`) để giảm deadlock.
 2. Trong cùng transaction: khóa user và kiểm tra chưa có booking `PENDING`; kiểm tra đủ slot tồn tại, cùng sân/ngày, liên tiếp, bắt đầu cách hiện tại ít nhất 15 phút; xác nhận mọi slot đang `AVAILABLE` hoặc lock cũ đã hết hạn; tính lại giá từ cấu hình hiện thời; ghi booking + snapshot `booking_slots`; cập nhật các slot sang `LOCKED` với cùng `current_booking_id` và `lock_expires_at` = thời điểm xác nhận + 10 phút. Chỉ commit khi tất cả thành công; nếu một bước lỗi rollback toàn bộ.
 3. Unique `(court_id, service_date, starts_at)` chặn khung giờ bị tạo trùng trong lịch cấu hình. Hàng slot được khóa và cập nhật có điều kiện chặn hai booking cùng chiếm một slot; lịch sử `booking_slots` không bị xóa để giữ đối soát.
 4. Truy vấn lịch coi slot `LOCKED` chỉ đang giữ nếu `lock_expires_at > NOW_UTC`; lock hết hạn được xem là trống ngay cả khi tác vụ nền chưa chạy. Khi đặt lại, server giải phóng lock cũ trong transaction trước khi gán booking mới.
@@ -313,7 +313,7 @@ Giá thường cụ thể theo từng môn, quy ước khôi phục rating đã 
 |---|---|
 | GD-01 | API dùng REST, JSON và tiền tố `/api/v1`; tên endpoint trong tài liệu là hợp đồng đề xuất, chưa phải route hiện có. |
 | GD-02 | Tài khoản dùng session phía server, cookie bảo vệ và thời hạn 8 giờ theo business-flow; cấu hình cookie/chi tiết lưu session cần chốt khi chọn framework/deploy. |
-| GD-03 | Mô hình bảng tại mục 4 là schema đích đề xuất, chưa thay thế schema MySQL đang có; cần migration tương thích sau khi kiểm kê database. |
+| GD-03 | Mô hình bảng tại mục 4 là schema đích đề xuất, chưa thay thế schema MariaDB đang có; cần migration tương thích sau khi kiểm kê database. |
 | GD-04 | Dùng `DATETIME(3)` chuẩn hóa UTC cho thời điểm sự kiện và deadline; ngày/giờ khung chơi lưu theo giờ địa phương Hà Nội (`service_date`, `starts_at`, `ends_at`) rồi ghép với `Asia/Ho_Chi_Minh` khi tính trạng thái. |
 | GD-05 | Mã đơn có dạng `SPB-YYYYMMDD-xxxxxx`; mã QR có dạng `QR-` + chuỗi ngẫu nhiên. Hai loại mã khác tiền tố nên không giao nhau; QR chứa mã đơn để nhân viên đối chiếu. |
 | GD-06 | Các trường thông tin cơ sở/sân trong bảng đích là mô hình đề xuất tối thiểu; cần đối chiếu dữ liệu khảo sát thực tế để tránh làm mất cột/dữ liệu nguồn. |

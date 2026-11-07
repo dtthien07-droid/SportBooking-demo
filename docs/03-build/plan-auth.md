@@ -6,7 +6,9 @@
 
 **Framework: Express 5.** Framework HTTP gọn, phổ biến và phù hợp với REST API của đồ án; middleware xác thực/phân quyền tường minh, dễ tiếp cận và bảo trì. Frontend vẫn là HTML/CSS/JavaScript thuần, MySQL chỉ được truy cập từ backend.
 
-Backend dùng `mysql2/promise` để truy vấn MySQL, `bcrypt` với 12 rounds để băm/so mật khẩu và thư viện kiểm thử Node.js.
+Backend dùng `mysql2/promise` để truy vấn MariaDB, `bcrypt` với 12 rounds để băm/so mật khẩu và thư viện kiểm thử Node.js.
+
+Máy chủ database thực tế là MariaDB 10.4 trong XAMPP; driver `mysql2` dùng được với MariaDB. Migration phải tương thích MariaDB 10.4: `DATETIME(3)` được hỗ trợ; JSON có thể lưu bằng `LONGTEXT` kèm kiểm tra hợp lệ; `CHECK` được thực thi từ phiên bản 10.2.1.
 
 ## 2. Cấu trúc thư mục dự kiến
 
@@ -192,7 +194,7 @@ DB_HOST=localhost
 DB_PORT=3306
 DB_NAME=sportbooking_dev
 DB_NAME_TEST=sportbooking_test
-DB_USER=replace_me
+DB_USER=sportbooking_app
 DB_PASSWORD=
 BCRYPT_ROUNDS=12
 SESSION_COOKIE_NAME=sportbooking_session
@@ -201,7 +203,7 @@ COOKIE_SECURE=false
 ADMIN_PASSWORD_HASH=
 ```
 
-`sportbooking_system` chứa dữ liệu khảo sát và tuyệt đối không dùng làm database phát triển/test cho module này. Chạy ứng dụng phát triển với `DB_NAME=sportbooking_dev`; test phải đặt `APP_ENV=test` và dùng `DB_NAME=sportbooking_test` (hoặc tên test khác kết thúc bằng `_test`).
+`sportbooking_system` chứa dữ liệu khảo sát và tuyệt đối không dùng làm database phát triển/test cho module này. Chạy ứng dụng phát triển với `DB_NAME=sportbooking_dev`; test phải đặt `APP_ENV=test` và dùng `DB_NAME=sportbooking_test`. Tài khoản ứng dụng là `DB_USER=sportbooking_app`, không dùng `root`.
 
 `ADMIN_PASSWORD_HASH` chỉ dùng khi cần seed tài khoản `admin@sportbooking.com` theo spec; hash được tạo bên ngoài luồng đăng ký và lấy từ `.env`, không ghi password/hash thật vào tài liệu hoặc source. `COOKIE_SECURE=false` chỉ dành cho local HTTP; production phải dùng HTTPS và bật Secure cookie.
 
