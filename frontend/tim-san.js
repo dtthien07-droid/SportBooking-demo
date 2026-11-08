@@ -40,6 +40,17 @@
     };
   }
 
+  function detailUrl(facility) {
+    const returnTo = window.location.pathname === '/tim-san.html'
+      ? `${window.location.pathname}${window.location.search}${window.location.hash}`
+      : '/tim-san.html';
+    const params = new URLSearchParams({
+      id: String(facility.id),
+      returnTo
+    });
+    return `/chi-tiet-san.html?${params}`;
+  }
+
   function updateUrl(page) {
     const params = new URLSearchParams();
     const filters = currentFilters();
@@ -100,6 +111,18 @@
       'article',
       'bg-surface-container-lowest rounded-2xl shadow-sm hover:shadow-md transition-all p-5 flex flex-col md:flex-row gap-5 border border-gray-100 group'
     );
+    const href = detailUrl(facility);
+    article.setAttribute('role', 'link');
+    article.tabIndex = 0;
+    article.addEventListener('click', (event) => {
+      if (!event.target.closest('a, button')) window.location.assign(href);
+    });
+    article.addEventListener('keydown', (event) => {
+      if (event.target === article && (event.key === 'Enter' || event.key === ' ')) {
+        event.preventDefault();
+        window.location.assign(href);
+      }
+    });
     const imageWrap = makeElement('div', 'relative md:w-64 h-52 rounded-xl overflow-hidden shrink-0 bg-surface-container flex items-center justify-center');
     const imageUrl = safeUrl(facility.image_url || '');
     if (imageUrl) {
@@ -164,7 +187,7 @@
     }
     buttons.append(mapLink);
     const bookLink = makeElement('a', 'px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-container text-white font-bold text-sm shadow-sm transition-all flex items-center gap-1', 'Đặt sân ngay');
-    bookLink.href = '#';
+    bookLink.href = href;
     buttons.append(bookLink);
     actions.append(buttons);
     content.append(actions);

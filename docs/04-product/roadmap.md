@@ -20,6 +20,17 @@ Trạng thái: Chưa làm / Đang làm / Xong
 | 12 | Realtime (polling 5 giây) | FR-16 | Nâng cao | Chưa làm | |
 | 13 | Quên mật khẩu, tin tức RSS, email, xuất Excel | | Tùy chọn | Chưa làm | Làm sau cùng |
 
+## Module 3 frontend: Chi tiết sân và lưới chọn khung giờ
+
+Ghi chú: Module 3 frontend theo phạm vi màn hình; hàng số 3 trong bảng roadmap tổng thể vẫn là module Admin và không thay đổi.
+
+| # | Việc | Trạng thái | Ghi chú |
+|---|---|---|---|
+| 3.1 | Đối chiếu mockup, trường API và luồng chọn khung | Xong | API có đủ trường quan trọng; gallery nhiều ảnh và số lượng/nội dung đánh giá không có nên không tạo dữ liệu giả. |
+| 3.2 | Nối trang chi tiết, sân con, trạng thái lịch và lựa chọn khung liền kề | Chờ người dùng xác nhận | Code đã triển khai; chưa xác minh end-to-end với API thật vì runtime hiện trả 404. |
+| 3.3 | Test lựa chọn giờ liền kề, không liền kề, bỏ đầu/giữa/cuối | Xong | 4/4 test `frontend/tests/slot-selection.test.js` đạt. |
+| 3.4 | Smoke test giao diện với API đang chạy tại localhost:3000 | Chờ người dùng xác nhận | Runtime API tại môi trường này trả 404 cho `/api/v1/facilities/1`; cần xác nhận bằng cấu hình/backend đang chạy của người dùng. |
+
 ## Module 4: Đặt sân, giữ chỗ, chống đặt trùng (FR-06, FR-12)
 
 Nguồn: [business-flow.md mục 3 (bước 4-6, 10), 6.1, 6.2, quy tắc 1-4](../01-plan/business-flow.md).  

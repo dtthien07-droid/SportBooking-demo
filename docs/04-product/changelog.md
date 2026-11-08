@@ -49,3 +49,11 @@
 - Tìm sân hỗ trợ môn, quận, từ khóa và phân trang; ngày/khung giờ/tiện ích để disabled do API không hỗ trợ. Đăng nhập thành công chuyển tới `/trangchu-user.html`.
 - Kiểm tra JS syntax và 14 test auth/facility seed đạt. Browser với API giả xác nhận render sân, query filter/pagination, redirect 401 và redirect login thành công.
 - Máy chủ đang chạy tại `http://localhost:3000` phục vụ trang nhưng `GET /api/v1/facilities` trả 404; chưa xác nhận dữ liệu thật qua runtime này. Không sửa backend/API.
+
+# 2026-11-08 — Module 3 frontend: Chi tiết sân và lưới khung giờ
+
+- Tạo `frontend/chi-tiet-san.html` từ mockup chi tiết sân; bỏ JavaScript cũ và dữ liệu sân/đánh giá/bản đồ/giá giả. Ảnh mặc định là hình minh họa theo môn; ảnh, chính sách, tiện ích, bản đồ và giá lấy từ response API.
+- Nối trang với `GET /api/v1/facilities/:id` và `GET /api/v1/courts/:id/time-slots?date=...`; giữ `id`, `date`, sân con và URL tìm kiếm trên query string. Thẻ sân trên trang chủ/tìm sân mở chi tiết đúng facility ID.
+- Lưới hiển thị toàn bộ slot API trả về, dùng `is_selectable`/trạng thái server, nhãn giờ vàng, tổng giờ/giá tạm tính; chọn liền kề và CTA không gọi API ghi.
+- **Xong:** `node --check` các JavaScript thay đổi; test lựa chọn slot liền kề/không liền kề/bỏ đầu-giữa-cuối đạt 4/4; `npm test` backend với `APP_ENV=test`, `DB_NAME=sportbooking_test` đạt 16/16.
+- **Chờ người dùng xác nhận:** smoke test thực tế tại `http://localhost:3000/`; API facilities của runtime hiện tại trả 404. Không chạy migration/seed; không sửa backend, API, `sportbooking_system` hoặc mockup.

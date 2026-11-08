@@ -48,6 +48,14 @@
     return Array.isArray(facility.sports) ? facility.sports : [];
   }
 
+  function detailUrl(facility) {
+    const params = new URLSearchParams({
+      id: String(facility.id),
+      returnTo: '/tim-san.html'
+    });
+    return `/chi-tiet-san.html?${params}`;
+  }
+
   function updateStats(facilities, total) {
     const statsSection = document.getElementById('statisticsSection');
     if (statsSection) statsSection.hidden = false;
@@ -77,6 +85,18 @@
       'article',
       'bg-surface-container-lowest rounded-2xl shadow-sm hover:shadow-md transition-all p-4 flex flex-col gap-3 border border-gray-100'
     );
+    const href = detailUrl(facility);
+    card.setAttribute('role', 'link');
+    card.tabIndex = 0;
+    card.addEventListener('click', (event) => {
+      if (!event.target.closest('a, button')) window.location.assign(href);
+    });
+    card.addEventListener('keydown', (event) => {
+      if (event.target === card && (event.key === 'Enter' || event.key === ' ')) {
+        event.preventDefault();
+        window.location.assign(href);
+      }
+    });
     const imageWrap = makeElement('div', 'relative h-44 overflow-hidden rounded-xl bg-surface-container flex items-center justify-center');
     const imageUrl = safeUrl(facility.image_url || '');
     if (imageUrl) {
@@ -116,7 +136,7 @@
       'mt-auto inline-flex items-center justify-center gap-1 rounded-xl bg-primary px-3.5 py-2 text-xs font-bold text-white shadow-sm',
       'Xem sân'
     );
-    link.href = '#';
+    link.href = href;
     card.append(link);
     return card;
   }

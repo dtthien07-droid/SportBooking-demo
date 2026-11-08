@@ -54,6 +54,12 @@ Frontend được phục vụ tại gốc `/`; `GET /` chuyển tới `/dang-nha
 | Đăng nhập / đăng ký | URL lần lượt `/dang-nhap.html` và `/dang-ky.html`; email + mật khẩu; đăng ký gồm thông tin hồ sơ và ô đồng ý với Điều khoản sử dụng cùng Chính sách bảo mật. Ô chỉ được bật sau khi người dùng mở và cuộn hết cả hai văn bản. Logo về trang đăng nhập. | Hai trang văn bản pháp lý công khai, xem không cần đăng nhập; footer chung trên mọi trang có liên kết đến cả hai trang. Lỗi xác thực/validation hiển thị cạnh trường và thông báo; loading khóa nút gửi; chỉ đăng ký thành công khi đã đồng ý; trang đăng ký thành công quay về đăng nhập theo nghiệp vụ. | Không hiển thị nút Quay lại. |
 | Điều khoản sử dụng / Chính sách bảo mật | Hai trang văn bản pháp lý công khai, không yêu cầu đăng nhập. | Footer chung trên mọi trang liên kết đến cả hai trang. | Trang trước; dự phòng trang chủ. |
 
+### URL trang frontend
+
+| Trang | URL | Tham số |
+|---|---|---|
+| Chi tiết sân và lịch khung giờ | `/chi-tiet-san.html?id={facilityId}&date={YYYY-MM-DD}` | `id` là ID cơ sở bắt buộc; `date` là ngày đang chọn. `court` lưu sân con đang chọn và `returnTo` giữ URL bộ lọc tìm sân khi quay lại. |
+
 ### 2.2 Menu Admin
 
 | Trang | Thành phần chính | Loading / lỗi / trống | Quay lại |

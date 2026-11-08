@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500">
+  <defs>
+    <linearGradient id="turf" x2="0" y2="1">
+      <stop offset="0" stop-color="#00873a"/>
+      <stop offset="1" stop-color="#005320"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="500" fill="#e9edff"/>
+  <rect x="70" y="75" width="660" height="350" rx="16" fill="url(#turf)"/>
+  <path d="M105 110h590v280H105zM400 110v280M400 250m-78 0a78 78 0 1 0 156 0a78 78 0 1 0-156 0M105 180h90v140h-90M695 180h-90v140h90" fill="none" stroke="#fff" stroke-width="7"/>
+  <circle cx="400" cy="250" r="7" fill="#fff"/>
+  <path d="M60 180h45v140H60M740 180h-45v140h45" fill="none" stroke="#fff" stroke-width="7"/>
+</svg>
