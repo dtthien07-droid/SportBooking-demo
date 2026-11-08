@@ -192,23 +192,6 @@
     }
   }
 
-  function safeReturnPath(value) {
-    if (!value || !value.startsWith('/') || value.startsWith('//')) return null;
-    try {
-      const url = new URL(value, window.location.origin);
-      if (url.origin !== window.location.origin
-          || url.pathname === '/dang-nhap.html'
-          || url.pathname === '/dang-ky.html'
-          || url.pathname === '/auth/login.html'
-          || url.pathname === '/auth/register.html') {
-        return null;
-      }
-      return `${url.pathname}${url.search}${url.hash}`;
-    } catch (error) {
-      return null;
-    }
-  }
-
   function redirectToLogin() {
     const returnTo = `${window.location.pathname}${window.location.search}${window.location.hash}`;
     window.location.replace(`/dang-nhap.html?returnTo=${encodeURIComponent(returnTo)}`);
@@ -267,8 +250,7 @@
         if (!result || !result.user) {
           throw new Error('Đăng nhập thành công nhưng máy chủ không trả thông tin tài khoản.');
         }
-        const returnTo = safeReturnPath(new URLSearchParams(window.location.search).get('returnTo'));
-        window.location.assign(returnTo || '/profile/profile.html');
+        window.location.assign('/trangchu-user.html');
       } catch (error) {
         setLoginErrors(form, error);
         setLoading(button, false);

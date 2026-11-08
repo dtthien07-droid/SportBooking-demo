@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SportBooking - Tìm cụm sân thể thao tại Hà Nội</title>
+
+    <!-- Font chữ & Icon -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#006b2c",
+                        "on-primary": "#ffffff",
+                        "primary-container": "#00873a",
+                        "on-primary-container": "#f7fff2",
+                        "secondary": "#9d4300",
+                        "secondary-container": "#fd761a",
+                        "on-secondary": "#ffffff",
+                        "surface": "#f9f9ff",
+                        "on-surface": "#141b2b",
+                        "on-surface-variant": "#3e4a3d",
+                        "surface-container": "#e9edff",
+                        "surface-container-low": "#f1f3ff",
+                        "surface-container-high": "#e1e8fd",
+                        "surface-container-lowest": "#ffffff",
+                        "error": "#ba1a1a"
+                    },
+                    spacing: { "space-sm": "0.5rem", "space-md": "1rem", "space-lg": "1.5rem", "space-xl": "2rem", "margin": "1.25rem" }
+                }
+            }
+        };
+    </script>
+    <style>
+        @layer base { html, body { margin: 0; padding: 0; } body { overscroll-behavior: none; } }
+        ::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+
+<body class="bg-surface font-['Be_Vietnam_Pro'] text-on-surface antialiased">
+
+    <!-- HEADER ĐỒNG BỘ 100% VỚI TRANG CHỦ -->
+    <header class="fixed top-0 left-0 right-0 w-full z-50 bg-surface/95 backdrop-blur-md shadow-sm border-b border-gray-100">
+        <div class="h-20 max-w-[1440px] mx-auto px-margin flex items-center justify-between gap-space-lg">
+            <div class="flex items-center gap-space-xl">
+                <!-- LOGO CHỮ SPORTBOOKING NGUYÊN BẢN -->
+                <a class="flex items-center gap-space-sm" href="trangchu-user.html">
+                    <span class="text-xl text-primary font-bold tracking-tight">SportBooking</span>
+                </a>
+
+                <nav class="hidden md:flex items-center gap-2 text-sm font-semibold">
+                    <a class="px-4 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container transition-all" href="trangchu-user.html">Trang chủ</a>
+                    <a class="px-4 py-2 rounded-xl bg-primary-container text-on-primary-container shadow-sm transition-all" href="tim-san.html">Tìm sân</a>
+                    <a class="px-4 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container transition-all" href="#">Lịch sử đặt sân</a>
+                    <a class="px-4 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container transition-all" href="#">Tin tức thể thao</a>
+                </nav>
+            </div>
+
+            <div class="flex items-center gap-space-lg">
+                <a aria-label="Thông báo" class="p-2.5 rounded-xl text-on-surface-variant hover:bg-surface-container transition-colors flex items-center justify-center" href="#">
+                    <span class="material-symbols-outlined text-[24px] align-middle" style="font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;">notifications</span>
+                </a>
+
+                <!-- KHU VỰC THÔNG TIN USER ĐỒNG BỘ ĐỘNG THEO TÀI KHOẢN -->
+                <div id="userHeaderArea" class="flex items-center gap-2 pl-2"></div>
+            </div>
+        </div>
+    </header>
+
+    <main class="w-full pt-20 min-h-screen bg-surface">
+       
+        <!-- TIÊU ĐỀ & THANH CÔNG CỤ TÌM KIẾM -->
+        <section class="w-full bg-surface-container-low/70 py-6">
+            <div class="max-w-[1440px] mx-auto px-margin flex flex-col gap-4">
+                <h1 class="text-2xl md:text-3xl font-extrabold text-on-surface tracking-tight">
+                    Tìm cụm sân thể thao tại Hà Nội
+                </h1>
+
+                <!-- Tabs chọn môn nhanh -->
+                <div class="flex items-center gap-2 overflow-x-auto pb-1" id="quickSportTabs">
+                    <button data-sport="all" class="sport-tab-btn px-4 py-2 rounded-xl text-sm font-bold bg-primary text-on-primary shadow-sm flex items-center gap-1.5 cursor-pointer" type="button">
+                        <span class="material-symbols-outlined text-[18px]">sports</span>
+                        <span>Tất cả môn</span>
+                    </button>
+                    <button data-sport="BADMINTON" class="sport-tab-btn px-4 py-2 rounded-xl text-sm font-medium bg-surface-container text-on-surface flex items-center gap-1.5 cursor-pointer" type="button">
+                        <span class="material-symbols-outlined text-[18px]">sports_tennis</span>
+                        <span>Cầu lông</span>
+                    </button>
+                    <button data-sport="FOOTBALL_MINI" class="sport-tab-btn px-4 py-2 rounded-xl text-sm font-medium bg-surface-container text-on-surface flex items-center gap-1.5 cursor-pointer" type="button">
+                        <span class="material-symbols-outlined text-[18px]">sports_soccer</span>
+                        <span>Bóng đá mini</span>
+                    </button>
+                    <button data-sport="PICKLEBALL" class="sport-tab-btn px-4 py-2 rounded-xl text-sm font-medium bg-surface-container text-on-surface flex items-center gap-1.5 cursor-pointer" type="button">
+                        <span class="material-symbols-outlined text-[18px]">sports_cricket</span>
+                        <span>Pickleball</span>
+                    </button>
+                </div>
+
+                <!-- THANH TÌM KIẾM CHÍNH -->
+                <form id="topSearchForm" class="bg-surface-container-lowest rounded-2xl p-4 shadow-md flex flex-col lg:flex-row items-stretch lg:items-center gap-4 border border-gray-100">
+                    <input type="hidden" name="sport" id="paramSport" value="">
+
+                    <!-- Tên sân / Địa chỉ -->
+                    <div class="flex-1 flex items-center gap-2 bg-surface-container-low px-4 py-2.5 rounded-xl">
+                        <span class="material-symbols-outlined text-gray-500 text-[20px]">search</span>
+                        <div class="flex flex-col flex-1">
+                            <label class="text-[11px] uppercase font-bold text-gray-500">Tên sân hoặc khu vực</label>
+                            <input name="q" id="queryInput" class="bg-transparent text-sm text-on-surface focus:outline-none w-full" placeholder="Nhập tên sân, địa chỉ..." type="text">
+                        </div>
+                    </div>
+
+                    <!-- Chọn Quận/Khu vực (Nạp động từ Database) -->
+                    <div class="w-full lg:w-60 flex items-center gap-2 bg-surface-container-low px-4 py-2.5 rounded-xl">
+                        <span class="material-symbols-outlined text-primary text-[20px]">location_on</span>
+                        <div class="flex flex-col flex-1">
+                            <span class="text-[11px] uppercase font-bold text-gray-500">Quận / Khu vực</span>
+                            <input name="district" id="paramDistrict" class="bg-transparent text-sm font-semibold text-on-surface focus:outline-none w-full" placeholder="Nhập quận/huyện" type="text">
+                        </div>
+                    </div>
+
+                    <!-- Chọn Ngày -->
+                    <div class="w-full lg:w-56 flex items-center gap-2 bg-surface-container-low px-4 py-2.5 rounded-xl">
+                        <span class="material-symbols-outlined text-secondary text-[20px]">calendar_today</span>
+                        <div class="flex flex-col flex-1">
+                            <span class="text-[11px] uppercase font-bold text-gray-500">Ngày chơi</span>
+                            <input type="date" name="date" id="paramDate" class="bg-transparent text-sm font-semibold text-on-surface focus:outline-none cursor-pointer w-full" disabled>
+                        </div>
+                    </div>
+
+                    <!-- Chọn Khung giờ -->
+                    <div class="w-full lg:w-60 flex items-center gap-2 bg-surface-container-low px-4 py-2.5 rounded-xl">
+                        <span class="material-symbols-outlined text-secondary text-[20px]">schedule</span>
+                        <div class="flex flex-col flex-1">
+                            <span class="text-[11px] uppercase font-bold text-gray-500">Khung giờ</span>
+                            <select name="time_slot" id="timeSlotSelect" class="bg-transparent text-sm font-semibold text-on-surface focus:outline-none cursor-pointer w-full" disabled>
+                                <option value="" selected>-- Tất cả khung giờ --</option>
+                                <option value="morning">Sáng (05:00 - 12:00)</option>
+                                <option value="afternoon">Chiều (12:00 - 17:00)</option>
+                                <option value="evening">Tối giờ vàng (17:00 - 22:00)</option>
+                                <option value="night">Đêm (22:00 - 23:59)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full lg:w-auto px-6 py-3 rounded-xl bg-secondary-container hover:bg-secondary text-white font-bold text-sm flex items-center justify-center gap-1 shadow-md transition-all cursor-pointer active:scale-95">
+                        <span class="material-symbols-outlined text-[20px]">search</span>
+                        <span>Tìm kiếm</span>
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- NỘI DUNG CHÍNH -->
+        <section class="max-w-[1440px] mx-auto px-margin py-8 w-full">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+               
+                <!-- BỘ LỌC CỘT TRÁI -->
+                <aside class="lg:col-span-4 xl:col-span-3 flex flex-col gap-6 lg:sticky lg:top-24">
+                    <div class="bg-surface-container-lowest rounded-2xl p-6 shadow-sm flex flex-col gap-6 border">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-bold text-base text-on-surface">Bộ lọc chi tiết</h4>
+                            <button id="clearFiltersBtn" class="text-xs font-bold text-secondary hover:underline cursor-pointer" type="button">
+                                Đặt lại bộ lọc
+                            </button>
+                        </div>
+                        <p class="text-xs text-on-surface-variant">Ngày, khung giờ và tiện ích hiện chưa được API hỗ trợ.</p>
+
+                        <!-- Môn thể thao -->
+                        <div class="flex flex-col gap-2">
+                            <span class="text-xs font-bold uppercase text-gray-500">Môn thể thao</span>
+                            <label class="flex items-center gap-2 p-1.5 hover:bg-surface-container rounded-lg cursor-pointer">
+                                <input class="filter-sport-check w-4 h-4 rounded text-primary focus:ring-primary accent-primary" type="checkbox" value="BADMINTON">
+                                <span class="text-sm">Cầu lông</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-1.5 hover:bg-surface-container rounded-lg cursor-pointer">
+                                <input class="filter-sport-check w-4 h-4 rounded text-primary focus:ring-primary accent-primary" type="checkbox" value="FOOTBALL_MINI">
+                                <span class="text-sm">Bóng đá mini</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-1.5 hover:bg-surface-container rounded-lg cursor-pointer">
+                                <input class="filter-sport-check w-4 h-4 rounded text-primary focus:ring-primary accent-primary" type="checkbox" value="PICKLEBALL">
+                                <span class="text-sm">Pickleball</span>
+                            </label>
+                        </div>
+
+                        <hr>
+
+                        <!-- Khung giờ -->
+                        <div class="flex flex-col gap-2">
+                            <span class="text-xs font-bold uppercase text-gray-500">Khung giờ</span>
+                            <label class="flex items-center gap-2 p-1.5 hover:bg-surface-container rounded-lg cursor-pointer">
+                                <input class="filter-slot-check w-4 h-4 rounded text-primary accent-primary" type="checkbox" value="morning" disabled>
+                                <span class="text-sm">Sáng (05:00 - 12:00)</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-1.5 hover:bg-surface-container rounded-lg cursor-pointer">
+                                <input class="filter-slot-check w-4 h-4 rounded text-primary accent-primary" type="checkbox" value="afternoon" disabled>
+                                <span class="text-sm">Chiều (12:00 - 17:00)</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-1.5 hover:bg-surface-container rounded-lg cursor-pointer">
+                                <input class="filter-slot-check w-4 h-4 rounded text-secondary accent-secondary" type="checkbox" value="evening" disabled>
+                                <span class="text-sm font-semibold text-secondary">Tối giờ vàng (17:00 - 22:00)</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-1.5 hover:bg-surface-container rounded-lg cursor-pointer">
+                                <input class="filter-slot-check w-4 h-4 rounded text-primary accent-primary" type="checkbox" value="night" disabled>
+                                <span class="text-sm">Đêm (22:00 - 23:59)</span>
+                            </label>
+                        </div>
+
+                        <hr>
+
+                        <!-- Tiện ích -->
+                        <div class="flex flex-col gap-2">
+                            <span class="text-xs font-bold uppercase text-gray-500">Tiện ích</span>
+                            <label class="flex items-center gap-2 p-1.5 hover:bg-surface-container rounded-lg cursor-pointer">
+                                <input id="amenityWc" class="filter-amenity-check w-4 h-4 rounded text-primary accent-primary" type="checkbox" value="wc" disabled>
+                                <span class="text-sm">Nhà vệ sinh sạch sẽ</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-1.5 hover:bg-surface-container rounded-lg cursor-pointer">
+                                <input id="amenityParking" class="filter-amenity-check w-4 h-4 rounded text-primary accent-primary" type="checkbox" value="parking" disabled>
+                                <span class="text-sm">Bãi đỗ ô tô / xe máy</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-1.5 hover:bg-surface-container rounded-lg cursor-pointer">
+                                <input id="amenityWifi" class="filter-amenity-check w-4 h-4 rounded text-primary accent-primary" type="checkbox" value="wifi" disabled>
+                                <span class="text-sm">Wifi miễn phí / Căng tin</span>
+                            </label>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- CỘT PHẢI: KẾT QUẢ & PHÂN TRANG -->
+                <div class="lg:col-span-8 xl:col-span-9 flex flex-col gap-6">
+                   
+                    <div class="bg-surface-container-lowest rounded-2xl p-4 shadow-sm flex items-center justify-between border">
+                        <p class="font-bold text-sm">
+                            Tìm thấy <span id="countResults" class="text-primary font-extrabold text-base">0</span> cụm sân thể thao phù hợp
+                        </p>
+                    </div>
+
+                    <!-- Danh sách sân render động -->
+                    <div id="venuesListContainer" class="flex flex-col gap-6">
+                        <div class="col-span-full py-16 text-center text-on-surface-variant flex flex-col items-center justify-center gap-3">
+                            <span class="material-symbols-outlined text-4xl animate-spin text-primary">sync</span>
+                            <span class="font-medium text-base">Đang tải danh sách sân từ cơ sở dữ liệu...</span>
+                        </div>
+                    </div>
+
+                    <!-- KHỐI PHÂN TRANG -->
+                    <div id="paginationContainer" class="bg-surface-container-lowest rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 border">
+                        <span class="text-sm text-on-surface-variant">
+                            Hiển thị <span class="font-bold text-on-surface" id="paginationRange">0 - 0</span> trong tổng số <span class="font-bold text-on-surface" id="totalCountText">0</span> cụm sân
+                        </span>
+                        <nav id="paginationButtons" aria-label="Pagination" class="flex items-center gap-1.5 text-sm"></nav>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="w-full bg-[#f1f3ff] border-t border-gray-200 shadow-[0_-1px_6px_rgba(0,0,0,0.02)]">
+        <div class="max-w-[1440px] mx-auto px-margin py-8 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="flex flex-col gap-1 text-left">
+                <div class="flex items-center gap-2">
+                    <span class="font-bold text-base text-primary">SportBooking Hà Nội</span>
+                    <span class="text-on-surface-variant text-xs">| Nền tảng đặt sân thể thao thông minh</span>
+                </div>
+                <p class="text-on-surface-variant text-xs">Hệ thống đặt sân thể thao SportBooking Hà Nội - Đặt sân trực tuyến nhanh chóng, tiện lợi &amp; chuẩn xác</p>
+                <p class="text-on-surface text-sm">Hotline hỗ trợ 24/7: <span class="font-bold text-secondary">1900 8899</span></p>
+            </div>
+            <div class="flex flex-col md:items-end gap-1.5">
+                <div class="flex flex-wrap items-center gap-3 text-xs text-on-surface-variant">
+                    <a class="hover:text-primary transition-colors" href="#">Hỗ trợ khách hàng</a>
+                    <span>•</span>
+                    <a class="hover:text-primary transition-colors" href="#">Điều khoản sử dụng</a>
+                    <span>•</span>
+                    <a class="hover:text-primary transition-colors" href="#">Chính sách bảo mật</a>
+                </div>
+                <p class="text-xs text-on-surface-variant">© 2026 SportBooking Hà Nội. Tất cả các quyền được bảo lưu.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- SCRIPT TẢI DANH SÁCH VÀ XỬ LÝ BỘ LỌC -->
+    <script src="/shared/facilities-api.js" defer></script>
+    <script src="/tim-san.js" defer></script>
+</body>
+</html>
