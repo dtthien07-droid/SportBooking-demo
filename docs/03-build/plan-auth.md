@@ -250,14 +250,14 @@ Test tích hợp DB chỉ chạy trên database test riêng đã tạo theo hư�
 7. Viết profile API, bảo đảm chỉ chủ hồ sơ sửa được và không thể tự đổi role/trạng thái tài khoản.
 8. Viết `/health` và error handler chuẩn JSON; xác nhận không lộ chi tiết nhạy cảm.
 9. Viết test backend theo mục 9, sau đó chạy test chỉ trên DB test và sửa lỗi thuộc phạm vi module.
-10. Tạo form đăng nhập/đăng ký, profile và API client thuần JS; kiểm tra trạng thái loading/lỗi/thành công và điều hướng.
+10. Tạo form đăng nhập/đăng ký, profile và API client thuần JS; bổ sung hai trang tĩnh Điều khoản sử dụng và Chính sách bảo mật, footer chung có liên kết đến hai trang trên mọi trang, cơ chế chỉ bật ô đồng ý sau khi người dùng mở và cuộn hết cả hai văn bản; kiểm tra trạng thái loading/lỗi/thành công và điều hướng. Bổ sung test backend xác nhận đăng ký thiếu `termsAccepted` bị từ chối với `400`.
 11. Chạy smoke test, rà `.gitignore`/`git status`, xác nhận không có `.env` hoặc secret bị track.
 12. Sau khi module hoàn tất và được xác nhận, cập nhật roadmap/changelog theo quy trình dự án.
 
 ## 11. Quyết định đã duyệt và trạng thái
 
 - Framework backend: **Express 5**.
-- Điều khoản đăng ký cố định: “Tôi đồng ý sử dụng SportBooking đúng mục đích đặt sân, cung cấp thông tin chính xác, và tuân thủ nội quy, chính sách hủy của từng cơ sở.”
+- Đăng ký chỉ thành công khi người dùng đã mở và cuộn hết Điều khoản sử dụng và Chính sách bảo mật rồi đánh dấu đồng ý; hai văn bản là trang công khai, liên kết ở footer chung trên mọi trang.
 - bcrypt rounds: **12**.
 - Code dùng chung (`app.js`, `config/`, `middleware/`, `shared/`) nằm trong `backend/src/`; code riêng auth nằm trong `backend/src/auth/`.
 - `GET /health` đặt ở gốc, không có tiền tố `/api/v1`.

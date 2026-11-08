@@ -25,3 +25,19 @@
 - Bổ sung test tích hợp HTTP trên `sportbooking_test`, có guard bắt buộc `APP_ENV=test` và `DB_NAME=sportbooking_test`; kiểm thử đăng ký, đăng nhập, khóa sau 5 lần sai, cookie/phiên, hồ sơ, đổi mật khẩu và giới hạn quyền.
 - **Xong:** `npm test` chạy với cấu hình test, 9/9 test đạt; dữ liệu test được dọn sau khi chạy.
 - Sửa binding tham số cho các trường hồ sơ không được gửi để PATCH một phần hoạt động đúng với MySQL.
+
+# 2026-11-08 — Frontend xác thực và hồ sơ (bước 10–11)
+
+- Bổ sung ba trang HTML đăng nhập, đăng ký và hồ sơ; dùng CSS/JS chung, Be Vietnam Pro, design tokens, trạng thái loading/lỗi, hiển thị lỗi cạnh trường, responsive và `prefers-reduced-motion`.
+- Kết nối đúng các route auth/profile hiện có bằng `fetch` cùng origin và cookie phiên; không lưu mật khẩu/token trong Web Storage. Thêm `express.static` để phục vụ `frontend/` trong cùng origin.
+- **Xong bước 10:** kiểm tra cú pháp JavaScript; 8/8 test auth không cần DB đạt; Express mock phục vụ đủ ba trang và hai asset; browser xác nhận xử lý 401, layout viewport 390px và điều hướng hết phiên về login kèm `returnTo`.
+- **Chờ người dùng xác nhận:** smoke test thủ công bước 11 với database/cấu hình chạy thực tế (đăng ký, admin, khóa sau 5 lần sai, hồ sơ, đổi mật khẩu, đăng xuất).
+- `npm test` chạy 8 test đạt; test tích hợp dừng ở guard do môi trường hiện tại không đặt `APP_ENV=test` và `DB_NAME=sportbooking_test`, trước khi kết nối database.
+
+# 2026-11-08 — Giao diện auth theo mockup đã deploy
+
+- Tạo `frontend/dang-nhap.html` và `frontend/dang-ky.html` từ markup mockup; giữ class và Tailwind CDN, bỏ script đăng nhập/đăng ký cũ, dùng `/shared/app.js` và API `/api/v1/auth/*`.
+- Đăng nhập chỉ nhận email; đăng ký nhúng Điều khoản sử dụng và Chính sách bảo mật, chỉ bật ô đồng ý sau khi mở và cuộn đến cuối cả hai văn bản.
+- Dùng ảnh login có sẵn tại `frontend/assets/images/sportbooking-login-courts.jpg` (đã đối chiếu trùng nguồn mockup); đổi `GET /` sang `/dang-nhap.html` và đồng bộ URL trong spec.
+- Kiểm tra redirect và tài nguyên static bằng HTTP; browser xác nhận form gửi đúng payload (API được mock), email type/placeholder, legal-read gate, và không tràn ngang ở viewport 390px.
+- `node --test tests/auth-step5.test.js tests/auth-step6-8.test.js`: 8/8 đạt. `npm test`: 8 test đạt; test tích hợp dừng ở guard do môi trường hiện tại không đặt `APP_ENV=test` và `DB_NAME=sportbooking_test`, trước khi kết nối database.

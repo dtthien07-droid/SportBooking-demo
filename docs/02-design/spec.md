@@ -33,7 +33,7 @@ Browser (HTML/CSS/JS) -- HTTP/JSON --> Backend Node.js -- MariaDB 10.4 --> sport
 
 ## 2. Trang và điều hướng
 
-Mọi trang có điều hướng **Quay lại**. Nút quay lại ưu tiên lịch sử trình duyệt; nếu không có trang trước phù hợp thì dùng đích dự phòng trong bảng. Khi hết phiên, trang yêu cầu đăng nhập và trở lại trang trước sau khi đăng nhập thành công. Các trang dữ liệu đều có trạng thái đang tải, lỗi có thể thử lại, và trống có hướng dẫn hành động tiếp theo.
+Frontend được phục vụ tại gốc `/`; `GET /` chuyển tới `/dang-nhap.html`. URL của các trang xác thực là `/dang-nhap.html` và `/dang-ky.html`; hồ sơ là `/profile/profile.html`. Các trang có điều hướng **Quay lại**, ngoại trừ Đăng nhập và Đăng ký. Nút quay lại ưu tiên lịch sử trình duyệt; nếu không có trang trước phù hợp thì dùng đích dự phòng trong bảng. Khi hết phiên, trang yêu cầu đăng nhập và trở lại trang trước sau khi đăng nhập thành công. Các trang dữ liệu đều có trạng thái đang tải, lỗi có thể thử lại, và trống có hướng dẫn hành động tiếp theo.
 
 ### 2.1 Menu User
 
@@ -49,9 +49,10 @@ Mọi trang có điều hướng **Quay lại**. Nút quay lại ưu tiên lịc
 | Lịch sử đặt sân | Danh sách đơn của user; lọc trạng thái; tiền đã trả/hoàn; trạng thái ghép; mở chi tiết, tiếp tục `PENDING`, hủy khi đủ điều kiện, đánh giá đơn đã hoàn thành, đặt lại. | Skeleton danh sách; lỗi có thử lại; chưa có đơn thì hướng dẫn tìm sân. | Trang trước; dự phòng trang chủ. |
 | Chi tiết đơn | Thông tin sân, toàn bộ khung giờ, mã đơn/vé, thanh toán/hoàn, tìm đối; hành động phụ thuộc trạng thái và quyền. | Loading theo đơn; lỗi hoặc không tìm thấy thông báo rõ; không hiển thị thao tác hủy cho đơn không đủ điều kiện. | Lịch sử; dự phòng lịch sử đặt sân. |
 | Thông báo | Chuông/số chưa đọc; popup xem nhanh với “x phút trước”; danh sách phân loại Tất cả, Lịch đặt sân & Giữ chỗ, Tìm đối & Ghép kèo, Thanh toán & Hoàn cọc, Hệ thống; đánh dấu đã đọc/xem chi tiết. | Loading danh sách; lỗi có thử lại; trống báo chưa có thông báo. | Trang trước; dự phòng trang chủ. |
-| Hồ sơ | Tên, email, SĐT duy nhất, giới tính và trình độ nếu có; sửa hồ sơ, đổi mật khẩu, đăng xuất; điều khoản đăng ký là nội dung cố định. | Loading hồ sơ; lỗi có thử lại; trường không tải không được âm thầm ghi đè. | Trang trước; dự phòng trang chủ. |
+| Hồ sơ | URL `/profile/profile.html`; tên, email, SĐT duy nhất, giới tính và trình độ nếu có; sửa hồ sơ, đổi mật khẩu, đăng xuất. | Loading hồ sơ; lỗi có thử lại; trường không tải không được âm thầm ghi đè. | Trang trước; dự phòng trang chủ. |
 | Tin tức thể thao (tùy chọn) | Danh sách tin từ RSS, tiêu đề, nguồn, thời điểm và liên kết bài gốc. | Loading; lỗi nguồn RSS có thể thử lại; trống thông báo chưa có bài. Nguồn RSS chốt khi triển khai tính năng tùy chọn. | Trang trước; dự phòng trang chủ. |
-| Đăng nhập / đăng ký | Email + mật khẩu; đăng ký gồm thông tin hồ sơ và xác nhận đoạn điều khoản cố định. | Lỗi xác thực/validation hiển thị cạnh trường và thông báo; loading khóa nút gửi; trang đăng ký thành công quay về đăng nhập theo nghiệp vụ. | Trang trước; dự phòng trang chủ hoặc đăng nhập tương ứng. |
+| Đăng nhập / đăng ký | URL lần lượt `/dang-nhap.html` và `/dang-ky.html`; email + mật khẩu; đăng ký gồm thông tin hồ sơ và ô đồng ý với Điều khoản sử dụng cùng Chính sách bảo mật. Ô chỉ được bật sau khi người dùng mở và cuộn hết cả hai văn bản. Logo về trang đăng nhập. | Hai trang văn bản pháp lý công khai, xem không cần đăng nhập; footer chung trên mọi trang có liên kết đến cả hai trang. Lỗi xác thực/validation hiển thị cạnh trường và thông báo; loading khóa nút gửi; chỉ đăng ký thành công khi đã đồng ý; trang đăng ký thành công quay về đăng nhập theo nghiệp vụ. | Không hiển thị nút Quay lại. |
+| Điều khoản sử dụng / Chính sách bảo mật | Hai trang văn bản pháp lý công khai, không yêu cầu đăng nhập. | Footer chung trên mọi trang liên kết đến cả hai trang. | Trang trước; dự phòng trang chủ. |
 
 ### 2.2 Menu Admin
 
@@ -68,9 +69,11 @@ Menu User và Admin chỉ hiện theo vai trò, nhưng ẩn menu không thay th�
 
 ### 3.1 Ngôn ngữ hình ảnh và hệ thống thiết kế
 
-- **Màu chủ đạo:** xanh đậm `#1B5E20`, xanh `#2E7D32`, xanh sáng `#4CAF50`; nền kem `#F6F8F4`, không dùng trắng thuần làm nền trang.
-- **Điểm nhấn:** lime `#C6F432` cho CTA **Đặt sân ghép đối ngay** và nhãn **Xin ghép**. Chữ phụ dùng xám nhạt nhưng phải giữ đủ tương phản với nền.
-- **Chữ:** Be Vietnam Pro hoặc Plus Jakarta Sans, có đủ dấu tiếng Việt; tiêu đề lớn, đậm, phân cấp rõ ràng.
+- **Màu:** giao diện xác thực dùng xanh `#006b2c`/`#00873a`, cam `#9d4300`/`#fd761a`, bề mặt `#f9f9ff`, `#f1f3ff` và `#ffffff`; viền và trạng thái lấy từ token trong [sportbooking-design-system.css](./mockups/sportbooking-design-system.css). Không thay bằng bảng màu khác.
+- **Typography:** Be Vietnam Pro cho nội dung và tiêu đề; Inter cho số liệu và nhãn phù hợp. Tiêu đề đậm, phân cấp rõ ràng.
+- **Trang đăng nhập/đăng ký:** màn hình desktop chia hai cột theo tỷ lệ gần 7:5, form bên trái và khối giới thiệu bên phải. Form đăng ký đặt Họ tên/Email trước, tiếp theo Số điện thoại/Mật khẩu và Nhập lại mật khẩu; ô nhập có icon, nút gửi dùng style nút chính. Khối giới thiệu dùng số liệu 29 cơ sở tại 6 quận cùng ba thẻ tính năng.
+- **Responsive:** ở viewport 390px, chuyển thành một cột, giữ form trước và đưa khối giới thiệu xuống dưới; không tràn ngang hoặc che nội dung.
+- **Trạng thái và chuyển động:** giữ bo góc, bóng đổ, focus-visible, hover, lỗi và disabled theo design system; nút submit bị khóa và thông báo loading trong lúc gửi. Tôn trọng `prefers-reduced-motion`.
 - **Hero:** ảnh sân lớn, bo góc, phủ gradient xanh đậm để chữ dễ đọc; ô tìm nhanh môn, quận/huyện, ngày, giờ nổi trên hero.
 - **Card sân:** ảnh lớn, điểm sao, giá “từ”, nhãn môn; hover nâng nhẹ và bóng đổ tăng vừa phải, không làm bố cục dịch chuyển bất ngờ.
 - **Khung giờ:** lưới dễ đọc và có chữ/icon đi kèm màu: trống viền xanh; đang giữ chỗ nền vàng sọc và không chọn được; đã đặt xám; **Xin ghép** lime; giờ vàng 17:00–21:00 có icon tia chớp; giờ đã qua bị khóa.
@@ -83,42 +86,26 @@ Menu User và Admin chỉ hiện theo vai trò, nhưng ẩn menu không thay th�
 
 ### 3.2 Biến CSS dùng chung
 
-Các giá trị dùng làm design tokens; có thể bổ sung theo nhu cầu component nhưng không đổi các màu nghiệp vụ đã chốt.
+`frontend/app.css` dùng design system làm nền. Các giá trị dưới đây trích đúng token đang dùng; style riêng cho giao diện xác thực chỉ bố cục và ghép component từ các token này, không tạo bảng màu thay thế.
 
 ```css
 :root {
-  color-scheme: light;
-  --color-green-900: #1B5E20;
-  --color-green-800: #2E7D32;
-  --color-green-500: #4CAF50;
-  --color-lime: #C6F432;
-  --color-cream: #F6F8F4;
-  --color-surface: #EEF2EB;
-  --color-text: #18321B;
-  --color-text-muted: #68756A;
-  --color-border: #DCE5D8;
-  --color-warning: #F2C94C;
-  --color-error: #B84242;
-  --color-match: #C6F432;
-
-  --radius-card: 16px;
-  --radius-panel: 24px;
-  --radius-pill: 999px;
-
-  --shadow-card: 0 8px 24px rgb(27 94 32 / 8%);
-  --shadow-raised: 0 14px 32px rgb(27 94 32 / 14%);
-
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-6: 24px;
-  --space-8: 32px;
-  --space-12: 48px;
-
-  --motion-fast: 150ms;
-  --motion-normal: 220ms;
-  --content-max: 1200px;
+  --sb-primary: #006b2c;
+  --sb-primary-container: #00873a;
+  --sb-secondary: #9d4300;
+  --sb-secondary-container: #fd761a;
+  --sb-surface: #f9f9ff;
+  --sb-surface-container-low: #f1f3ff;
+  --sb-surface-container-lowest: #ffffff;
+  --sb-on-surface: #141b2b;
+  --sb-border-default: #e5e7eb;
+  --sb-error: #ba1a1a;
+  --sb-font-main: 'Be Vietnam Pro', system-ui, -apple-system, sans-serif;
+  --sb-font-mono: 'Inter', ui-monospace, SFMono-Regular, monospace;
+  --sb-radius-md: 12px;
+  --sb-radius-xl: 20px;
+  --sb-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+  --sb-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 ```
 
@@ -163,7 +150,7 @@ Các route dưới đây là hợp đồng HTTP/JSON đề xuất, dùng tiền 
 
 | API | Vai trò | Input | Output thành công | Lỗi chính |
 |---|---|---|---|---|
-| `POST /auth/register` | Public | Họ tên, email, mật khẩu, SĐT, đồng ý điều khoản | `201`, hồ sơ mới không gồm hash mật khẩu | `400` dữ liệu sai; `409` email/SĐT trùng |
+| `POST /auth/register` | Public | Họ tên, email, mật khẩu, SĐT, `termsAccepted` bắt buộc là `true` | `201`, hồ sơ mới không gồm hash mật khẩu; ghi `terms_accepted_at` | `400` dữ liệu sai hoặc thiếu/không chấp nhận `termsAccepted`; `409` email/SĐT trùng |
 | `POST /auth/login` | Public | Email, mật khẩu | `200`, user/role và phiên 8 giờ | `400` thiếu/sai định dạng; `401` thông tin không hợp lệ; `403` admin khóa; `423` đang tạm khóa do sai mật khẩu |
 | `POST /auth/logout` | User/Admin | Phiên hiện tại | `204` | `401` chưa xác thực |
 | `GET /auth/me` | User/Admin | Không | Hồ sơ và vai trò hiện tại | `401` phiên hết hạn |
@@ -262,28 +249,28 @@ Nguồn dữ liệu ban đầu là [khao-sat-san.xlsx](../../infra/data/khao-sat
 
 | Cột Excel | Header trong workbook | Cột đích | Chuẩn hóa |
 |---|---|---|---|
-| A | `Cụm sân / Khu vực` | `facilities.district` | Điền xuống giá trị quận/huyện liền trước ở các dòng trống trong cùng nhóm; chuẩn hóa khoảng trắng và tên quận thống nhất. |
+| A | `Cụm sân / Khu vực` | `facilities.district` | Điền xuống giá trị quận/huyện liền trước ở các dòng trống trong cùng nhóm; trim khoảng trắng. Ưu tiên cột A; nếu địa chỉ lệch thì ghi cảnh báo theo dòng, không tự sửa quận. |
 | B | `Tên môn` | `courts.sport_type` | Dòng trống thuộc nhóm môn hiện hành được điền theo nhãn nhóm; ánh xạ các biến thể “Sân bóng/bóng đá mini” → `FOOTBALL_MINI`, “cầu lông” → `BADMINTON`, “pickleball” → `PICKLEBALL`; giá trị không nhận diện phải báo lỗi, không đoán. |
-| C | `Tên sân` | `facilities.name`, `courts.name` | Chuẩn hóa khoảng trắng; dùng tên đã khảo sát cho cơ sở và sân mặc định. |
-| D | `Địa chỉ chi tiết` | `facilities.address`, `facilities.district` | Giữ địa chỉ đầy đủ; đối chiếu/tách quận với cột A đã điền xuống. Nếu không khớp thì đánh dấu cần rà soát, không âm thầm ghi đè quận. |
-| E | `Link map` | `facilities.map_url` | Giữ URL hợp lệ. Nội dung không phải URL hoặc URL lỗi cần xác minh; không tự biến tên địa điểm thành URL. |
-| F | `Số điện thoại liên hệ` | `facilities.hotline` | Chuyển số dạng scientific notation về chuỗi chữ số, giữ số 0 đầu theo định dạng SĐT Việt Nam; kiểm tra độ dài/prefix và rà soát các số bị mất độ chính xác do kiểu số Excel. Lưu dưới dạng chuỗi, không kiểu số. |
-| G | `Giờ mở cửa / đóng cửa` | `facilities.opening_time`, `facilities.closing_time` | Chuẩn hóa separator, khoảng trắng và mẫu giờ (`HH:mm–HH:mm`, “đến”, dấu gạch nối). Chuẩn hóa “Cả ngày”/`24:00` theo quy ước giờ vận hành đã xác nhận; giá trị không phân giải được đưa vào báo cáo lỗi, không tự thay bằng mặc định. |
-| H | `Tiện ích` | `facilities.amenities` | Tách các mục phân cách bằng `/`, dấu phẩy hoặc dấu chấm phẩy, trim và loại mục trùng; chuyển thành JSON array. Ô trống áp dụng tiện ích mặc định theo môn và đánh dấu `is_seed`. |
-| I | `rate đgia` | `courts.initial_rating` | Điểm hợp lệ phải là số từ 1.0 đến 5.0. Nếu Excel đã chuyển điểm thành ngày/serial ngày hoặc dấu `*****`, không thể suy ngược đáng tin cậy; đối chiếu nguồn khảo sát để khôi phục điểm, nếu chưa xác minh thì để `NULL` và ghi cảnh báo, không tự quy đổi serial thành sao. |
-| J | Cột giá (không có header) | `courts.survey_price_min`, `courts.survey_price_max` | Loại đơn vị/ký tự tiền tệ và `/giờ`, nhận dạng khoảng giá; tách số nhỏ nhất/lớn nhất, chuẩn hóa `k`/`nghìn` và VNĐ về đồng. Nếu chỉ có một mức thì lưu min=max; không phân tích được thì báo lỗi để rà soát. Đây là giá khảo sát, không thay giá vận hành `price_normal`/`price_peak`. |
-| Không có | Ảnh | `facilities.image_url` | Workbook không cung cấp ảnh; để `NULL` cho tới khi có nguồn ảnh hợp lệ. |
+| C | `Tên sân` | `facilities.name`, `courts.name` | Gộp ký tự xuống dòng thành khoảng trắng, trim và giữ nguyên tên khảo sát cho cơ sở và sân mặc định. |
+| D | `Địa chỉ chi tiết` | `facilities.address` | Giữ địa chỉ đầy đủ sau khi trim; chỉ dùng để đối chiếu và cảnh báo lệch quận so với cột A. |
+| E | `Link map` | `facilities.map_url` | Dùng nguyên URL hợp lệ đã sửa trong workbook; nếu vẫn không phải URL thì lưu `NULL`, ghi cảnh báo theo dòng. Frontend tạo link tìm kiếm Google Maps từ địa chỉ khi hiển thị. |
+| F | `Số điện thoại liên hệ` | `facilities.hotline` | Lưu chuỗi chữ số, bỏ dấu chấm và khoảng trắng. Chuỗi toàn số dài 9 hoặc 10 chữ số thì thêm `0` đầu; ô trống lưu `NULL`. |
+| G | `Giờ mở cửa / đóng cửa` | `facilities.opening_time`, `facilities.closing_time` | Chuẩn hóa separator, dấu chấm và mẫu giờ (`5h00–22h30`, “đến”, dấu gạch nối). “Cả ngày”/“Mở cửa cả ngày” thành `00:00:00`–`24:00:00`; giờ đóng `00:00` hoặc `24:00` là hết ngày cùng ngày. Làm tròn giờ mở lên và giờ đóng xuống giờ nguyên. `24:00` được lưu dưới dạng `TIME '24:00:00'`, không đổi thành `00:00` ngày hôm sau. |
+| H | `Tiện ích` | `facilities.amenities` | Tách mục phân cách bằng `/`, dấu phẩy hoặc chấm phẩy; trim, bỏ mục trùng và lưu JSON array. Ô trống lưu mảng rỗng, không tự suy đoán tiện ích. |
+| I | `rate đgia` | `courts.initial_rating` | Dùng nguyên giá trị đã sửa trong workbook nếu là số từ 1.0 đến 5.0. Giá trị còn sai định dạng/ngoài miền để `NULL`, ghi cảnh báo đúng dòng; kỳ vọng không có cảnh báo. |
+| J | Cột giá (không có header) | `courts.survey_price_min`, `courts.survey_price_max`, `price_normal`, `price_peak` | Chuẩn hóa ký hiệu VNĐ, `k`/`nghìn`, dấu phân cách và khoảng giá; thiếu `/giờ` vẫn hiểu là giá theo giờ. Giá nhỏ nhất là `price_normal`, lớn nhất là `price_peak`; nếu chỉ một mức thì `price_peak = price_normal × 1,3`. Không dùng hằng số giá theo môn. Giá không phân tích được phải báo lỗi và không tự đoán. |
+| Không có | Ảnh | `facilities.image_url` | Chưa có ảnh theo môn; lưu `NULL`, frontend hiển thị nền gradient và icon theo môn cho tới khi có ảnh thật. |
 
 #### Quy tắc import và mặc định
 
 1. Đọc `.xlsx` hoặc CSV UTF-8 xuất từ workbook; kiểm tra header, số dòng dữ liệu, kiểu và giá trị bắt buộc trước khi ghi.
-2. Chuẩn hóa dữ liệu theo bảng ánh xạ; xuất báo cáo các dòng cần xác minh (đặc biệt điện thoại mất độ chính xác, map không phải URL, giờ không phân tích được, rating bị chuyển thành date/serial, giá không tách được). Không đoán dữ liệu nguồn; yêu cầu xác nhận/correction trước khi import các giá trị bắt buộc sai hoặc thiếu.
-3. Với dữ liệu thiếu được phép mặc định, đặt giờ mở cửa 06:00–22:00, giá thường theo môn lấy từ hằng số trong script, giờ vàng 17:00–21:00 bằng giá thường × 1,3, tiện ích mặc định theo môn, chính sách hủy theo [business-flow mục 4.1](../01-plan/business-flow.md#41-hủy-đơn-và-hoàn-tiền-fr-08-uc-08), quận/huyện tách từ địa chỉ và một ảnh cho mỗi cơ sở khi đã có tài nguyên ảnh. Các bản ghi có trường mặc định được đánh dấu `is_seed = TRUE`; sửa dữ liệu bởi admin phải chuyển `is_seed = FALSE`.
+2. Chuẩn hóa theo bảng ánh xạ; báo cáo lỗi theo dòng cho giá/giờ/rating/map không hợp lệ và cảnh báo nếu quận cột A khác địa chỉ. Không đoán dữ liệu; rating và map đã được sửa trong workbook nên kỳ vọng 0 cảnh báo ở hai trường này.
+3. Giờ hoạt động lấy từ khảo sát; cơ sở nhập theo khảo sát có `facilities.is_seed = FALSE`, gồm cả “Cả ngày”/“Mở cửa cả ngày” mở `00:00`, đóng `24:00`. `24:00` không rollover sang ngày sau. Giờ mở lẻ làm tròn lên giờ nguyên, giờ đóng lẻ làm tròn xuống. UI hiển thị “Mở cửa 24/24”. Khung một tiếng được tạo từ giờ mở đến giờ đóng trong 14 ngày; cơ sở 24/24 có 24 khung/ngày. Giá vận hành lấy từ cột J theo `price_normal`/`price_peak`, không dùng hằng số theo môn.
 4. Import lặp lại không tạo trùng và không ghi đè dữ liệu do admin đã sửa. Định danh khớp seed dùng khóa chuẩn hóa từ quận + tên + địa chỉ cho cơ sở, và `facility_id + court.name` cho sân; các xung đột không thể phân định phải dừng để rà soát.
-5. Tạo khung một tiếng cho 14 ngày tới trong thời gian mở cửa 06:00–22:00; chỉ chèn khung còn thiếu theo `UNIQUE(court_id, service_date, starts_at)`, không cập nhật khung đã tồn tại. Giá lấy từ cấu hình giá vận hành của sân.
+5. Tạo khung một tiếng cho 14 ngày tới từ giờ mở cửa đã làm tròn lên tới giờ đóng đã làm tròn xuống; chỉ chèn khung còn thiếu theo `UNIQUE(court_id, service_date, starts_at)`, không cập nhật khung đã tồn tại. `TIME '24:00:00'` là cuối ngày; không chuyển thành nửa đêm ngày kế tiếp.
 6. Sau import, xác nhận đúng 29 cơ sở, 6 quận, 29 sân và phân bố môn cầu lông 10, bóng đá mini 8, pickleball 11; sai lệch phải báo và dừng, không sửa số liệu để khớp.
 
-Giá thường cụ thể theo từng môn, quy ước khôi phục rating đã bị Excel chuyển thành ngày/serial, và nguồn ảnh chưa có trong workbook; cần xác nhận trước khi seed các giá trị đó. Database `sportbooking_system` giữ dữ liệu khảo sát hiện có và không phải mục tiêu chạy seed phát triển.
+Database `sportbooking_system` giữ dữ liệu khảo sát hiện có và không phải mục tiêu chạy seed phát triển. Ảnh theo môn chưa có; giao diện tạm dùng gradient và icon.
 
 ## 9. Tiêu chí nghiệm thu
 
@@ -317,7 +304,7 @@ Giá thường cụ thể theo từng môn, quy ước khôi phục rating đã 
 | GD-04 | Dùng `DATETIME(3)` chuẩn hóa UTC cho thời điểm sự kiện và deadline; ngày/giờ khung chơi lưu theo giờ địa phương Hà Nội (`service_date`, `starts_at`, `ends_at`) rồi ghép với `Asia/Ho_Chi_Minh` khi tính trạng thái. |
 | GD-05 | Mã đơn có dạng `SPB-YYYYMMDD-xxxxxx`; mã QR có dạng `QR-` + chuỗi ngẫu nhiên. Hai loại mã khác tiền tố nên không giao nhau; QR chứa mã đơn để nhân viên đối chiếu. |
 | GD-06 | Các trường thông tin cơ sở/sân trong bảng đích là mô hình đề xuất tối thiểu; cần đối chiếu dữ liệu khảo sát thực tế để tránh làm mất cột/dữ liệu nguồn. |
-| GD-07 | Giá thường của từng môn được khai báo thành hằng số trong script seed; số cụ thể chờ user xác nhận. |
+| GD-07 | Giá lấy từ workbook: mức nhỏ nhất là `price_normal`, mức lớn nhất là `price_peak`; nếu chỉ có một mức thì `price_peak = price_normal × 1,3`. Giá thiếu `/giờ` vẫn tính theo giờ; không dùng hằng số giá theo môn. |
 
 ### Câu hỏi mở
 

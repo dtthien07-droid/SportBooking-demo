@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>SportBooking - Thông báo của tôi</title>
+
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Inter:wght@500;600&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet"/>
+
+    <style>
+        @layer base {
+            html, body { margin: 0; padding: 0; }
+            body { overscroll-behavior: none; }
+            main > :first-child { margin-top: 0 !important; }
+            main > :last-child { margin-bottom: 0 !important; }
+        }
+        ::-webkit-scrollbar { display: none; }
+    </style>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#006b2c",
+                        "on-primary": "#ffffff",
+                        "primary-container": "#00873a",
+                        "on-primary-container": "#f7fff2",
+                        "secondary": "#9d4300",
+                        "secondary-container": "#fd761a",
+                        "on-secondary": "#ffffff",
+                        "secondary-fixed": "#ffdbca",
+                        "on-secondary-fixed": "#341100",
+                        "on-secondary-fixed-variant": "#783200",
+                        "tertiary": "#0051d5",
+                        "tertiary-fixed": "#dbe1ff",
+                        "on-tertiary-fixed": "#00174b",
+                        "on-tertiary-fixed-variant": "#003ea8",
+                        "surface": "#f9f9ff",
+                        "on-surface": "#141b2b",
+                        "on-surface-variant": "#3e4a3d",
+                        "surface-container": "#e9edff",
+                        "surface-container-low": "#f1f3ff",
+                        "surface-container-high": "#e1e8fd",
+                        "surface-container-highest": "#dce2f7",
+                        "surface-container-lowest": "#ffffff",
+                        "outline": "#6e7b6c",
+                        "outline-variant": "#bdcaba",
+                        "error": "#ba1a1a",
+                        "error-container": "#ffdad6",
+                        "on-error": "#ffffff",
+                        "on-error-container": "#93000a"
+                    },
+                    spacing: { "space-xs": "0.25rem", "space-sm": "0.5rem", "space-md": "1rem", "space-lg": "1.5rem", "space-xl": "2rem", "margin": "1.25rem" },
+                    fontFamily: {
+                        "body-md": ["Be Vietnam Pro"],
+                        "headline-sm": ["Be Vietnam Pro"],
+                        "headline-md": ["Be Vietnam Pro"],
+                        "headline-lg": ["Be Vietnam Pro"],
+                        "label-sm": ["Inter"],
+                        "label-md": ["Inter"],
+                        "label-lg": ["Inter"]
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+
+<body class="bg-surface font-['Be_Vietnam_Pro'] text-on-surface antialiased">
+
+    <!-- HEADER ĐỒNG BỘ CÓ KHUNG XEM NHANH -->
+    <header class="fixed top-0 left-0 right-0 w-full z-50 bg-surface/95 backdrop-blur-md shadow-sm border-b border-gray-100">
+        <div class="h-20 max-w-[1440px] mx-auto px-margin flex items-center justify-between gap-space-lg">
+            <div class="flex items-center gap-space-xl">
+                <a class="flex items-center gap-space-sm" href="trangchu-user.html">
+                    <span class="text-xl text-primary font-bold tracking-tight">SportBooking</span>
+                </a>
+
+                <nav class="hidden md:flex items-center gap-2 text-sm font-semibold">
+                    <a class="px-4 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container transition-all" href="trangchu-user.html">Trang chủ</a>
+                    <a class="px-4 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container transition-all" href="tim-san.html">Tìm sân</a>
+                    <a class="px-4 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container transition-all" href="lich-su-dat-san.html">Lịch sử đặt sân</a>
+                    <a class="px-4 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container transition-all" href="tim-doi-choi.html">Tìm đối chơi</a>
+                    <a class="px-4 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container transition-all" href="tin-tuc-the-thao.html">Tin tức thể thao</a>
+                </nav>
+            </div>
+
+            <div class="flex items-center gap-space-lg">
+                <!-- KHU VỰC CHUÔNG THÔNG BÁO VỚI KHUNG XEM NHANH -->
+                <div class="relative" id="notifDropdownContainer">
+                    <button aria-label="Thông báo" class="relative p-2 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface transition-colors flex items-center justify-center cursor-pointer" id="btnToggleNotifDropdown" type="button">
+                        <span class="material-symbols-outlined text-[24px] align-middle" style="font-variation-settings: 'FILL' 1;">notifications</span>
+                        <span class="hidden absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-error text-white font-bold text-[10px] rounded-full flex items-center justify-center shadow-sm" id="badgeQuickCount">0</span>
+                    </button>
+
+                    <!-- Khung Xem Nhanh Popover -->
+                    <div class="hidden absolute right-0 top-full mt-2 w-[400px] max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl border border-gray-100 flex-col z-50 overflow-hidden" id="quickNotifPopover">
+                        <div class="p-3.5 pb-2 border-b bg-surface-container-lowest">
+                            <div class="flex items-center justify-between mb-1.5">
+                                <div class="flex items-center gap-2">
+                                    <h3 class="text-sm font-bold text-on-surface">Thông báo</h3>
+                                    <span class="px-2 py-0.5 rounded-full bg-red-100 text-error text-[10px] font-bold" id="badgePopoverUnread">0 chưa đọc</span>
+                                </div>
+                                <button class="text-xs text-primary font-bold hover:underline cursor-pointer" id="btnQuickMarkAll" type="button">Đã đọc tất cả</button>
+                            </div>
+                        </div>
+
+                        <div class="max-h-[360px] overflow-y-auto divide-y divide-gray-100" id="quickNotifList"></div>
+
+                        <div class="p-2.5 bg-surface-container-low text-center border-t">
+                            <a class="inline-flex items-center justify-center gap-1 text-xs font-bold text-primary hover:underline cursor-pointer" href="thong-bao.html">
+                                <span>Xem tất cả thông báo</span>
+                                <span class="material-symbols-outlined text-[15px]">chevron_right</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KHU VỰC THÔNG TIN USER: TỰ ĐỘNG LẤY TÊN TÀI KHOẢN ĐANG ĐĂNG NHẬP -->
+                <div id="userHeaderArea" class="flex items-center gap-2 pl-2"></div>
+            </div>
+        </div>
+    </header>
+
+    <main class="w-full pt-20 min-h-screen bg-surface">
+        <div class="flex flex-col w-full">
+            <div class="max-w-[1440px] w-full mx-auto px-margin py-space-lg flex flex-col gap-space-lg">
+                
+                <!-- Breadcrumb & Top Bar -->
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-space-md">
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-center gap-3 mt-1">
+                            <h1 class="text-2xl md:text-3xl font-bold text-on-surface tracking-tight">Trung tâm Thông báo</h1>
+                            <div class="hidden inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-error-container text-error text-xs font-bold shadow-sm" id="mainUnreadBadge">
+                                <span class="w-2 h-2 rounded-full bg-error animate-ping"></span>
+                                <span id="mainUnreadBadgeText">0 thông báo chưa đọc</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Nút thao tác nhanh -->
+                    <div class="flex flex-wrap items-center gap-space-sm">
+                        <button class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary hover:bg-primary-container text-white text-xs font-bold transition-all shadow-sm cursor-pointer active:scale-95" id="btnMarkAllReadMain" type="button">
+                            <span class="material-symbols-outlined text-[18px]">done_all</span>
+                            <span>Đánh dấu tất cả đã đọc</span>
+                        </button>
+                        <button class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-container-lowest text-error hover:bg-red-50 text-xs font-semibold transition-all border border-red-100 cursor-pointer" id="btnClearReadMain" type="button">
+                            <span class="material-symbols-outlined text-[18px]">delete_sweep</span>
+                            <span>Xóa đã đọc</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Bố cục chính 2 Cột -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
+                    
+                    <!-- CỘT TRÁI: Phân loại & Kênh nhận tin -->
+                    <aside class="lg:col-span-4 xl:col-span-3 flex flex-col gap-space-md sticky top-24">
+                        <div class="bg-surface-container-lowest rounded-2xl p-space-md shadow-sm flex flex-col gap-space-sm border border-gray-100">
+                            <div class="flex items-center justify-between pb-2 border-b">
+                                <span class="text-sm font-bold text-on-surface">Phân loại</span>
+                                <span class="text-xs text-gray-400 font-semibold" id="countTotalNotifs">0 thông báo</span>
+                            </div>
+                            <nav class="flex flex-col gap-1 text-xs" id="categoryFilterGroup">
+                                <button class="filter-category-btn active w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-primary text-white font-bold shadow-sm transition-all text-left cursor-pointer" data-category="all" type="button">
+                                    <div class="flex items-center gap-2 min-w-0">
+                                        <span class="material-symbols-outlined text-[18px]">mark_email_unread</span>
+                                        <span class="truncate">Tất cả thông báo</span>
+                                    </div>
+                                    <span class="px-2 py-0.5 rounded-full bg-white/20 text-white text-[11px] font-bold" id="badgeFilterAll">0</span>
+                                </button>
+                                <button class="filter-category-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-semibold transition-all text-left cursor-pointer" data-category="booking" type="button">
+                                    <div class="flex items-center gap-2 min-w-0">
+                                        <span class="material-symbols-outlined text-[18px] text-primary">event_available</span>
+                                        <span class="truncate">Lịch đặt sân &amp; Giữ chỗ</span>
+                                    </div>
+                                    <span class="px-2 py-0.5 rounded-full bg-surface-container text-gray-600 text-[10px] font-bold" id="badgeFilterBooking">0</span>
+                                </button>
+                                <button class="filter-category-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-semibold transition-all text-left cursor-pointer" data-category="match" type="button">
+                                    <div class="flex items-center gap-2 min-w-0">
+                                        <span class="material-symbols-outlined text-[18px] text-secondary">handshake</span>
+                                        <span class="truncate">Tìm đối &amp; Ghép kèo</span>
+                                    </div>
+                                    <span class="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed text-[10px] font-bold" id="badgeFilterMatch">0</span>
+                                </button>
+                                <button class="filter-category-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-semibold transition-all text-left cursor-pointer" data-category="wallet" type="button">
+                                    <div class="flex items-center gap-2 min-w-0">
+                                        <span class="material-symbols-outlined text-[18px] text-tertiary">account_balance_wallet</span>
+                                        <span class="truncate">Thanh toán &amp; Hoàn cọc</span>
+                                    </div>
+                                    <span class="px-2 py-0.5 rounded-full bg-surface-container text-gray-600 text-[10px] font-bold" id="badgeFilterWallet">0</span>
+                                </button>
+                                <button class="filter-category-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-semibold transition-all text-left cursor-pointer" data-category="promo" type="button">
+                                    <div class="flex items-center gap-2 min-w-0">
+                                        <span class="material-symbols-outlined text-[18px] text-error">campaign</span>
+                                        <span class="truncate">Khuyến mãi &amp; Hệ thống</span>
+                                    </div>
+                                    <span class="px-2 py-0.5 rounded-full bg-surface-container text-gray-600 text-[10px] font-bold" id="badgeFilterPromo">0</span>
+                                </button>
+                            </nav>
+                        </div>
+
+                        <div class="bg-surface-container-low rounded-2xl p-4 flex items-center gap-3 border text-xs">
+                            <div class="w-10 h-10 rounded-xl bg-white text-secondary flex items-center justify-center shrink-0 shadow-sm">
+                                <span class="material-symbols-outlined text-[22px]">support_agent</span>
+                            </div>
+                            <div class="flex flex-col min-w-0">
+                                <span class="font-bold text-on-surface truncate">Cần hỗ trợ lịch thi đấu?</span>
+                                <a class="text-secondary font-bold hover:underline" href="tel:19008899">Hotline 1900 8899 (24/7)</a>
+                            </div>
+                        </div>
+                    </aside>
+
+                    <!-- CỘT PHẢI: Danh sách chi tiết thông báo -->
+                    <main class="lg:col-span-8 xl:col-span-9 flex flex-col gap-space-lg" id="notifMainContainer">
+                        
+                        <!-- PHẦN 1: HÔM NAY -->
+                        <section class="flex flex-col gap-space-md" id="sectionToday">
+                            <div class="flex items-center justify-between pb-1 border-b">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-primary animate-ping"></span>
+                                    <h2 class="text-base font-bold text-on-surface tracking-tight">Hôm nay</h2>
+                                    <span class="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-bold" id="badgeTodayCount">0 thông báo</span>
+                                </div>
+                                <span class="text-xs text-primary font-semibold flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-xs">sync</span>
+                                    <span>Tự động cập nhật</span>
+                                </span>
+                            </div>
+
+                            <div class="flex flex-col gap-3.5" id="todayNotifList"></div>
+                        </section>
+
+                        <!-- PHẦN 2: TRƯỚC ĐÓ -->
+                        <section class="flex flex-col gap-space-md" id="sectionOlder">
+                            <div class="flex items-center justify-between pb-1 border-b">
+                                <h2 class="text-base font-bold text-on-surface tracking-tight">Trước đó</h2>
+                                <span class="text-xs text-gray-400" id="badgeOlderCount">Thông báo cũ hơn</span>
+                            </div>
+
+                            <div class="flex flex-col gap-3.5" id="olderNotifList"></div>
+                        </section>
+
+                        <!-- KHUNG THÔNG BÁO RỖNG -->
+                        <div id="emptyNotifView" class="hidden flex-col items-center justify-center py-16 px-4 bg-surface-container-lowest rounded-3xl border border-dashed border-gray-200 text-center">
+                            <div class="w-16 h-16 rounded-3xl bg-green-50 text-primary flex items-center justify-center mb-3 shadow-inner">
+                                <span class="material-symbols-outlined text-[34px]">notifications_paused</span>
+                            </div>
+                            <h3 class="font-bold text-base text-gray-900 mb-1">Không có thông báo nào</h3>
+                            <p class="text-xs text-gray-500 max-w-sm mb-4">Các thông báo về lịch đặt sân, kết quả ghép đối và ưu đãi sẽ xuất hiện ở đây khi bạn thao tác.</p>
+                            <a href="tim-san.html" class="px-4 py-2 bg-primary hover:bg-primary-container text-white text-xs font-bold rounded-xl transition-all shadow-sm">
+                                Khám phá &amp; Đặt sân ngay
+                            </a>
+                        </div>
+
+                    </main>
+
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- FOOTER ĐỒNG BỘ -->
+    <footer class="w-full bg-[#f1f3ff] border-t border-gray-200 shadow-[0_-1px_6px_rgba(0,0,0,0.02)]">
+        <div class="max-w-[1440px] mx-auto px-margin py-8 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="flex flex-col gap-1 text-left">
+                <div class="flex items-center gap-2">
+                    <span class="font-bold text-base text-primary">SportBooking Hà Nội</span>
+                    <span class="text-on-surface-variant text-xs">| Nền tảng đặt sân thể thao thông minh</span>
+                </div>
+                <p class="text-on-surface-variant text-xs">Hệ thống đặt sân thể thao SportBooking Hà Nội - Đặt sân trực tuyến nhanh chóng, tiện lợi &amp; chuẩn xác</p>
+                <p class="text-on-surface text-sm">Hotline hỗ trợ 24/7: <span class="font-bold text-secondary">1900 8899</span></p>
+            </div>
+            <div class="flex flex-col md:items-end gap-1.5">
+                <div class="flex flex-wrap items-center gap-3 text-xs text-on-surface-variant">
+                    <a class="hover:text-primary transition-colors" href="ho-tro-khach-hang.html">Hỗ trợ khách hàng</a>
+                    <span>•</span>
+                    <a class="hover:text-primary transition-colors" href="dieu-khoan-su-dung.html">Điều khoản sử dụng</a>
+                    <span>•</span>
+                    <a class="hover:text-primary transition-colors" href="chinh-sach-bao-mat.html">Chính sách bảo mật</a>
+                </div>
+                <p class="text-xs text-on-surface-variant">© 2026 SportBooking Hà Nội. Tất cả các quyền được bảo lưu.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- SCRIPT ĐIỀU KHIỂN THÔNG BÁO TÁCH BIỆT THEO TỪNG TÀI KHOẢN -->
+    <script>
+        function parseTimestamp(val) {
+            if (!val) return Date.now();
+            if (typeof val === 'number') return val;
+            const parsed = new Date(val).getTime();
+            if (!isNaN(parsed)) return parsed;
+            return Date.now();
+        }
+
+        function formatRelativeTime(timestamp) {
+            if (!timestamp) return 'Vừa xong';
+            const ts = parseTimestamp(timestamp);
+            const now = Date.now();
+            const diffSec = Math.floor((now - ts) / 1000);
+
+            if (diffSec < 0 || diffSec < 45) return 'Vừa xong';
+            if (diffSec < 3600) {
+                const mins = Math.max(1, Math.floor(diffSec / 60));
+                return `${mins} phút trước`;
+            }
+            if (diffSec < 86400) {
+                const hours = Math.floor(diffSec / 3600);
+                return `${hours} giờ trước`;
+            }
+            const d = new Date(ts);
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
+        function resolveNotificationLink(item) {
+            if (item.link && item.link !== '#' && item.link !== 'thong-bao.html') {
+                return item.link;
+            }
+            if (item.category === 'booking') return 'lich-su-dat-san.html';
+            if (item.category === 'match') return 'tim-doi-choi.html';
+            return 'trangchu-user.html';
+        }
+
+        window.handleNotifClick = function (notifId, explicitUrl) {
+            const notifs = SportNotification.getAll();
+            const item = notifs.find(n => n.id === notifId);
+
+            if (item && item.unread) {
+                item.unread = false;
+                item.read = true;
+                SportNotification.saveAll(notifs);
+            }
+
+            let targetUrl = explicitUrl || (item ? resolveNotificationLink(item) : 'lich-su-dat-san.html');
+            window.location.href = targetUrl;
+        };
+
+        // MODULE QUẢN LÝ THÔNG BÁO TÁCH BIỆT CHUẨN XÁC THEO USER
+        const SportNotification = (function () {
+            function getCurrentUser() {
+                try {
+                    return JSON.parse(sessionStorage.getItem('sb_session')) ||
+                           JSON.parse(localStorage.getItem('sb_session')) ||
+                           JSON.parse(localStorage.getItem('currentUser')) ||
+                           null;
+                } catch (e) { return null; }
+            }
+
+            // Key lưu trữ riêng biệt theo ID / SĐT của từng tài khoản
+            function getStorageKey() {
+                const user = getCurrentUser();
+                if (!user) return 'sb_notifs_guest';
+                const uid = user.id || user.phone || user.email || 'user';
+                return `sb_notifs_user_${uid}`;
+            }
+
+            function getAll() {
+                const user = getCurrentUser();
+                const key = getStorageKey();
+                let list = null;
+                try {
+                    list = JSON.parse(localStorage.getItem(key));
+                } catch (e) {}
+
+                // Nếu tài khoản mới chưa từng có dữ liệu -> Chỉ tạo 1 thông báo Chào mừng ban đầu
+                if (list === null) {
+                    if (user) {
+                        const welcomeNotif = [{
+                            id: 'notif_welcome_' + Date.now(),
+                            category: 'promo',
+                            court_name: 'Hệ thống',
+                            venue_name: 'SportBooking',
+                            summary_info: 'SportBooking Hà Nội • Chào mừng thành viên mới',
+                            title: '🎉 Chào mừng bạn đến với SportBooking!',
+                            desc: `Xin chào ${user.fullName || user.name || 'bạn'}, tài khoản của bạn đã sẵn sàng. Hãy đặt sân thể thao đầu tiên ngay hôm nay!`,
+                            content: `Xin chào ${user.fullName || user.name || 'bạn'}, tài khoản của bạn đã sẵn sàng. Hãy đặt sân thể thao đầu tiên ngay hôm nay!`,
+                            timestamp: Date.now(),
+                            unread: true,
+                            read: false,
+                            link: 'tim-san.html',
+                            actionText: 'Đặt sân ngay',
+                            actionIcon: 'sports_soccer',
+                            icon: 'celebration',
+                            color: 'text-primary',
+                            bgIcon: 'bg-emerald-50 border border-emerald-300',
+                            badgeCategoryText: 'Thành viên mới',
+                            badgeClass: 'bg-emerald-100 text-primary border border-emerald-300'
+                        }];
+                        localStorage.setItem(key, JSON.stringify(welcomeNotif));
+                        return welcomeNotif;
+                    }
+                    return [];
+                }
+
+                return Array.isArray(list) ? list : [];
+            }
+
+            function saveAll(list) {
+                const key = getStorageKey();
+                localStorage.setItem(key, JSON.stringify(list));
+            }
+
+            return {
+                getCurrentUser,
+                getStorageKey,
+                getAll,
+                saveAll,
+                add(item) {
+                    const list = getAll();
+                    const newNotif = {
+                        id: 'notif-' + Date.now(),
+                        category: item.category || 'booking',
+                        court_name: item.court_name || 'Sân thi đấu',
+                        venue_name: item.venue_name || 'SportBooking',
+                        summary_info: item.summary_info || 'SportBooking Hà Nội',
+                        title: item.title,
+                        desc: item.desc || item.content,
+                        content: item.content || item.desc,
+                        timestamp: Date.now(),
+                        unread: true,
+                        read: false,
+                        link: item.link || resolveNotificationLink(item),
+                        actionText: item.actionText || 'Xem chi tiết',
+                        actionIcon: item.actionIcon || 'arrow_forward',
+                        icon: item.icon || 'notifications',
+                        color: item.color || 'text-primary',
+                        bgIcon: item.bgIcon || 'bg-emerald-100 text-primary',
+                        badgeCategoryText: item.badgeCategoryText || 'Thông báo',
+                        badgeClass: item.badgeClass || 'bg-gray-100 text-gray-800'
+                    };
+                    list.unshift(newNotif);
+                    saveAll(list);
+                    renderAll();
+                    return newNotif;
+                },
+                markAllRead() {
+                    const list = getAll().map(n => ({ ...n, unread: false, read: true }));
+                    saveAll(list);
+                    renderAll();
+                },
+                clearRead() {
+                    const list = getAll().filter(n => n.unread || !n.read);
+                    saveAll(list);
+                    renderAll();
+                }
+            };
+        })();
+
+        window.SportNotification = SportNotification;
+        let currentCategory = 'all';
+
+        function renderAll() {
+            const notifs = SportNotification.getAll();
+            const unreadCount = notifs.filter(n => n.unread || !n.read).length;
+
+            const badgeQuick = document.getElementById('badgeQuickCount');
+            const badgePopover = document.getElementById('badgePopoverUnread');
+            if (badgeQuick) {
+                badgeQuick.textContent = unreadCount;
+                badgeQuick.classList.toggle('hidden', unreadCount === 0);
+            }
+            if (badgePopover) {
+                badgePopover.textContent = `${unreadCount} chưa đọc`;
+            }
+
+            const mainBadge = document.getElementById('mainUnreadBadge');
+            const mainBadgeText = document.getElementById('mainUnreadBadgeText');
+            if (mainBadge && mainBadgeText) {
+                mainBadgeText.textContent = `${unreadCount} thông báo chưa đọc`;
+                mainBadge.classList.toggle('hidden', unreadCount === 0);
+            }
+
+            document.getElementById('countTotalNotifs').textContent = `${notifs.length} thông báo`;
+            document.getElementById('badgeFilterAll').textContent = unreadCount > 0 ? `${unreadCount} mới` : notifs.length;
+            document.getElementById('badgeFilterBooking').textContent = notifs.filter(n => n.category === 'booking').length;
+            document.getElementById('badgeFilterMatch').textContent = notifs.filter(n => n.category === 'match').length;
+            document.getElementById('badgeFilterWallet').textContent = notifs.filter(n => n.category === 'wallet').length;
+            document.getElementById('badgeFilterPromo').textContent = notifs.filter(n => n.category === 'promo').length;
+
+            const filtered = currentCategory === 'all'
+                ? notifs
+                : notifs.filter(n => n.category === currentCategory);
+
+            const todayStart = new Date();
+            todayStart.setHours(0, 0, 0, 0);
+
+            const todayItems = filtered.filter(n => !n.timestamp || n.timestamp >= todayStart.getTime());
+            const olderItems = filtered.filter(n => n.timestamp && n.timestamp < todayStart.getTime());
+
+            const todayContainer = document.getElementById('todayNotifList');
+            const sectionToday = document.getElementById('sectionToday');
+            document.getElementById('badgeTodayCount').textContent = `${todayItems.length} thông báo`;
+
+            if (todayItems.length === 0) {
+                sectionToday.classList.add('hidden');
+                todayContainer.innerHTML = '';
+            } else {
+                sectionToday.classList.remove('hidden');
+                todayContainer.innerHTML = todayItems.map(item => createNotifCardHtml(item)).join('');
+            }
+
+            const olderContainer = document.getElementById('olderNotifList');
+            const sectionOlder = document.getElementById('sectionOlder');
+            if (olderItems.length === 0) {
+                sectionOlder.classList.add('hidden');
+                olderContainer.innerHTML = '';
+            } else {
+                sectionOlder.classList.remove('hidden');
+                olderContainer.innerHTML = olderItems.map(item => createNotifCardHtml(item)).join('');
+            }
+
+            const emptyView = document.getElementById('emptyNotifView');
+            if (filtered.length === 0) {
+                emptyView.classList.remove('hidden');
+                emptyView.classList.add('flex');
+            } else {
+                emptyView.classList.add('hidden');
+                emptyView.classList.remove('flex');
+            }
+
+            renderQuickPopover(notifs);
+        }
+
+        function createNotifCardHtml(item) {
+            const targetLink = resolveNotificationLink(item);
+            const relativeTime = formatRelativeTime(item.timestamp);
+            const isUnread = item.unread || !item.read;
+
+            let borderClass = 'border-gray-200 bg-white hover:border-gray-300';
+            if (isUnread) {
+                borderClass = 'border-emerald-200 bg-emerald-50/20 shadow-xs';
+            }
+
+            let iconName = item.icon || 'notifications';
+            let iconBoxStyle = item.bgIcon || 'bg-gray-100 text-slate-700 border border-gray-200';
+            let iconTextColor = item.color || 'text-slate-700';
+
+            let badgeClass = item.badgeClass || 'bg-gray-100 text-gray-800 border border-gray-200';
+            let badgeText = item.badgeCategoryText || 'Thông báo';
+            let courtName = item.court_name || 'Thông báo hệ thống';
+            let summaryText = item.summary_info || 'SportBooking';
+            let actionText = item.actionText || 'Xem chi tiết';
+
+            return `
+                <article onclick="handleNotifClick('${item.id}', '${targetLink}')" class="notif-card ${isUnread ? 'unread ring-1 ring-primary/20' : ''} relative rounded-2xl p-4 md:p-5 shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row gap-4 items-start group border ${borderClass} cursor-pointer bg-white" data-cat="${item.category}" data-id="${item.id}">
+                    <div class="w-12 h-12 md:w-14 md:h-14 rounded-2xl ${iconBoxStyle} flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-2xs">
+                        <span class="material-symbols-outlined text-[26px] md:text-[28px] ${iconTextColor}">${iconName}</span>
+                    </div>
+
+                    <div class="flex-1 flex flex-col gap-1.5 min-w-0 pr-2">
+                        <div class="flex flex-wrap items-center gap-2 text-xs">
+                            <span class="px-2.5 py-0.5 rounded-full ${badgeClass} text-[10px] font-extrabold uppercase tracking-wide">
+                                ${badgeText}
+                            </span>
+                            <span class="font-extrabold text-slate-800 uppercase tracking-tight text-[11px] px-2 py-0.5 rounded bg-surface-container-low border border-gray-200">
+                                ${courtName}
+                            </span>
+                            <span class="text-gray-400 flex items-center gap-1 text-[11px] ml-auto md:ml-0 font-medium">
+                                <span class="material-symbols-outlined text-[13px]">schedule</span>
+                                <span>${relativeTime}</span>
+                            </span>
+                        </div>
+
+                        <h3 class="text-sm md:text-base font-extrabold text-slate-900 group-hover:text-primary transition-colors leading-snug">
+                            ${item.title}
+                        </h3>
+
+                        <div class="text-xs text-primary font-bold flex items-center flex-wrap gap-1.5 py-0.5">
+                            <span class="material-symbols-outlined text-[15px] text-primary">info</span>
+                            <span>${summaryText}</span>
+                        </div>
+
+                        <p class="text-xs text-slate-600 leading-relaxed font-normal">
+                            ${item.content || item.desc}
+                        </p>
+                    </div>
+
+                    <div class="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-3 w-full md:w-auto shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-gray-100" onclick="event.stopPropagation()">
+                        <div class="flex items-center gap-2">
+                            ${isUnread ? `
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-primary text-[10px] font-bold">
+                                    <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+                                    <span>Chưa đọc</span>
+                                </span>
+                            ` : `
+                                <span class="text-[10px] text-gray-400 font-medium">Đã xem</span>
+                            `}
+                        </div>
+
+                        <a href="${targetLink}" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary hover:bg-primary-container text-white font-bold text-xs shadow-sm hover:opacity-95 transition-all active:scale-95 shrink-0">
+                            <span>${actionText}</span>
+                            <span class="material-symbols-outlined text-[15px]">arrow_forward</span>
+                        </a>
+                    </div>
+                </article>
+            `;
+        }
+
+        function renderQuickPopover(notifs) {
+            const listEl = document.getElementById('quickNotifList');
+            if (!listEl) return;
+
+            if (!notifs || notifs.length === 0) {
+                listEl.innerHTML = '<div class="p-6 text-center text-xs text-gray-400">Không có thông báo nào</div>';
+                return;
+            }
+
+            listEl.innerHTML = notifs.slice(0, 5).map(n => {
+                const link = resolveNotificationLink(n);
+                const relTime = formatRelativeTime(n.timestamp);
+                const isUnread = n.unread || !n.read;
+                return `
+                    <div class="p-3.5 hover:bg-surface-container-low transition-colors flex items-start gap-3 cursor-pointer ${isUnread ? 'bg-green-50/50 font-medium' : 'bg-white opacity-85'}" onclick="handleNotifClick('${n.id}', '${link}')">
+                        <div class="w-10 h-10 rounded-xl ${n.bgIcon || 'bg-gray-100'} flex items-center justify-center shrink-0 mt-0.5">
+                            <span class="material-symbols-outlined text-[20px]">${n.icon || 'notifications'}</span>
+                        </div>
+                        <div class="flex-1 min-w-0 flex flex-col gap-0.5 text-xs">
+                            <div class="flex items-baseline justify-between">
+                                <span class="font-bold text-on-surface truncate">${n.title}</span>
+                                <span class="text-[10px] text-gray-400 shrink-0 ml-1.5 font-medium whitespace-nowrap">${relTime}</span>
+                            </div>
+                            <p class="text-gray-600 line-clamp-2 leading-relaxed mt-0.5 text-[11px]">${n.desc || n.content}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            renderAll();
+
+            setInterval(function () {
+                renderAll();
+            }, 30000);
+
+            const notifBtn = document.getElementById('btnToggleNotifDropdown');
+            const notifPopover = document.getElementById('quickNotifPopover');
+            const notifContainer = document.getElementById('notifDropdownContainer');
+
+            if (notifBtn && notifPopover) {
+                notifBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    notifPopover.classList.toggle('hidden');
+                    notifPopover.classList.toggle('flex');
+                });
+
+                document.addEventListener('click', function (e) {
+                    if (notifContainer && !notifContainer.contains(e.target)) {
+                        notifPopover.classList.add('hidden');
+                        notifPopover.classList.remove('flex');
+                    }
+                });
+            }
+
+            document.getElementById('btnQuickMarkAll')?.addEventListener('click', () => SportNotification.markAllRead());
+            document.getElementById('btnMarkAllReadMain')?.addEventListener('click', () => SportNotification.markAllRead());
+            document.getElementById('btnClearReadMain')?.addEventListener('click', function () {
+                if (confirm('Bạn có chắc chắn muốn xóa toàn bộ thông báo đã đọc?')) {
+                    SportNotification.clearRead();
+                }
+            });
+
+            const categoryBtns = document.querySelectorAll('.filter-category-btn');
+            categoryBtns.forEach(btn => {
+                btn.addEventListener('click', function () {
+                    categoryBtns.forEach(b => {
+                        b.className = 'filter-category-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-semibold transition-all text-left cursor-pointer';
+                    });
+                    this.className = 'filter-category-btn active w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-primary text-white font-bold shadow-sm transition-all text-left cursor-pointer';
+
+                    currentCategory = this.getAttribute('data-category');
+                    renderAll();
+                });
+            });
+        });
+    </script>
+
+    <!-- NHÚNG FILE AUTH ĐỂ ĐỒNG BỘ THÔNG TIN USER TỰ ĐỘNG LÊN HEADER -->
+    <script src="auth.js"></script>
+</body>
+</html>

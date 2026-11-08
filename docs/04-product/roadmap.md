@@ -6,10 +6,9 @@ Trạng thái: Chưa làm / Đang làm / Xong
 
 | # | Module | Mã | Nhóm | Trạng thái | Ghi chú |
 |---|---|---|---|---|---|
-| 1 | Đăng ký, đăng nhập, phân quyền, hồ sơ | FR-01, FR-03 | Cốt lõi | Đang làm | Đã triển khai: migration 001 (users, user_sessions), kết nối MySQL có guard, repository, đăng ký/đăng nhập, bcrypt, khóa 15 phút sau 5 lần sai, seed-admin; các bước 6–8 có route HTTP, phiên/cookie 8 giờ, hồ sơ, đổi mật khẩu và /health. Xong: test tích hợp trên sportbooking_test và toàn bộ npm test đạt 9/9; test tự dọn dữ liệu. Còn: express.static, frontend đăng nhập/đăng ký |
-| 1b | Migration 002 + seed 29 cơ sở và khung giờ | FR-04 | Cốt lõi | Chưa làm | Cần migration 002 (facilities, courts, time_slots) và seed-facilities.js; xem plan-seed-data.md |
-| 2 | Admin quản lý cơ sở, sân, khung giờ, giá | FR-04 | Cốt lõi | Chưa làm | Dữ liệu mẫu; cần cách sinh khung giờ hằng ngày vì seed chỉ sinh 14 ngày |
-| 3 | Tìm kiếm và xem chi tiết sân | FR-05 | Cốt lõi | Chưa làm | |
+| 1 | Đăng ký, đăng nhập, phân quyền, hồ sơ | FR-01, FR-03 | Cốt lõi | Đang làm | Đã triển khai backend và bước 10: express.static cùng origin, trang đăng nhập/đăng ký/hồ sơ và JS/CSS dùng chung. Hoàn thành hai trang `/dang-nhap.html` và `/dang-ky.html` theo mockup cũ; đăng nhập chỉ dùng email, form nối API mới; ô đồng ý chỉ bật sau khi đọc hết hai văn bản pháp lý được nhúng trong đăng ký. Các trang pháp lý riêng chưa có trong frontend nên liên kết tương ứng dùng `#`. Bước 11 smoke test thủ công: Chờ người dùng xác nhận. Backend bắt buộc `termsAccepted = true` và ghi `terms_accepted_at`. |
+| 2 | Seed 29 sân, khung giờ, API sân, trang chủ, tìm sân | FR-04, FR-05 | Cốt lõi | Đang làm | Seed-loader tests xác nhận 29 dòng khảo sát và phân bố môn; API integration tests trên `sportbooking_test` xác nhận lọc, phân trang, đăng nhập, lịch/lock và 24/24. Trang chủ và tìm sân chưa triển khai; chưa đánh dấu toàn module Xong. |
+| 3 | Admin quản lý cơ sở, sân, khung giờ, giá | FR-04 | Cốt lõi | Chưa làm | Dữ liệu mẫu; cần cách sinh khung giờ hằng ngày vì seed chỉ sinh 14 ngày |
 | 4 | Đặt sân, giữ chỗ 10 phút, chống đặt trùng | FR-06, FR-12 | Cốt lõi | Chưa làm | Phần khó nhất, có test (chi tiết bên dưới) |
 | 5 | Thanh toán giả lập, vé QR | FR-07 | Cốt lõi | Chưa làm | |
 | 6 | Hủy và hoàn tiền | FR-08 | Cốt lõi | Chưa làm | |
