@@ -38,6 +38,62 @@ async function getMigrationState(connection) {
   };
 }
 
+async function applyBookingPreferencesMigration(connection, databaseName) {
+  const [columnRows] = await connection.execute(
+    `SELECT column_name
+     FROM information_schema.columns
+     WHERE table_schema = DATABASE() AND table_name = 'bookings'
+       AND column_name = 'match_preference'`
+  );
+  const [paymentRows] = await connection.execute(
+    `SELECT table_name, engine
+     FROM information_schema.tables
+     WHERE table_schema = DATABASE() AND table_name = 'payments'`
+  );
+  const [foreignKeyRows] = await connection.execute(
+    `SELECT constraint_name
+     FROM information_schema.referential_constraints
+     WHERE constraint_schema = DATABASE() AND constraint_name = 'fk_payments_booking'`
+  );
+  const hasPreference = columnRows.length > 0;
+  const hasPayments = paymentRows.length > 0;
+  const hasPaymentForeignKey = foreignKeyRows.length > 0;
+
+  if (hasPreference && hasPayments && paymentRows[0].engine === 'InnoDB' && hasPaymentForeignKey) {
+    console.log(`${databaseName}: migration 004 already applied.`);
+    return;
+  }
+  if (hasPreference || hasPayments || hasPaymentForeignKey) {
+    throw new Error(`${databaseName}: migration 004 is partially applied; refusing to alter the schema automatically.`);
+  }
+
+  const migrationPath = path.join(__dirname, 'migrations', '004-add-booking-match-preference-and-payments.sql');
+  const migration = await fs.readFile(migrationPath, 'utf8');
+  const statements = migration.split(';').map((statement) => statement.trim()).filter(Boolean);
+  for (const statement of statements) {
+    await connection.query(statement);
+  }
+
+  const [verifiedColumns] = await connection.execute(
+    `SELECT column_name FROM information_schema.columns
+     WHERE table_schema = DATABASE() AND table_name = 'bookings'
+       AND column_name = 'match_preference'`
+  );
+  const [verifiedTables] = await connection.execute(
+    `SELECT table_name, engine FROM information_schema.tables
+     WHERE table_schema = DATABASE() AND table_name = 'payments'`
+  );
+  const [verifiedForeignKeys] = await connection.execute(
+    `SELECT constraint_name FROM information_schema.referential_constraints
+     WHERE constraint_schema = DATABASE() AND constraint_name = 'fk_payments_booking'`
+  );
+  if (!verifiedColumns.length || !verifiedTables.length || verifiedTables[0].engine !== 'InnoDB'
+      || !verifiedForeignKeys.length) {
+    throw new Error(`${databaseName}: migration 004 verification failed.`);
+  }
+  console.log(`${databaseName}: migration 004 applied and verified.`);
+}
+
 async function migrateBookings(databaseName) {
   const pool = getAllowedPool(databaseName);
   const connection = await pool.getConnection();
@@ -65,32 +121,31 @@ async function migrateBookings(databaseName) {
     const allForeignKeysExist = FOREIGN_KEYS.every((key) => state.foreignKeys.has(key));
     if (allBookingTablesExist && allForeignKeysExist) {
       console.log(`${databaseName}: migration 003 already applied.`);
-      return;
-    }
-    if (existingBookingTables.length > 0 || state.foreignKeys.size > 0) {
+    } else if (existingBookingTables.length > 0 || state.foreignKeys.size > 0) {
       throw new Error(
         `${databaseName}: migration 003 is partially applied; refusing to alter the schema automatically.`
       );
-    }
+    } else {
+      const migrationPath = path.join(__dirname, 'migrations', '003-create-booking-tables.sql');
+      const migration = await fs.readFile(migrationPath, 'utf8');
+      const statements = migration.split(';').map((statement) => statement.trim()).filter(Boolean);
+      for (const statement of statements) {
+        await connection.query(statement);
+      }
 
-    const migrationPath = path.join(__dirname, 'migrations', '003-create-booking-tables.sql');
-    const migration = await fs.readFile(migrationPath, 'utf8');
-    const statements = migration.split(';').map((statement) => statement.trim()).filter(Boolean);
-    for (const statement of statements) {
-      await connection.query(statement);
+      const migratedState = await getMigrationState(connection);
+      const missingTables = BOOKING_TABLES.filter((table) => !migratedState.tables.has(table));
+      const missingForeignKeys = FOREIGN_KEYS.filter((key) => !migratedState.foreignKeys.has(key));
+      if (missingTables.length || missingForeignKeys.length) {
+        throw new Error(
+          `${databaseName}: migration verification failed; missing tables: `
+          + `${missingTables.join(', ') || 'none'}; missing foreign keys: `
+          + `${missingForeignKeys.join(', ') || 'none'}.`
+        );
+      }
+      console.log(`${databaseName}: migration 003 applied and verified.`);
     }
-
-    const migratedState = await getMigrationState(connection);
-    const missingTables = BOOKING_TABLES.filter((table) => !migratedState.tables.has(table));
-    const missingForeignKeys = FOREIGN_KEYS.filter((key) => !migratedState.foreignKeys.has(key));
-    if (missingTables.length || missingForeignKeys.length) {
-      throw new Error(
-        `${databaseName}: migration verification failed; missing tables: `
-        + `${missingTables.join(', ') || 'none'}; missing foreign keys: `
-        + `${missingForeignKeys.join(', ') || 'none'}.`
-      );
-    }
-    console.log(`${databaseName}: migration 003 applied and verified.`);
+    await applyBookingPreferencesMigration(connection, databaseName);
   } finally {
     connection.release();
     await pool.end();

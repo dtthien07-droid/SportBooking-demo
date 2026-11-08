@@ -135,12 +135,14 @@ function createBookingRepository(pool) {
                 END AS lock_expired,
                 CASE
                   WHEN TIMESTAMP(ts.service_date, ts.starts_at)
-                       >= DATE_ADD(
-                         DATE_ADD(UTC_TIMESTAMP(3), INTERVAL 7 HOUR),
-                         INTERVAL 15 MINUTE
-                       )
+                       >= DATE_ADD(DATE_ADD(UTC_TIMESTAMP(3), INTERVAL 7 HOUR), INTERVAL 15 MINUTE)
                   THEN 1 ELSE 0
-                END AS starts_in_time
+                END AS starts_in_time,
+                CASE
+                  WHEN TIMESTAMP(ts.service_date, ts.starts_at)
+                       >= DATE_ADD(DATE_ADD(UTC_TIMESTAMP(3), INTERVAL 7 HOUR), INTERVAL 30 MINUTE)
+                  THEN 1 ELSE 0
+                END AS starts_in_match_time
          FROM time_slots AS ts
          LEFT JOIN courts AS c ON c.id = ts.court_id
          LEFT JOIN facilities AS f ON f.id = c.facility_id
@@ -173,13 +175,26 @@ function createBookingRepository(pool) {
       );
     },
 
-    async createBooking(connection, { bookingCode, userId, totalAmount, expiresAt }) {
+    async createBooking(connection, {
+      bookingCode, userId, totalAmount, matchPreference, expiresAt
+    }) {
       const [result] = await connection.execute(
         `INSERT INTO bookings
-           (booking_code, user_id, status, total_amount, lock_expires_at,
+           (booking_code, user_id, status, total_amount, match_preference, lock_expires_at,
             created_at, updated_at)
-         VALUES (?, ?, 'PENDING', ?, ?, UTC_TIMESTAMP(3), UTC_TIMESTAMP(3))`,
-        [bookingCode, userId, totalAmount, expiresAt]
+         VALUES (?, ?, 'PENDING', ?, ?, ?, UTC_TIMESTAMP(3), UTC_TIMESTAMP(3))`,
+        [bookingCode, userId, totalAmount, matchPreference, expiresAt]
+      );
+      return result.insertId;
+    },
+
+    async createPayment(connection, { bookingId, amountDue, paymentOption }) {
+      const [result] = await connection.execute(
+        `INSERT INTO payments
+           (booking_id, status, amount_due, paid_amount, refunded_amount,
+            payment_option, created_at, updated_at)
+         VALUES (?, 'PENDING', ?, 0, 0, ?, UTC_TIMESTAMP(3), UTC_TIMESTAMP(3))`,
+        [bookingId, amountDue, paymentOption]
       );
       return result.insertId;
     },
@@ -269,21 +284,25 @@ function createBookingRepository(pool) {
 
     async findBookingById(bookingId) {
       const [rows] = await pool.execute(
-        `SELECT id, booking_code, user_id, status, total_amount, lock_expires_at,
+        `SELECT b.id, b.booking_code, b.user_id, b.status, b.total_amount,
+                b.match_preference, b.lock_expires_at,
+                p.status AS payment_status, p.amount_due, p.paid_amount,
+                p.refunded_amount, p.payment_option,
                 CASE
-                  WHEN status != 'PENDING' OR lock_expires_at IS NULL THEN NULL
+                  WHEN b.status != 'PENDING' OR b.lock_expires_at IS NULL THEN NULL
                   ELSE GREATEST(
                     0,
-                    CEIL(TIMESTAMPDIFF(MICROSECOND, UTC_TIMESTAMP(3), lock_expires_at) / 1000000)
+                    CEIL(TIMESTAMPDIFF(MICROSECOND, UTC_TIMESTAMP(3), b.lock_expires_at) / 1000000)
                   )
                 END AS remaining_seconds,
                 CASE
-                  WHEN lock_expires_at IS NOT NULL
-                       AND lock_expires_at <= UTC_TIMESTAMP(3)
+                  WHEN b.lock_expires_at IS NOT NULL
+                       AND b.lock_expires_at <= UTC_TIMESTAMP(3)
                   THEN 1 ELSE 0
                 END AS lock_expired
-         FROM bookings
-         WHERE id = ?
+         FROM bookings AS b
+         LEFT JOIN payments AS p ON p.booking_id = b.id
+         WHERE b.id = ?
          LIMIT 1`,
         [bookingId]
       );

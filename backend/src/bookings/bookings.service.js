@@ -31,6 +31,64 @@ function normalizeSlotIds(slotIds) {
   return ids;
 }
 
+function normalizePaymentOption(value) {
+  if (value !== 'DEPOSIT_50' && value !== 'FULL') {
+    throw createBookingError(400, 'INVALID_PAYMENT_OPTION', 'payment_option must be DEPOSIT_50 or FULL.');
+  }
+  return value;
+}
+
+function normalizeMatchPreference(value) {
+  if (value === undefined || value === null) return null;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw createBookingError(400, 'INVALID_MATCH_PREFERENCE', 'match_preference must be an object or null.');
+  }
+  const allowedKeys = new Set(['mode', 'gender', 'skill', 'format', 'message']);
+  if (Object.keys(value).some((key) => !allowedKeys.has(key))) {
+    throw createBookingError(400, 'INVALID_MATCH_PREFERENCE', 'match_preference contains an unsupported field.');
+  }
+  if (value.mode !== 'RANDOM' && value.mode !== 'CRITERIA') {
+    throw createBookingError(400, 'INVALID_MATCH_PREFERENCE', 'match_preference.mode must be RANDOM or CRITERIA.');
+  }
+  const validGender = value.gender === undefined || value.gender === null
+    || ['ANY', 'MALE', 'FEMALE'].includes(value.gender);
+  const validSkill = value.skill === undefined || value.skill === null
+    || ['BEGINNER', 'INTERMEDIATE', 'GOOD'].includes(value.skill);
+  const validFormat = value.format === undefined || value.format === null
+    || ['SINGLES', 'DOUBLES'].includes(value.format);
+  if (!validGender || !validSkill || !validFormat) {
+    throw createBookingError(400, 'INVALID_MATCH_PREFERENCE', 'The match preference contains an unsupported criterion.');
+  }
+  if (value.message !== undefined && value.message !== null
+      && (typeof value.message !== 'string' || value.message.length > 1000)) {
+    throw createBookingError(400, 'INVALID_MATCH_PREFERENCE', 'match_preference.message must be at most 1000 characters.');
+  }
+  if (value.mode === 'RANDOM' && (value.gender != null || value.skill != null)) {
+    throw createBookingError(400, 'INVALID_MATCH_PREFERENCE', 'Random search cannot include gender or skill criteria.');
+  }
+  return {
+    mode: value.mode,
+    gender: value.gender ?? null,
+    skill: value.skill ?? null,
+    format: value.format ?? null,
+    message: typeof value.message === 'string' && value.message.trim()
+      ? value.message.trim()
+      : null
+  };
+}
+
+function parseMatchPreference(value) {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value);
+    } catch (error) {
+      throw createBookingError(500, 'INVALID_STORED_MATCH_PREFERENCE', 'The saved match preference is invalid.');
+    }
+  }
+  return value;
+}
+
 function normalizeBookingId(id) {
   if (typeof id !== 'string' || !/^[1-9]\d*$/.test(id)
       || BigInt(id) > 18446744073709551615n) {
@@ -65,6 +123,8 @@ function createBookingsService(repository) {
 
   async function createBooking(userId, body) {
     const slotIds = normalizeSlotIds(body && body.slot_ids);
+    const paymentOption = normalizePaymentOption(body && body.payment_option);
+    const matchPreference = normalizeMatchPreference(body && body.match_preference);
     try {
       return await repository.withTransaction(async (connection) => {
         const user = await repository.lockUser(connection, userId);
@@ -129,6 +189,13 @@ function createBookingsService(repository) {
           if (Number(slot.starts_in_time) !== 1) {
             throw createBookingError(400, 'SLOT_TOO_SOON', 'Slots must start at least 15 minutes from now.');
           }
+          if (matchPreference && Number(slot.starts_in_match_time) !== 1) {
+            throw createBookingError(
+              400,
+              'MATCH_PREFERENCE_TOO_LATE',
+              'Match search requires the first selected slot to start at least 30 minutes from now.'
+            );
+          }
         }
 
         const chronologicalSlots = [...requestedSlots].sort((left, right) => (
@@ -136,6 +203,14 @@ function createBookingsService(repository) {
           || (BigInt(left.id) < BigInt(right.id) ? -1 : 1)
         ));
         const firstSlot = chronologicalSlots[0];
+        if (matchPreference && matchPreference.format
+            && !['BADMINTON', 'PICKLEBALL'].includes(firstSlot.sport_type)) {
+          throw createBookingError(
+            400,
+            'MATCH_FORMAT_NOT_SUPPORTED',
+            'Singles/doubles format is available only for badminton and pickleball.'
+          );
+        }
         for (let index = 1; index < chronologicalSlots.length; index += 1) {
           const previous = chronologicalSlots[index - 1];
           const current = chronologicalSlots[index];
@@ -150,13 +225,25 @@ function createBookingsService(repository) {
           (total, slot) => total + BigInt(String(slot.price)),
           0n
         ).toString();
+        const totalAmountInteger = BigInt(totalAmount);
+        const depositAmount = ((totalAmountInteger + 1n) / 2n).toString();
+        const amountDue = paymentOption === 'DEPOSIT_50' ? depositAmount : totalAmount;
+        const amountDueAtVenue = paymentOption === 'DEPOSIT_50'
+          ? (totalAmountInteger - BigInt(depositAmount)).toString()
+          : '0';
         const bookingCode = `SPB-${crypto.randomBytes(16).toString('hex').toUpperCase()}`;
         const lockExpiresAt = await repository.createHoldDeadline(connection);
         const bookingId = await repository.createBooking(connection, {
           bookingCode,
           userId,
           totalAmount,
+          matchPreference: matchPreference === null ? null : JSON.stringify(matchPreference),
           expiresAt: lockExpiresAt
+        });
+        await repository.createPayment(connection, {
+          bookingId,
+          amountDue,
+          paymentOption
         });
         await repository.createBookingSlots(connection, bookingId, chronologicalSlots);
         const affectedRows = await repository.lockTimeSlotsForBooking(
@@ -174,6 +261,14 @@ function createBookingsService(repository) {
           booking_code: bookingCode,
           status: 'PENDING',
           total_amount: totalAmount,
+          payment: {
+            status: 'PENDING',
+            payment_option: paymentOption,
+            amount_due: amountDue
+          },
+          deposit_amount: depositAmount,
+          amount_due_at_venue: amountDueAtVenue,
+          match_preference: matchPreference,
           lock_expires_at: lockExpiresAt,
           remaining_seconds: 600,
           slots: chronologicalSlots.map(toSlotResponse)
@@ -204,6 +299,19 @@ function createBookingsService(repository) {
       booking_code: booking.booking_code,
       status: booking.status,
       total_amount: String(booking.total_amount),
+      payment: booking.payment_status === null ? null : {
+        status: booking.payment_status,
+        payment_option: booking.payment_option,
+        amount_due: String(booking.amount_due),
+        paid_amount: String(booking.paid_amount),
+        refunded_amount: String(booking.refunded_amount)
+      },
+      deposit_amount: ((BigInt(String(booking.total_amount)) + 1n) / 2n).toString(),
+      amount_due_at_venue: booking.payment_option === 'DEPOSIT_50'
+        ? (BigInt(String(booking.total_amount))
+          - ((BigInt(String(booking.total_amount)) + 1n) / 2n)).toString()
+        : booking.payment_option === 'FULL' ? '0' : null,
+      match_preference: parseMatchPreference(booking.match_preference),
       lock_expires_at: booking.lock_expires_at,
       remaining_seconds: booking.remaining_seconds === null
         ? null

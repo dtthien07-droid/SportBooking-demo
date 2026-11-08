@@ -27,15 +27,19 @@ async function postJson(baseUrl, path, body, cookie) {
   if (cookie) {
     headers.cookie = cookie;
   }
+  const payload = path === '/api/v1/bookings' && body
+    && !Object.hasOwn(body, 'payment_option')
+    ? { ...body, payment_option: 'DEPOSIT_50' }
+    : body;
   return fetch(`${baseUrl}${path}`, {
     method: 'POST',
     headers,
-    body: JSON.stringify(body)
+    body: JSON.stringify(payload)
   });
 }
 
-function createSoonSlotTime() {
-  const startsAt = new Date(Date.now() + 7 * 60 * 60 * 1000 + 5 * 60 * 1000);
+function createSoonSlotTime(minutes = 5) {
+  const startsAt = new Date(Date.now() + 7 * 60 * 60 * 1000 + minutes * 60 * 1000);
   return {
     date: startsAt.toISOString().slice(0, 10),
     startsAt: `${String(startsAt.getUTCHours()).padStart(2, '0')}:${String(startsAt.getUTCMinutes()).padStart(2, '0')}:00`
@@ -47,8 +51,10 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
   const userIds = [];
   let facilityId;
   let courtId;
+  let footballCourtId;
   let server;
   let multiSlotBookingId;
+  let rollbackTriggerName;
 
   try {
     const [databaseRows] = await pool.execute('SELECT DATABASE() AS database_name');
@@ -103,6 +109,15 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
       [facilityId, `Booking test court ${suffix}`]
     );
     courtId = String(courtResult.insertId);
+    const [footballCourtResult] = await pool.execute(
+      `INSERT INTO courts
+         (facility_id, name, sport_type, price_normal, price_peak, is_active, is_seed,
+          created_at, updated_at)
+       VALUES (?, ?, 'FOOTBALL_MINI', 500000, 600000, TRUE, FALSE,
+               UTC_TIMESTAMP(3), UTC_TIMESTAMP(3))`,
+      [facilityId, `Booking test football ${suffix}`]
+    );
+    footballCourtId = String(footballCourtResult.insertId);
 
     const serviceDate = localDateOffset(2);
     const slotIds = [];
@@ -117,7 +132,7 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
           serviceDate,
           `${String(hour).padStart(2, '0')}:00:00`,
           `${String(hour + 1).padStart(2, '0')}:00:00`,
-          hour === 0 ? 123456 : 120000
+          hour === 0 ? 123455 : 120000
         ]
       );
       slotIds.push(String(slotResult.insertId));
@@ -136,21 +151,79 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
       ]
     );
     const tooSoonSlotId = String(soonSlotResult.insertId);
+    const matchSoonSlot = createSoonSlotTime(20);
+    const [matchSoonSlotResult] = await pool.execute(
+      `INSERT INTO time_slots
+         (court_id, service_date, starts_at, ends_at, price, status,
+          created_at, updated_at)
+       VALUES (?, ?, ?, ?, 120001, 'AVAILABLE', UTC_TIMESTAMP(3), UTC_TIMESTAMP(3))`,
+      [
+        courtId,
+        matchSoonSlot.date,
+        matchSoonSlot.startsAt,
+        `${String((Number(matchSoonSlot.startsAt.slice(0, 2)) + 1) % 24).padStart(2, '0')}:${matchSoonSlot.startsAt.slice(3, 5)}:00`
+      ]
+    );
+    const matchTooSoonSlotId = String(matchSoonSlotResult.insertId);
+    const [footballSlotResult] = await pool.execute(
+      `INSERT INTO time_slots
+         (court_id, service_date, starts_at, ends_at, price, status,
+          created_at, updated_at)
+       VALUES (?, ?, '10:00:00', '11:00:00', 500000, 'AVAILABLE', UTC_TIMESTAMP(3), UTC_TIMESTAMP(3))`,
+      [footballCourtId, localDateOffset(3)]
+    );
+    const footballSlotId = String(footballSlotResult.insertId);
 
     await t.test('creates one-slot and contiguous multi-slot holds with server prices', async () => {
       const oneSlotResponse = await postJson(
         baseUrl,
         '/api/v1/bookings',
-        { slot_ids: [slotIds[0]] },
+        {
+          slot_ids: [slotIds[0]],
+          payment_option: 'DEPOSIT_50',
+          match_preference: {
+            mode: 'CRITERIA',
+            gender: 'ANY',
+            skill: 'BEGINNER',
+            format: 'SINGLES',
+            message: 'Test preference'
+          }
+        },
         users[0].cookie
       );
       assert.equal(oneSlotResponse.status, 201);
       const oneSlotBooking = await oneSlotResponse.json();
       assert.match(oneSlotBooking.booking_code, /^SPB-[A-F0-9]{32}$/);
       assert.equal(oneSlotBooking.status, 'PENDING');
-      assert.equal(oneSlotBooking.total_amount, '123456');
+      assert.equal(oneSlotBooking.total_amount, '123455');
+      assert.equal(oneSlotBooking.payment.status, 'PENDING');
+      assert.equal(oneSlotBooking.payment.payment_option, 'DEPOSIT_50');
+      assert.equal(oneSlotBooking.deposit_amount, '61728');
+      assert.equal(oneSlotBooking.amount_due_at_venue, '61727');
+      assert.deepEqual(oneSlotBooking.match_preference, {
+        mode: 'CRITERIA',
+        gender: 'ANY',
+        skill: 'BEGINNER',
+        format: 'SINGLES',
+        message: 'Test preference'
+      });
       assert.equal(oneSlotBooking.remaining_seconds, 600);
       assert.equal(oneSlotBooking.slots.length, 1);
+      const [paymentRows] = await pool.execute(
+        'SELECT status, payment_option, amount_due FROM payments WHERE booking_id = ?',
+        [oneSlotBooking.booking_id]
+      );
+      assert.equal(paymentRows.length, 1);
+      assert.equal(paymentRows[0].status, 'PENDING');
+      assert.equal(paymentRows[0].payment_option, 'DEPOSIT_50');
+      assert.equal(String(paymentRows[0].amount_due), '61728');
+      const oneSlotDetailResponse = await fetch(
+        `${baseUrl}/api/v1/bookings/${oneSlotBooking.booking_id}`,
+        { headers: { cookie: users[0].cookie } }
+      );
+      assert.equal(oneSlotDetailResponse.status, 200);
+      const oneSlotDetail = await oneSlotDetailResponse.json();
+      assert.deepEqual(oneSlotDetail.match_preference, oneSlotBooking.match_preference);
 
       const multiSlotResponse = await postJson(
         baseUrl,
@@ -175,6 +248,10 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
       const detail = await detailResponse.json();
       assert.equal(detail.slots[0].court_name, `Booking test court ${suffix}`);
       assert.equal(detail.slots[0].price_at_booking, '120000');
+      assert.equal(detail.payment.status, 'PENDING');
+      assert.equal(detail.payment.payment_option, 'DEPOSIT_50');
+      assert.equal(detail.deposit_amount, '120000');
+      assert.equal(detail.amount_due_at_venue, '120000');
     });
 
     await t.test('rejects a second active booking and non-contiguous or near-term slots', async () => {
@@ -216,6 +293,32 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
         users[2].cookie
       );
       assert.equal(tooSoon.status, 400);
+
+      const tooLateForMatching = await postJson(
+        baseUrl,
+        '/api/v1/bookings',
+        {
+          slot_ids: [matchTooSoonSlotId],
+          payment_option: 'FULL',
+          match_preference: { mode: 'RANDOM' }
+        },
+        users[2].cookie
+      );
+      assert.equal(tooLateForMatching.status, 400);
+      assert.equal((await tooLateForMatching.json()).error.code, 'MATCH_PREFERENCE_TOO_LATE');
+
+      const unsupportedFormat = await postJson(
+        baseUrl,
+        '/api/v1/bookings',
+        {
+          slot_ids: [footballSlotId],
+          payment_option: 'FULL',
+          match_preference: { mode: 'CRITERIA', format: 'DOUBLES' }
+        },
+        users[2].cookie
+      );
+      assert.equal(unsupportedFormat.status, 400);
+      assert.equal((await unsupportedFormat.json()).error.code, 'MATCH_FORMAT_NOT_SUPPORTED');
 
       const duplicateIds = await postJson(
         baseUrl,
@@ -260,6 +363,50 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
         [users[3].id, users[4].id]
       );
       assert.equal(Number(allUserBookings[0].count), 1);
+    });
+
+    await t.test('rolls back booking and slot writes when payment creation fails', async () => {
+      rollbackTriggerName = `test_payment_fail_${crypto.randomUUID().replaceAll('-', '')}`;
+      const [paymentCountBeforeRows] = await pool.execute(
+        'SELECT COUNT(*) AS count FROM payments'
+      );
+      await pool.query(
+        `CREATE TRIGGER ${rollbackTriggerName}
+         BEFORE INSERT ON payments FOR EACH ROW
+         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'intentional integration test failure'`
+      );
+      try {
+        const failed = await postJson(
+          baseUrl,
+          '/api/v1/bookings',
+          { slot_ids: [slotIds[7]], payment_option: 'FULL' },
+          users[2].cookie
+        );
+        assert.equal(failed.status, 500);
+        const [bookingRows] = await pool.execute(
+          'SELECT COUNT(*) AS count FROM bookings WHERE user_id = ?',
+          [users[2].id]
+        );
+        assert.equal(Number(bookingRows[0].count), 0);
+        const [paymentCountAfterRows] = await pool.execute(
+          'SELECT COUNT(*) AS count FROM payments'
+        );
+        assert.equal(Number(paymentCountAfterRows[0].count), Number(paymentCountBeforeRows[0].count));
+        const [slotRows] = await pool.execute(
+          'SELECT status, current_booking_id FROM time_slots WHERE id = ?',
+          [slotIds[7]]
+        );
+        assert.equal(slotRows[0].status, 'AVAILABLE');
+        assert.equal(slotRows[0].current_booking_id, null);
+        const [bookingSlotRows] = await pool.execute(
+          'SELECT COUNT(*) AS count FROM booking_slots WHERE time_slot_id = ?',
+          [slotIds[7]]
+        );
+        assert.equal(Number(bookingSlotRows[0].count), 0);
+      } finally {
+        await pool.query(`DROP TRIGGER IF EXISTS ${rollbackTriggerName}`);
+        rollbackTriggerName = null;
+      }
     });
 
     await t.test('cancellation frees slots and expiry job releases elapsed holds', async () => {
@@ -342,6 +489,9 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
       assert.equal(otherUserRead.status, 404);
     });
   } finally {
+    if (rollbackTriggerName) {
+      await pool.query(`DROP TRIGGER IF EXISTS ${rollbackTriggerName}`);
+    }
     if (server) {
       await new Promise((resolve) => server.close(resolve));
     }
@@ -367,10 +517,13 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
            WHERE current_booking_id IN (${placeholders})`,
           bookingIds
         );
+        await pool.execute(`DELETE FROM payments WHERE booking_id IN (${placeholders})`, bookingIds);
         await pool.execute(`DELETE FROM bookings WHERE id IN (${placeholders})`, bookingIds);
       }
       await pool.execute('DELETE FROM time_slots WHERE court_id = ?', [courtId]);
+      await pool.execute('DELETE FROM time_slots WHERE court_id = ?', [footballCourtId]);
       await pool.execute('DELETE FROM courts WHERE id = ?', [courtId]);
+      await pool.execute('DELETE FROM courts WHERE id = ?', [footballCourtId]);
       await pool.execute('DELETE FROM facilities WHERE id = ?', [facilityId]);
     }
     for (const userId of userIds) {
