@@ -439,9 +439,9 @@
     content.hidden = true;
     clearNotice();
     try {
-      const result = await request(API.me);
-      if (!result || !result.user) throw new Error('Máy chủ chưa trả hồ sơ tài khoản.');
-      renderProfile(result.user);
+      const user = await window.SportBookingHeaderReady;
+      if (!user) throw new Error('Máy chủ chưa trả hồ sơ tài khoản.');
+      renderProfile(user);
     } catch (error) {
       if (error.status === 401 && error.code === 'UNAUTHENTICATED') {
         redirectToLogin();
@@ -541,22 +541,6 @@
       }
     });
 
-    const logoutButton = document.querySelector('[data-logout]');
-    logoutButton.addEventListener('click', async () => {
-      clearNotice();
-      setLoading(logoutButton, true);
-      try {
-        await request(API.logout, { method: 'POST' });
-        window.location.assign('/dang-nhap.html?loggedOut=1');
-      } catch (error) {
-        if (error.status === 401 && error.code === 'UNAUTHENTICATED') {
-          redirectToLogin();
-          return;
-        }
-        showNotice('Không thể đăng xuất lúc này. Vui lòng thử lại.');
-        setLoading(logoutButton, false);
-      }
-    });
     loadProfile();
   }
 

@@ -13,7 +13,7 @@ Trạng thái: Chưa làm / Đang làm / Xong
 | 5 | Thanh toán giả lập, vé QR | FR-07 | Cốt lõi | Chưa làm | |
 | 6 | Hủy và hoàn tiền | FR-08 | Cốt lõi | Chưa làm | |
 | 7 | Lịch sử đặt sân | FR-09 | Cốt lõi | Chưa làm | |
-| 8 | Thông báo trong app | FR-17 | Cốt lõi | Chưa làm | |
+| 8 | Thông báo trong app | FR-17 | Cốt lõi | Chưa làm | Ghi chú: nối API khi làm module thông báo. |
 | 9 | Đánh giá sân | FR-18 | Nâng cao | Chưa làm | |
 | 10 | Admin: dashboard, quản lý user, booking ngoại lệ | FR-10, FR-11, FR-19 | Cốt lõi | Chưa làm | |
 | 11 | Tìm đối, ghép, nới lỏng | FR-13–15 | Nâng cao | Chưa làm | |

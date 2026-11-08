@@ -49,6 +49,7 @@
       const requestError = new Error(data?.error?.message || 'Yêu cầu không thể hoàn tất.');
       requestError.status = response.status;
       requestError.code = data?.error?.code;
+      requestError.details = data?.error?.details || {};
       throw requestError;
     }
     return data;
@@ -58,20 +59,37 @@
     return requestJson(`/api/v1/facilities/${encodeURIComponent(id)}`);
   }
 
+  function getCurrentUser() {
+    return requestJson('/api/v1/auth/me');
+  }
+
+  async function logout() {
+    const response = await fetch('/api/v1/auth/logout', {
+      method: 'POST',
+      credentials: 'same-origin'
+    });
+    if (response.status === 401) {
+      redirectToLogin();
+      return false;
+    }
+    if (!response.ok && response.status !== 204) {
+      throw new Error('Không thể đăng xuất. Vui lòng thử lại.');
+    }
+    return true;
+  }
+
   function getCourtSlots(courtId, date) {
     const query = new URLSearchParams({ date });
     return requestJson(`/api/v1/courts/${encodeURIComponent(courtId)}/time-slots?${query}`);
   }
 
-  function createBooking(slotIds) {
+  function createBooking(slotIds, paymentOption, matchPreference) {
+    const payload = { slot_ids: slotIds, payment_option: paymentOption };
+    if (matchPreference) payload.match_preference = matchPreference;
     return requestJson('/api/v1/bookings', {
       method: 'POST',
-      body: JSON.stringify({ slot_ids: slotIds })
+      body: JSON.stringify(payload)
     });
-  }
-
-  function getBooking(bookingId) {
-    return requestJson(`/api/v1/bookings/${encodeURIComponent(bookingId)}`);
   }
 
   function cancelBooking(bookingId) {
@@ -81,11 +99,17 @@
     });
   }
 
+  function getBooking(bookingId) {
+    return requestJson(`/api/v1/bookings/${encodeURIComponent(bookingId)}`);
+  }
+
   window.SportBookingApi = {
     cancelBooking,
     createBooking,
     getBooking,
     getCourtSlots,
-    getFacility
+    getCurrentUser,
+    getFacility,
+    logout
   };
 })();

@@ -57,27 +57,12 @@
             }
         };
     </script>
-</head>
+<link rel="stylesheet" href="/shared/header.css"></head>
 
 <body class="bg-surface font-['Be_Vietnam_Pro'] text-on-surface antialiased">
 
     <!-- HEADER HỆ THỐNG -->
-    <header class="fixed top-0 left-0 right-0 w-full z-50 bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] border-b border-gray-100">
-        <div class="h-20 max-w-[1440px] mx-auto px-margin flex items-center justify-between gap-space-lg">
-            <div class="flex items-center gap-space-xl">
-                <a class="flex items-center gap-space-sm" href="/trangchu-user.html">
-                    <span class="text-2xl font-bold text-primary tracking-tight">SportBooking</span>
-                </a>
-                <nav class="hidden md:flex items-center gap-1 text-sm font-semibold">
-                    <a class="px-4 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-all" href="/trangchu-user.html">Trang chủ</a>
-                    <a class="px-4 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-all" href="/tim-san.html">Tìm sân</a>
-                    <a class="px-4 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-all" href="/lich-su-dat-san.html">Lịch sử đặt sân</a>
-                    <a class="px-4 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-all" href="/tin-tuc-the-thao.html">Tin tức thể thao</a>
-                </nav>
-            </div>
-
-        </div>
-    </header>
+    <div data-shared-header></div>
 
     <section id="initialLoading" class="max-w-[1440px] w-full mx-auto px-margin pt-24 pb-space-xl" role="status">
         <div class="animate-pulse space-y-4">
@@ -285,12 +270,13 @@
                                 </h2>
                                 <a id="btnExternalMaps" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-white font-bold text-xs shadow-sm hover:bg-primary-container transition-all" href="#" target="_blank" rel="noopener noreferrer">
                                     <span class="material-symbols-outlined text-[16px]">near_me</span>
-                                    <span>Mở ứng dụng Google Maps</span>
+                                      <span>Xem trên bản đồ</span>
                                     <span class="material-symbols-outlined text-[14px]">open_in_new</span>
                                 </a>
+                                <p id="mapSourceNote" class="text-xs text-on-surface-variant" aria-live="polite"></p>
                             </div>
 
-                            <p class="text-sm text-on-surface-variant">Bản đồ mở theo liên kết do sân cung cấp.</p>
+                            <p class="text-sm text-on-surface-variant">Vị trí cơ sở trên bản đồ.</p>
                         </section>
 
                         <!-- 7. ĐÁNH GIÁ & NHẬN XÉT -->
@@ -402,7 +388,7 @@
         </div>
     </aside>
 
-    <script src="/shared/slot-selection.js" defer></script>
+    <script src="/shared/header.js" defer></script><script src="/shared/slot-selection.js" defer></script>
     <script src="/chi-tiet-san.js" defer></script>
 </body>
 </html>

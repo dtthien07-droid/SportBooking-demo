@@ -5,20 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#006b2c">
   <title>Hồ sơ cá nhân | SportBooking</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/app.css">
+  <link rel="stylesheet" href="/shared/header.css">
+  <script src="/shared/header.js" defer></script>
   <script src="/shared/app.js" defer></script>
 </head>
 <body data-page="profile">
+  <div data-shared-header></div>
   <main class="sb-container sb-main-layout sb-profile-layout">
     <a class="sb-back-link" href="/auth/login.html" data-back data-fallback="/auth/login.html">
       <span aria-hidden="true">←</span> Quay lại
     </a>
     <section class="sb-card sb-profile-card" aria-labelledby="page-title">
       <header class="sb-profile-heading">
-        <a class="sb-brand" href="/auth/login.html" aria-label="SportBooking - Đăng nhập">
-          <span class="sb-brand-mark" aria-hidden="true">S</span>
-          <span class="sb-logo-text">SportBooking</span>
-        </a>
         <p class="sb-auth-eyebrow">Tài khoản của bạn</p>
         <h1 id="page-title">Hồ sơ cá nhân</h1>
         <p class="sb-auth-intro">Cập nhật thông tin và bảo vệ tài khoản của bạn.</p>
@@ -100,11 +103,6 @@
           <button class="sb-btn sb-btn-secondary" type="submit" data-submit
             data-idle-label="Cập nhật mật khẩu" data-loading-label="Đang cập nhật…">Cập nhật mật khẩu</button>
         </form>
-        <div class="sb-logout-row">
-          <p>Phiên đăng nhập được quản lý an toàn bằng cookie.</p>
-          <button class="sb-btn sb-btn-error-subtle" type="button" data-logout
-            data-idle-label="Đăng xuất" data-loading-label="Đang đăng xuất…">Đăng xuất</button>
-        </div>
       </div>
     </section>
     <footer class="sb-site-footer"><p>SportBooking · Đặt sân thể thao dễ dàng</p></footer>

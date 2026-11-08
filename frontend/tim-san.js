@@ -178,12 +178,35 @@
     actions.append(price);
 
     const buttons = makeElement('div', 'flex items-center gap-2');
-    const mapLink = makeElement('a', 'px-3.5 py-2.5 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 font-bold text-xs flex items-center gap-1 transition-all shadow-sm', 'Bản đồ');
-    const mapUrl = safeUrl(facility.map_url || '');
+    const mapLink = makeElement('a', 'px-3.5 py-2.5 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 font-bold text-xs flex items-center gap-1 transition-all shadow-sm', 'Xem trên bản đồ');
+    const suppliedMapUrl = typeof facility.map_url === 'string' ? facility.map_url.trim() : '';
+    let mapUrl = '';
+    let mapNote = '';
+    if (suppliedMapUrl.startsWith('https://')) {
+      try {
+        const parsedMapUrl = new URL(suppliedMapUrl);
+        if (parsedMapUrl.protocol === 'https:') mapUrl = parsedMapUrl.href;
+      } catch {}
+    }
+    if (!mapUrl && facility.latitude !== null && facility.latitude !== undefined
+        && facility.longitude !== null && facility.longitude !== undefined
+        && Number.isFinite(Number(facility.latitude)) && Number.isFinite(Number(facility.longitude))) {
+      mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${facility.latitude},${facility.longitude}`)}`;
+      mapNote = 'Theo tọa độ';
+    } else if (!mapUrl && typeof facility.address === 'string' && facility.address.trim()) {
+      mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(facility.address.trim())}`;
+      mapNote = 'Theo địa chỉ';
+    }
     mapLink.href = mapUrl || '#';
     if (mapUrl) {
       mapLink.target = '_blank';
       mapLink.rel = 'noopener noreferrer';
+    } else {
+      mapLink.hidden = true;
+    }
+    if (mapNote) {
+      const mapNoteEl = makeElement('span', 'text-[10px] text-gray-500', mapNote);
+      buttons.append(mapNoteEl);
     }
     buttons.append(mapLink);
     const bookLink = makeElement('a', 'px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-container text-white font-bold text-sm shadow-sm transition-all flex items-center gap-1', 'Đặt sân ngay');

@@ -5,6 +5,8 @@
   const facilityId = query.get('id');
   const dateKeys = getNextFourteenDates();
   const requestedDate = query.get('date');
+  const requestedSlots = (query.get('slots') || '').split(',')
+    .filter((id) => /^[1-9]\d*$/.test(id));
   const state = {
     facility: null,
     courts: [],
@@ -12,7 +14,7 @@
     date: dateKeys.includes(requestedDate) ? requestedDate : dateKeys[0],
     slots: [],
     dates: new Map(),
-    selectedSlotIds: new Set(),
+    selectedSlotIds: new Set(requestedSlots),
     requestSequence: 0,
     redirected: false,
     calendarLoading: false
@@ -58,6 +60,7 @@
     rulesText: document.getElementById('venueRulesList'),
     mapSection: document.getElementById('mapSection'),
     mapLink: document.getElementById('btnExternalMaps'),
+    mapNote: document.getElementById('mapSourceNote'),
     reviewBadge: document.getElementById('ratingBadge'),
     reviewScoreCard: document.getElementById('reviewScoreCard'),
     reviewScore: document.getElementById('reviewBigScore'),
@@ -103,16 +106,6 @@
       day: '2-digit',
       month: '2-digit'
     }).format(new Date(`${date}T00:00:00+07:00`));
-  }
-
-  function safeExternalUrl(value) {
-    if (typeof value !== 'string' || value.trim() === '') return null;
-    try {
-      const url = new URL(value);
-      return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : null;
-    } catch {
-      return null;
-    }
   }
 
   function safeImageUrl(value) {
@@ -262,11 +255,31 @@
     elements.policiesSection.hidden = !cancellationPolicy && !rules;
   }
 
-  function renderMap(mapUrl) {
-    const url = safeExternalUrl(mapUrl);
+  function renderMap(facility) {
+    const supplied = typeof facility.map_url === 'string' ? facility.map_url.trim() : '';
+    let url = null;
+    let note = '';
+    if (supplied.startsWith('https://')) {
+      try {
+        const parsed = new URL(supplied);
+        if (parsed.protocol === 'https:') url = parsed.href;
+      } catch {}
+    }
+    if (!url && facility.latitude !== null && facility.latitude !== undefined
+        && facility.longitude !== null && facility.longitude !== undefined
+        && Number.isFinite(Number(facility.latitude)) && Number.isFinite(Number(facility.longitude))) {
+      url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${facility.latitude},${facility.longitude}`)}`;
+      note = 'Theo tọa độ';
+    } else if (!url && typeof facility.address === 'string' && facility.address.trim()) {
+      url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(facility.address.trim())}`;
+      note = 'Theo địa chỉ';
+    }
     elements.mapSection.hidden = !url;
     if (!url) return;
     elements.mapLink.href = url;
+    elements.mapLink.target = '_blank';
+    elements.mapLink.rel = 'noopener noreferrer';
+    elements.mapNote.textContent = note;
   }
 
   function renderFacilityImage(facility, court) {
@@ -371,7 +384,7 @@
     if (hotline) elements.callHotline.href = `tel:${hotline.replace(/[^\d+]/g, '')}`;
     renderAmenities(facility.amenities);
     renderPolicies(facility);
-    renderMap(facility.map_url);
+    renderMap(facility);
 
     elements.courtPicker.replaceChildren();
     state.courts.forEach((court) => {
@@ -653,6 +666,7 @@
         }
       }
       state.slots = state.dates.get(state.date) || [];
+      keepAvailableSelection();
       state.calendarLoading = false;
       renderDateOptions();
       elements.slotLoading.hidden = true;

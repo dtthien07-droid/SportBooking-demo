@@ -45,37 +45,12 @@
         @layer base { html, body { margin: 0; padding: 0; } body { overscroll-behavior: none; } }
         ::-webkit-scrollbar { display: none; }
     </style>
-</head>
+<link rel="stylesheet" href="/shared/header.css"></head>
 
 <body class="bg-surface font-['Be_Vietnam_Pro'] text-on-surface antialiased">
 
     <!-- HEADER ĐỒNG BỘ 100% VỚI TRANG CHỦ -->
-    <header class="fixed top-0 left-0 right-0 w-full z-50 bg-surface/95 backdrop-blur-md shadow-sm border-b border-gray-100">
-        <div class="h-20 max-w-[1440px] mx-auto px-margin flex items-center justify-between gap-space-lg">
-            <div class="flex items-center gap-space-xl">
-                <!-- LOGO CHỮ SPORTBOOKING NGUYÊN BẢN -->
-                <a class="flex items-center gap-space-sm" href="trangchu-user.html">
-                    <span class="text-xl text-primary font-bold tracking-tight">SportBooking</span>
-                </a>
-
-                <nav class="hidden md:flex items-center gap-2 text-sm font-semibold">
-                    <a class="px-4 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container transition-all" href="trangchu-user.html">Trang chủ</a>
-                    <a class="px-4 py-2 rounded-xl bg-primary-container text-on-primary-container shadow-sm transition-all" href="tim-san.html">Tìm sân</a>
-                    <a class="px-4 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container transition-all" href="#">Lịch sử đặt sân</a>
-                    <a class="px-4 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container transition-all" href="#">Tin tức thể thao</a>
-                </nav>
-            </div>
-
-            <div class="flex items-center gap-space-lg">
-                <a aria-label="Thông báo" class="p-2.5 rounded-xl text-on-surface-variant hover:bg-surface-container transition-colors flex items-center justify-center" href="#">
-                    <span class="material-symbols-outlined text-[24px] align-middle" style="font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;">notifications</span>
-                </a>
-
-                <!-- KHU VỰC THÔNG TIN USER ĐỒNG BỘ ĐỘNG THEO TÀI KHOẢN -->
-                <div id="userHeaderArea" class="flex items-center gap-2 pl-2"></div>
-            </div>
-        </div>
-    </header>
+    <div data-shared-header></div>
 
     <main class="w-full pt-20 min-h-screen bg-surface">
        
@@ -291,7 +266,7 @@
     </footer>
 
     <!-- SCRIPT TẢI DANH SÁCH VÀ XỬ LÝ BỘ LỌC -->
-    <script src="/shared/facilities-api.js" defer></script>
+    <script src="/shared/header.js" defer></script><script src="/shared/facilities-api.js" defer></script>
     <script src="/tim-san.js" defer></script>
 </body>
 </html>
