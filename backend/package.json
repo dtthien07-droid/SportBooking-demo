@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start": "node src/server.js",
-    "test": "node --test",
+    "test": "node run-tests.js",
     "migrate:facilities": "node ../infra/database/migrate-facilities.js",
     "seed:facilities": "node ../infra/database/seed-facilities.js"
   },

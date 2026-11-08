@@ -74,7 +74,9 @@
     selectionNotice: document.getElementById('selectionNotice'),
     slotGrid: document.getElementById('timeSlotsGrid'),
     hoursSummary: document.getElementById('selectedHoursSummary'),
-    priceSummary: document.getElementById('selectedPriceSummary')
+    priceSummary: document.getElementById('selectedPriceSummary'),
+    proceedBooking: document.getElementById('btnProceedBooking'),
+    mobileProceedBooking: document.getElementById('mobileProceedBooking')
   };
 
   function getNextFourteenDates() {
@@ -478,6 +480,33 @@
     const total = selected.reduce((sum, slot) => sum + Number(slot.price), 0);
     elements.hoursSummary.textContent = `Đã chọn: ${selected.length} giờ`;
     elements.priceSummary.textContent = `Tạm tính: ${formatCurrency(total)}`;
+    const canProceed = selected.length > 0;
+    for (const button of [elements.proceedBooking, elements.mobileProceedBooking]) {
+      button.disabled = !canProceed;
+      button.classList.toggle('bg-primary', canProceed);
+      button.classList.toggle('text-white', canProceed);
+      button.classList.toggle('hover:bg-primary-container', canProceed);
+      button.classList.toggle('bg-gray-300', !canProceed);
+      button.classList.toggle('text-gray-600', !canProceed);
+      button.classList.toggle('cursor-not-allowed', !canProceed);
+      button.classList.toggle('cursor-pointer', canProceed);
+    }
+  }
+
+  function continueToBooking() {
+    const selectedIds = state.slots
+      .filter((slot) => state.selectedSlotIds.has(String(slot.id)))
+      .sort(compareSlots)
+      .map((slot) => String(slot.id));
+    if (selectedIds.length === 0 || !state.court || !state.facility) return;
+
+    const params = new URLSearchParams({
+      facility_id: String(state.facility.id),
+      court_id: String(state.court.id),
+      date: state.date,
+      slots: selectedIds.join(',')
+    });
+    window.location.assign(`/dat-san.html?${params}`);
   }
 
   function renderSlots() {
@@ -675,6 +704,8 @@
   }
 
   elements.retryFacility.addEventListener('click', loadFacility);
+  elements.proceedBooking.addEventListener('click', continueToBooking);
+  elements.mobileProceedBooking.addEventListener('click', continueToBooking);
   elements.retrySlots.addEventListener('click', () => {
     elements.retrySlots.hidden = false;
     refreshSelectedDate(true);

@@ -8,10 +8,18 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
   throw new Error('PORT must be a valid TCP port.');
 }
 
-const server = createApp({ pool: getPool() }).listen(port);
+const app = createApp({ pool: getPool() });
+const server = app.listen(port);
+const expiryTimer = setInterval(() => {
+  app.locals.bookingsService.releaseExpiredBookings().catch((error) => {
+    console.error(`[Booking Expiry Job] Failed: ${error.message}`);
+  });
+}, 60_000);
+expiryTimer.unref();
 
 for (const signal of ['SIGINT', 'SIGTERM']) {
   process.once(signal, () => {
+    clearInterval(expiryTimer);
     server.close((error) => {
       if (error) {
         process.exitCode = 1;

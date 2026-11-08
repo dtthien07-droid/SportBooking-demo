@@ -57,3 +57,11 @@
 - Lưới hiển thị toàn bộ slot API trả về, dùng `is_selectable`/trạng thái server, nhãn giờ vàng, tổng giờ/giá tạm tính; chọn liền kề và CTA không gọi API ghi.
 - **Xong:** `node --check` các JavaScript thay đổi; test lựa chọn slot liền kề/không liền kề/bỏ đầu-giữa-cuối đạt 4/4; `npm test` backend với `APP_ENV=test`, `DB_NAME=sportbooking_test` đạt 16/16.
 - **Chờ người dùng xác nhận:** smoke test thực tế tại `http://localhost:3000/`; API facilities của runtime hiện tại trả 404. Không chạy migration/seed; không sửa backend, API, `sportbooking_system` hoặc mockup.
+
+# 2026-11-08 — Module 4: API giữ chỗ và frontend xác nhận
+
+- Thêm API tạo/đọc/hủy booking với transaction, khóa dòng user/slot, snapshot giá và job giải phóng booking hết hạn; thêm integration tests cho hold, xung đột, concurrency, hủy và expiry.
+- Nối lựa chọn slot liền kề sang `/dat-san.html`; trang xác nhận hiển thị thông tin server, gọi API khi xác nhận, đồng bộ booking khi tải lại, đếm ngược và hỗ trợ hủy.
+- Browser smoke test với API giả xác nhận hiển thị tổng tiền, tạo hold và đồng hồ `10:00`, hủy giữ chỗ, tải lại đơn còn hạn, chuyển login với 401 và thông báo 409.
+- `npm test` chạy với `APP_ENV=test`, `DB_NAME=sportbooking_test`: 14/17 đạt; 3 integration test không thể kết nối do `sportbooking_app` bị từ chối quyền vào `sportbooking_test`. Chưa chạy GRANT vì môi trường hiện không có kết nối quản trị DB được cấu hình.
+- **Chờ xác nhận:** cấp quyền DB test bằng tài khoản quản trị cục bộ rồi chạy lại `npm test` để xác nhận integration thật; không sử dụng `sportbooking_system` và không sửa mockups.

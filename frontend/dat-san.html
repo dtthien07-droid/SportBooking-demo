@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Xác nhận thông tin và giữ sân trên SportBooking.">
+  <title>Xác nhận đặt sân - SportBooking</title>
+  <link rel="stylesheet" href="/app.css">
+  <link rel="stylesheet" href="/booking/booking.css">
+</head>
+<body class="sb-booking-page">
+  <header class="sb-booking-header">
+    <a class="sb-booking-brand" href="/trangchu-user.html">SportBooking</a>
+    <a href="/tim-san.html">Tìm sân</a>
+  </header>
+
+  <main class="sb-booking-main">
+    <a class="sb-booking-back" href="/tim-san.html">← Quay lại tìm sân</a>
+    <section class="sb-booking-card" aria-labelledby="pageTitle">
+      <p class="sb-booking-eyebrow">XÁC NHẬN ĐẶT SÂN</p>
+      <h1 id="pageTitle">Thông tin giữ chỗ</h1>
+      <p class="sb-booking-lead">Kiểm tra sân và khung giờ trước khi xác nhận. Thời gian giữ chỗ bắt đầu sau khi bạn xác nhận.</p>
+
+      <div id="bookingLoading" class="sb-booking-loading" role="status">
+        Đang tải thông tin sân và khung giờ…
+      </div>
+
+      <div id="bookingError" class="sb-booking-error" role="alert" hidden>
+        <p id="bookingErrorMessage"></p>
+        <button id="retryBookingLoad" type="button" class="sb-booking-secondary">Thử lại</button>
+      </div>
+
+      <div id="bookingSummary" hidden>
+        <dl class="sb-booking-facts">
+          <div>
+            <dt>Cơ sở</dt>
+            <dd id="facilityName"></dd>
+          </div>
+          <div>
+            <dt>Sân</dt>
+            <dd id="courtName"></dd>
+          </div>
+          <div>
+            <dt>Ngày chơi</dt>
+            <dd id="serviceDate"></dd>
+          </div>
+        </dl>
+
+        <section class="sb-booking-slot-section" aria-labelledby="slotHeading">
+          <h2 id="slotHeading">Khung giờ đã chọn</h2>
+          <ul id="bookingSlots" class="sb-booking-slots"></ul>
+        </section>
+
+        <div class="sb-booking-total">
+          <span>Tổng tiền</span>
+          <strong id="bookingTotal"></strong>
+        </div>
+
+        <section id="bookingTimerPanel" class="sb-booking-timer-panel" aria-live="polite" hidden>
+          <div>
+            <p class="sb-booking-timer-label">Thời gian giữ sân còn lại</p>
+            <p id="bookingTimer" class="sb-booking-timer">10:00</p>
+          </div>
+          <p id="bookingCode" class="sb-booking-code" hidden></p>
+        </section>
+
+        <p id="bookingMessage" class="sb-booking-message" role="status" hidden></p>
+        <div id="bookingActions" class="sb-booking-actions" hidden>
+          <button id="confirmBooking" type="button" class="sb-booking-primary">
+            Xác nhận đặt sân
+          </button>
+          <button id="cancelBooking" type="button" class="sb-booking-secondary" hidden>
+            Hủy giữ chỗ
+          </button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/booking/bookings-api.js" defer></script>
+  <script src="/booking/booking-page.js" defer></script>
+</body>
+</html>

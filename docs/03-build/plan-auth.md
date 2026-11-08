@@ -214,7 +214,7 @@ Tạo/cập nhật `.gitignore` ở root (ngoại lệ được phép) để b�
 ### Backend unit/integration
 
 - Tạo database test riêng trước khi chạy test: kết nối MySQL bằng tài khoản phát triển được cấp, rồi chạy `CREATE DATABASE sportbooking_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;` (có thể dùng `CREATE DATABASE IF NOT EXISTS` cho môi trường test dùng lại). Không chạy lệnh này trên `sportbooking_system`.
-- Mọi lệnh test phải chạy với `APP_ENV=test`, `DB_NAME=sportbooking_test` và cấu hình kết nối test riêng. Trước khi mở kết nối hoặc chạy migration, test runner kiểm tra `APP_ENV === 'test'` và từ chối chạy nếu `DB_NAME` không kết thúc bằng `_test`; không được fallback sang `sportbooking_dev` hoặc `sportbooking_system`.
+- Chạy test bằng `npm test` từ thư mục `backend/`; script `run-tests.js` tự đặt `APP_ENV=test`, `DB_NAME=sportbooking_test` rồi gọi Node test runner, không phụ thuộc shell/PowerShell và không lấy DB đích từ `.env` development. Guard trong `src/config/database.js` vẫn yêu cầu test chỉ dùng `DB_NAME` có hậu tố `_test` và từ chối `sportbooking_system`; tuyệt đối không fallback sang `sportbooking_dev` hoặc `sportbooking_system`.
 - Đăng ký hợp lệ: user tạo với role `USER`; response không có hash; hash bcrypt verify được.
 - Đăng ký từ chối mật khẩu dưới 8 ký tự, email sai định dạng, thiếu trường/điều khoản.
 - Email trùng hoặc SĐT trùng nhận `409`; không tạo bản ghi thứ hai.
@@ -238,6 +238,14 @@ Tạo/cập nhật `.gitignore` ở root (ngoại lệ được phép) để b�
 - Thử mở route Admin bằng user thường không cấp quyền chỉ nhờ ẩn menu; backend vẫn phải trả `403`.
 
 Test tích hợp DB chỉ chạy trên database test riêng đã tạo theo hướng dẫn trên; không chạy migration/test phá hoại trên dữ liệu khảo sát hay DB dùng chung.
+
+Lệnh chạy test chuẩn trên Windows PowerShell (đứng tại `backend/`):
+
+```powershell
+npm test
+```
+
+`npm test` tự cấu hình `APP_ENV=test` và `DB_NAME=sportbooking_test`; không cần gõ tay biến môi trường và không đổi cấu hình `.env` dành cho development.
 
 ## 10. Thứ tự thực hiện
 

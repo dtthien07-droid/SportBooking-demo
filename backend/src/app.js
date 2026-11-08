@@ -11,6 +11,9 @@ const createFacilitiesRouter = require('./facilities/facilities.routes');
 const createSessionRouter = require('./auth/routes/auth.routes');
 const createProfileRouter = require('./auth/routes/profile.routes');
 const createRequireAuth = require('./auth/middleware/require-auth');
+const createBookingRepository = require('./bookings/bookings.repository');
+const { createBookingsService } = require('./bookings/bookings.service');
+const createBookingsRouter = require('./bookings/bookings.routes');
 const { getCookieName, getSecureCookieSetting } = require('./auth/session.cookie');
 const { createSessionService } = require('./auth/session.service');
 const createSessionRepository = require('./auth/repositories/session.repository');
@@ -32,6 +35,8 @@ function createApp({ pool, env = process.env } = {}) {
   const authService = createAuthService({ userRepository });
   const profileService = createProfileService({ userRepository, passwords: passwordHelper });
   const facilitiesService = createFacilitiesService(facilitiesRepository);
+  const bookingsRepository = createBookingRepository(pool);
+  const bookingsService = createBookingsService(bookingsRepository);
   const sessionService = createSessionService({ sessionRepository });
   const cookieName = getCookieName(env);
   const secureCookie = getSecureCookieSetting(env);
@@ -53,6 +58,7 @@ function createApp({ pool, env = process.env } = {}) {
     cookieName
   }));
   app.use('/api/v1/users', createProfileRouter({ profileService, requireAuth }));
+  app.use('/api/v1/bookings', createBookingsRouter({ bookingsService, requireAuth }));
   app.use('/api/v1', createFacilitiesRouter({ facilitiesService, requireAuth }));
   app.get('/', (request, response) => {
     response.redirect(302, '/dang-nhap.html');
@@ -84,6 +90,7 @@ function createApp({ pool, env = process.env } = {}) {
     return sendError(response, 500, 'INTERNAL_ERROR', 'An unexpected error occurred.');
   });
 
+  app.locals.bookingsService = bookingsService;
   return app;
 }
 

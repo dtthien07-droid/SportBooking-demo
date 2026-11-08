@@ -9,7 +9,7 @@ Trạng thái: Chưa làm / Đang làm / Xong
 | 1 | Đăng ký, đăng nhập, phân quyền, hồ sơ | FR-01, FR-03 | Cốt lõi | Đang làm | Đã triển khai backend và bước 10: express.static cùng origin, trang đăng nhập/đăng ký/hồ sơ và JS/CSS dùng chung. Hoàn thành hai trang `/dang-nhap.html` và `/dang-ky.html` theo mockup cũ; đăng nhập chỉ dùng email, form nối API mới; ô đồng ý chỉ bật sau khi đọc hết hai văn bản pháp lý được nhúng trong đăng ký. Các trang pháp lý riêng chưa có trong frontend nên liên kết tương ứng dùng `#`. Bước 11 smoke test thủ công: Chờ người dùng xác nhận. Backend bắt buộc `termsAccepted = true` và ghi `terms_accepted_at`. |
 | 2 | Seed 29 sân, khung giờ, API sân, trang chủ, tìm sân | FR-04, FR-05 | Cốt lõi | Đang làm | Seed-loader tests xác nhận 29 dòng khảo sát và phân bố môn; API integration tests trên `sportbooking_test` xác nhận lọc, phân trang, đăng nhập, lịch/lock và 24/24. Đã triển khai giao diện trang chủ/tìm sân và nối danh sách với API; module vẫn đang làm. Máy chủ hiện có tại localhost:3000 trả 404 cho `/api/v1/facilities`, cần xác minh runtime trước khi smoke test dữ liệu thật. |
 | 3 | Admin quản lý cơ sở, sân, khung giờ, giá | FR-04 | Cốt lõi | Chưa làm | Dữ liệu mẫu; cần cách sinh khung giờ hằng ngày vì seed chỉ sinh 14 ngày |
-| 4 | Đặt sân, giữ chỗ 10 phút, chống đặt trùng | FR-06, FR-12 | Cốt lõi | Chưa làm | Phần khó nhất, có test (chi tiết bên dưới) |
+| 4 | Đặt sân, giữ chỗ 10 phút, chống đặt trùng | FR-06, FR-12 | Cốt lõi | Đang làm | Backend 4.C, test 4.D và frontend xác nhận giữ chỗ 4.E đã được triển khai. Chưa xác nhận tích hợp thật: `npm test` còn 3 integration test bị chặn do tài khoản `sportbooking_app` chưa có quyền `sportbooking_test`. |
 | 5 | Thanh toán giả lập, vé QR | FR-07 | Cốt lõi | Chưa làm | |
 | 6 | Hủy và hoàn tiền | FR-08 | Cốt lõi | Chưa làm | |
 | 7 | Lịch sử đặt sân | FR-09 | Cốt lõi | Chưa làm | |
@@ -34,7 +34,9 @@ Ghi chú: Module 3 frontend theo phạm vi màn hình; hàng số 3 trong bảng
 ## Module 4: Đặt sân, giữ chỗ, chống đặt trùng (FR-06, FR-12)
 
 Nguồn: [business-flow.md mục 3 (bước 4-6, 10), 6.1, 6.2, quy tắc 1-4](../01-plan/business-flow.md).  
-Trạng thái chung: **Chưa làm**
+Trạng thái chung: **Đang làm**
+
+Cập nhật 2026-11-08: Backend hold/đọc/hủy, expiry job và bộ integration test đã được triển khai; frontend trang xác nhận, đồng hồ server, hủy và xử lý 401/409/410 đã được triển khai. Browser smoke test với API giả xác nhận tổng tiền, countdown 10:00, hủy, tiếp tục sau reload, lỗi 401 và 409. Chờ cấp quyền DB test để chạy integration test thật trước khi đánh dấu hoàn tất.
 
 | # | Việc | Trạng thái |
 |---|---|---|
