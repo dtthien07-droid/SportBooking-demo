@@ -8,12 +8,18 @@
   },
   "scripts": {
     "start": "node src/server.js",
-    "test": "node --test"
+    "test": "node --test",
+    "migrate:facilities": "node ../infra/database/migrate-facilities.js",
+    "seed:facilities": "node ../infra/database/seed-facilities.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
     "dotenv": "^16.4.7",
+    "exceljs": "^4.4.0",
     "express": "^5.1.0",
     "mysql2": "^3.14.0"
+  },
+  "overrides": {
+    "uuid": "^11.1.1"
   }
 }
