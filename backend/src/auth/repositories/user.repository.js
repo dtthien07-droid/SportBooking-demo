@@ -99,10 +99,10 @@ function createUserRepository(pool) {
              updated_at = UTC_TIMESTAMP(3)
          WHERE id = ?`,
         [
-          fullName !== undefined, fullName,
-          phone !== undefined, phone,
-          gender !== undefined, gender,
-          skillLevel !== undefined, skillLevel,
+          fullName !== undefined, fullName === undefined ? null : fullName,
+          phone !== undefined, phone === undefined ? null : phone,
+          gender !== undefined, gender === undefined ? null : gender,
+          skillLevel !== undefined, skillLevel === undefined ? null : skillLevel,
           id
         ]
       );
