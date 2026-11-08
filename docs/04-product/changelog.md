@@ -41,3 +41,11 @@
 - Dùng ảnh login có sẵn tại `frontend/assets/images/sportbooking-login-courts.jpg` (đã đối chiếu trùng nguồn mockup); đổi `GET /` sang `/dang-nhap.html` và đồng bộ URL trong spec.
 - Kiểm tra redirect và tài nguyên static bằng HTTP; browser xác nhận form gửi đúng payload (API được mock), email type/placeholder, legal-read gate, và không tràn ngang ở viewport 390px.
 - `node --test tests/auth-step5.test.js tests/auth-step6-8.test.js`: 8/8 đạt. `npm test`: 8 test đạt; test tích hợp dừng ở guard do môi trường hiện tại không đặt `APP_ENV=test` và `DB_NAME=sportbooking_test`, trước khi kết nối database.
+
+# 2026-11-08 — Trang chủ user và tìm sân
+
+- Tạo `frontend/trangchu-user.html` và `frontend/tim-san.html` từ markup mockup; giữ Tailwind CDN và bố cục, loại bỏ script/dữ liệu sân, giá, thông báo, kèo và số liệu giả.
+- Nối trang chủ và tìm sân tới `GET /api/v1/facilities` qua `frontend/shared/facilities-api.js`, dùng đúng query/response fields, `credentials: 'same-origin'`, textContent, loading/error/retry/empty states và chuyển 401 tới login.
+- Tìm sân hỗ trợ môn, quận, từ khóa và phân trang; ngày/khung giờ/tiện ích để disabled do API không hỗ trợ. Đăng nhập thành công chuyển tới `/trangchu-user.html`.
+- Kiểm tra JS syntax và 14 test auth/facility seed đạt. Browser với API giả xác nhận render sân, query filter/pagination, redirect 401 và redirect login thành công.
+- Máy chủ đang chạy tại `http://localhost:3000` phục vụ trang nhưng `GET /api/v1/facilities` trả 404; chưa xác nhận dữ liệu thật qua runtime này. Không sửa backend/API.
