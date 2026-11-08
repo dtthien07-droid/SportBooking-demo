@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>SportBooking - Đăng ký tài khoản thành viên</title>
+
+    <!-- Font chữ & Icon -->
+    <link href="https://fonts.googleapis.com" rel="preconnect">
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#006b2c",
+                        "on-primary": "#ffffff",
+                        "primary-container": "#00873a",
+                        "on-primary-container": "#f7fff2",
+                        "secondary": "#9d4300",
+                        "secondary-container": "#fd761a",
+                        "on-secondary": "#ffffff",
+                        "secondary-fixed": "#ffdbca",
+                        "on-secondary-fixed": "#341100",
+                        "on-secondary-fixed-variant": "#783200",
+                        "tertiary": "#0051d5",
+                        "tertiary-fixed": "#dbe1ff",
+                        "on-tertiary-fixed-variant": "#003ea8",
+                        "surface": "#f9f9ff",
+                        "on-surface": "#141b2b",
+                        "on-surface-variant": "#3e4a3d",
+                        "surface-container": "#e9edff",
+                        "surface-container-low": "#f1f3ff",
+                        "surface-container-high": "#e1e8fd",
+                        "surface-container-lowest": "#ffffff",
+                        "outline": "#6e7b6c",
+                        "outline-variant": "#bdcaba",
+                        "error": "#ba1a1a"
+                    },
+                    spacing: {
+                        "space-xs": "0.25rem",
+                        "space-sm": "0.5rem",
+                        "space-md": "1rem",
+                        "space-lg": "1.5rem",
+                        "space-xl": "2rem",
+                        "margin": "1.25rem"
+                    }
+                }
+            }
+        };
+    </script>
+    <style>
+        @layer base {
+            html, body { margin: 0; padding: 0; }
+            body { overscroll-behavior: none; }
+            main > :first-child { margin-top: 0 !important; }
+            main > :last-child { margin-bottom: 0 !important; }
+        }
+        ::-webkit-scrollbar { display: none; }
+    </style>
+<style>
+.auth-notice { margin: 0 0 1rem; padding: .75rem 1rem; border-radius: .75rem; background: #ffdad6; color: #93000a; }
+.auth-notice[data-kind="success"] { background: #dcfce7; color: #166534; }
+.auth-field-error { min-height: 1rem; color: #ba1a1a; font-size: .75rem; line-height: 1rem; }
+.sb-legal-documents { display: flex; flex-direction: column; gap: .5rem; }
+.sb-legal-document { overflow: hidden; border: 1px solid #dce2f7; border-radius: .75rem; }
+.sb-legal-document > summary { padding: .75rem; color: #006b2c; cursor: pointer; font-weight: 600; }
+.sb-legal-content { max-height: 14rem; overflow-y: auto; overscroll-behavior: contain; padding: .75rem; font-size: .875rem; line-height: 1.55; }
+.sb-legal-content h3 { margin: .75rem 0 .4rem; font-size: 1rem; font-weight: 700; }
+.sb-legal-content p { margin: .35rem 0; }
+.sb-legal-content ul, .sb-legal-content ol { margin: .35rem 0; padding-left: 1.25rem; }
+</style></head>
+
+<body class="bg-surface font-['Be_Vietnam_Pro'] text-on-surface antialiased" data-page="register">
+
+    <!-- HEADER: ĐÃ BỎ KHỐI AVATAR / USER INFO -->
+    <header class="fixed top-0 left-0 right-0 w-full z-50 bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100">
+        <div class="h-20 max-w-[1440px] mx-auto px-4 lg:px-8 flex items-center justify-between">
+            <a class="flex items-center gap-2" href="#">
+                <span class="text-2xl text-primary font-bold tracking-tight">SportBooking</span>
+            </a>
+
+            <div>
+                <a class="px-5 py-2.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary text-sm font-bold transition-all shadow-sm flex items-center justify-center gap-1.5" href="/dang-nhap.html">
+                    <span class="material-symbols-outlined text-lg">login</span>
+                    <span>Đăng nhập</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="w-full pt-20 min-h-screen bg-surface">
+        <div class="flex flex-col w-full">
+            <div class="relative w-full py-space-xl px-margin flex justify-center items-center overflow-hidden">
+                <!-- Hiệu ứng nền Ambient Athletic Glow -->
+                <div class="absolute -top-32 -left-32 w-96 h-96 bg-primary-fixed/20 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="absolute top-1/2 -right-40 w-[30rem] h-[30rem] bg-secondary-fixed/25 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="absolute bottom-0 left-1/3 w-80 h-80 bg-surface-container-high/60 rounded-full blur-2xl pointer-events-none"></div>
+
+                <div class="w-full max-w-4xl relative z-10 my-4">
+                    <!-- Huy hiệu trạng thái -->
+                    <div class="flex items-center justify-between mb-space-md">
+                        <a class="inline-flex items-center gap-space-xs text-on-surface-variant hover:text-primary transition-colors text-sm font-medium" href="#">
+                            <span class="material-symbols-outlined text-lg"></span>
+                            <span></span>
+                        </a>
+                        <div class="inline-flex items-center gap-space-xs px-3 py-1 rounded-full bg-surface-container-high text-primary text-xs font-semibold">
+                            <span class="w-2 h-2 rounded-full bg-primary-container animate-pulse"></span>
+                            <span>Hệ thống thành viên thể thao 2026</span>
+                        </div>
+                    </div>
+
+                    <!-- Bento Card chính -->
+                    <div class="bg-surface-container-lowest rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+                        <!-- Banner tiêu đề -->
+                        <div class="relative w-full bg-gradient-to-r from-primary-container via-primary to-on-surface p-space-lg text-on-primary overflow-hidden">
+                            <div class="absolute right-0 top-0 bottom-0 w-1/3 opacity-10 flex items-center justify-center pointer-events-none">
+                                <span class="material-symbols-outlined text-[160px]">sports_tennis</span>
+                            </div>
+                            <div class="relative z-10 max-w-xl">
+                                <span class="inline-block px-2.5 py-0.5 rounded-full bg-white/20 text-white text-xs font-bold tracking-wider uppercase mb-space-xs">Tài khoản mới</span>
+                                <h1 class="text-2xl md:text-3xl font-bold text-white tracking-tight">Tạo tài khoản SportBooking</h1>
+                                <p class="text-sm text-white/90 mt-space-xs">Tham gia cộng đồng thể thao hàng đầu, đặt sân trực tuyến 24/7 và kết nối ghép kèo đối chơi chuẩn trình độ tại Hà Nội.</p>
+                            </div>
+                        </div>
+
+                        <!-- Form đăng ký -->
+                        <p class="auth-notice" role="status" aria-live="polite" data-notice hidden></p>
+<form class="p-space-lg md:p-space-xl flex flex-col gap-space-xl" id="signupForm" data-form="register" novalidate>
+                            <!-- Phần 1: Thông tin cơ bản -->
+                            <div class="flex flex-col gap-space-md">
+                                <div class="flex items-center gap-space-xs">
+                                    <span class="flex items-center justify-center w-7 h-7 rounded-full bg-primary-container text-on-primary-container text-sm font-bold">1</span>
+                                    <h2 class="text-lg font-bold text-on-surface">Thông tin định danh</h2>
+                                </div>
+                               
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+                                    <!-- Họ và tên -->
+                                    <div class="flex flex-col gap-space-xs">
+                                        <label class="text-sm font-semibold text-on-surface flex items-center gap-1" for="register-full-name">
+                                            Họ và tên <span class="text-error">*</span>
+                                        </label>
+                                        <div class="relative flex items-center">
+                                            <span class="material-symbols-outlined absolute left-3 text-on-surface-variant pointer-events-none text-xl">badge</span>
+                                            <input class="w-full pl-10 pr-4 py-3 rounded-xl bg-surface-container-low text-on-surface text-sm placeholder:text-gray-400 border border-transparent focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all shadow-sm" id="register-full-name" aria-describedby="register-full-name-error" name="fullName" placeholder="VD: Nguyễn Tuấn Anh" required type="text">
+                                        </div>
+<p class="auth-field-error" id="register-full-name-error" data-field-error="fullName"></p>
+                                    </div>
+
+                                    <!-- Số điện thoại -->
+                                    <div class="flex flex-col gap-space-xs">
+                                        <label class="text-sm font-semibold text-on-surface flex items-center justify-between" for="register-phone">
+                                            <span>Số điện thoại <span class="text-error">*</span></span>
+                                        </label>
+                                        <div class="relative flex items-center">
+                                            <span class="material-symbols-outlined absolute left-3 text-on-surface-variant pointer-events-none text-xl">phone_iphone</span>
+                                            <input class="w-full pl-10 pr-4 py-3 rounded-xl bg-surface-container-low text-on-surface text-sm placeholder:text-gray-400 border border-transparent focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all shadow-sm" id="register-phone" name="phone" aria-describedby="register-phone-error" placeholder="VD: 0988 123 456" required type="tel">
+                                        </div>
+<p class="auth-field-error" id="register-phone-error" data-field-error="phone"></p>
+                                    </div>
+
+                                    <!-- Email -->
+                                    <div class="flex flex-col gap-space-xs md:col-span-2">
+                                        <label class="text-sm font-semibold text-on-surface flex items-center justify-between" for="register-email">
+                                            <span>Địa chỉ Email <span class="text-error">*</span></span>
+                                        </label>
+                                        <div class="relative flex items-center">
+                                            <span class="material-symbols-outlined absolute left-3 text-on-surface-variant pointer-events-none text-xl">mail</span>
+                                            <input class="w-full pl-10 pr-4 py-3 rounded-xl bg-surface-container-low text-on-surface text-sm placeholder:text-gray-400 border border-transparent focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all shadow-sm" id="register-email" name="email" aria-describedby="register-email-error" placeholder="VD: tuananh.sport@gmail.com" required type="email">
+                                        </div>
+<p class="auth-field-error" id="register-email-error" data-field-error="email"></p>
+                                    </div>
+
+                                    <!-- Mật khẩu -->
+                                    <div class="flex flex-col gap-space-xs">
+                                        <label class="text-sm font-semibold text-on-surface flex items-center gap-1" for="register-password">
+                                            Mật khẩu <span class="text-error">*</span>
+                                        </label>
+                                        <div class="relative flex items-center">
+                                            <span class="material-symbols-outlined absolute left-3 text-on-surface-variant pointer-events-none text-xl">lock</span>
+                                            <input class="w-full pl-10 pr-11 py-3 rounded-xl bg-surface-container-low text-on-surface text-sm placeholder:text-gray-400 border border-transparent focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all shadow-sm" id="register-password" name="password" aria-describedby="register-password-error" placeholder="Tối thiểu 8 ký tự" required type="password">
+                                            <button aria-label="Hiện mật khẩu" aria-controls="register-password" class="absolute right-3 z-10 cursor-pointer text-on-surface-variant hover:text-on-surface transition-colors p-1" data-toggle-password="register-password" type="button">
+                                                <span class="material-symbols-outlined text-xl">visibility</span>
+                                            </button>
+                                        </div>
+                                        <p class="auth-field-error" id="register-password-error" data-field-error="password"></p>
+                                    </div>
+
+                                    <!-- Xác nhận mật khẩu -->
+                                    <div class="flex flex-col gap-space-xs">
+                                        <label class="text-sm font-semibold text-on-surface flex items-center gap-1" for="register-confirm-password">
+                                            Xác nhận mật khẩu <span class="text-error">*</span>
+                                        </label>
+                                        <div class="relative flex items-center">
+                                            <span class="material-symbols-outlined absolute left-3 text-on-surface-variant pointer-events-none text-xl">shield_lock</span>
+                                            <input class="w-full pl-10 pr-11 py-3 rounded-xl bg-surface-container-low text-on-surface text-sm placeholder:text-gray-400 border border-transparent focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all shadow-sm" id="register-confirm-password" name="confirmPassword" aria-describedby="register-confirm-password-error" placeholder="Nhập lại mật khẩu" required type="password">
+                                            <button aria-label="Hiện mật khẩu" aria-controls="register-confirm-password" class="absolute right-3 z-10 cursor-pointer text-on-surface-variant hover:text-on-surface transition-colors p-1" data-toggle-password="register-confirm-password" type="button">
+                                                <span class="material-symbols-outlined text-xl">visibility</span>
+                                            </button>
+                                        </div>
+                                        <p class="auth-field-error" id="register-confirm-password-error" data-field-error="confirmPassword"></p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Phần 2: Giới tính -->
+                            <div class="flex flex-col gap-space-sm pt-space-xs">
+                                <div class="flex items-center justify-between">
+                                    <label class="text-sm font-semibold text-on-surface flex items-center gap-space-xs">
+                                        <span class="material-symbols-outlined text-primary text-xl">wc</span>
+                                        <span>Giới tính <span class="text-error">*</span></span>
+                                    </label>
+                                    <span class="text-xs text-on-surface-variant">Hỗ trợ ghép đội nam/nữ/đôi nam-nữ</span>
+                                </div>
+                                <div class="grid grid-cols-3 gap-space-md" id="genderGroup">
+                                    <label class="gender-card cursor-pointer relative flex flex-col items-center justify-center p-space-md rounded-xl transition-all hover:bg-surface-container-high select-none bg-surface-container-lowest shadow-md border border-primary/20" data-value="MALE">
+                                        <input checked required class="sr-only" name="gender" type="radio" value="MALE">
+                                        <div class="w-12 h-12 rounded-full flex items-center justify-center bg-surface mb-space-xs transition-all text-primary">
+                                            <span class="material-symbols-outlined text-2xl">male</span>
+                                        </div>
+                                        <span class="text-sm text-on-surface font-semibold">Nam</span>
+                                        <span class="check-indicator absolute top-2 right-2 w-5 h-5 rounded-full bg-primary text-on-primary flex items-center justify-center text-xs">
+                                            <span class="material-symbols-outlined text-sm font-bold">check</span>
+                                        </span>
+                                    </label>
+
+                                    <label class="gender-card cursor-pointer relative flex flex-col items-center justify-center p-space-md rounded-xl bg-surface-container-low transition-all hover:bg-surface-container-high shadow-sm select-none border border-transparent" data-value="FEMALE">
+                                        <input required class="sr-only" name="gender" type="radio" value="FEMALE">
+                                        <div class="w-12 h-12 rounded-full flex items-center justify-center bg-surface mb-space-xs text-on-surface-variant transition-all">
+                                            <span class="material-symbols-outlined text-2xl">female</span>
+                                        </div>
+                                        <span class="text-sm text-on-surface font-semibold">Nữ</span>
+                                        <span class="check-indicator hidden absolute top-2 right-2 w-5 h-5 rounded-full bg-primary text-on-primary flex items-center justify-center text-xs">
+                                            <span class="material-symbols-outlined text-sm font-bold">check</span>
+                                        </span>
+                                    </label>
+
+                                    <label class="gender-card cursor-pointer relative flex flex-col items-center justify-center p-space-md rounded-xl bg-surface-container-low transition-all hover:bg-surface-container-high shadow-sm select-none border border-transparent" data-value="OTHER">
+                                        <input required class="sr-only" name="gender" type="radio" value="OTHER">
+                                        <div class="w-12 h-12 rounded-full flex items-center justify-center bg-surface mb-space-xs text-on-surface-variant transition-all">
+                                            <span class="material-symbols-outlined text-2xl">transgender</span>
+                                        </div>
+                                        <span class="text-sm text-on-surface font-semibold">Khác</span>
+                                        <span class="check-indicator hidden absolute top-2 right-2 w-5 h-5 rounded-full bg-primary text-on-primary flex items-center justify-center text-xs">
+                                            <span class="material-symbols-outlined text-sm font-bold">check</span>
+                                        </span>
+                                    </label>
+                                </div>
+                                <p class="auth-field-error" data-field-error="gender"></p>
+                            </div>
+
+                            <!-- Phần 3: Thể thao chính & Trình độ -->
+                            <div class="flex flex-col gap-space-lg p-space-lg rounded-2xl bg-surface-container-low border border-gray-100">
+                                <div class="flex items-start justify-between gap-space-md">
+                                    <div class="flex items-center gap-space-xs">
+                                        <span class="flex items-center justify-center w-7 h-7 rounded-full bg-primary-container text-on-primary-container text-sm font-bold">2</span>
+                                        <div>
+                                            <h3 class="text-lg font-bold text-on-surface">Môn thể thao &amp; Trình độ kỹ năng</h3>
+                                            <p class="text-xs text-on-surface-variant">Dữ liệu hỗ trợ thuật toán MatchMaker tự động ghép kèo đối chơi cân sức</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Chips môn thể thao chính -->
+                                <div class="flex flex-col gap-space-xs">
+                                    <span class="text-sm font-semibold text-on-surface">Môn thể thao hay chơi nhất:</span>
+                                    <div class="flex flex-wrap gap-space-sm" id="sportSelectionGroup">
+                                        <label class="sport-chip flex items-center gap-space-xs px-space-md py-2.5 rounded-full font-medium text-sm transition-all bg-surface-container text-on-surface-variant cursor-pointer select-none" data-sport="badminton">
+                                            <input required class="sr-only" name="favorite_sport" type="radio" value="badminton">
+                                            <span class="material-symbols-outlined text-lg">sports_tennis</span>
+                                            <span>Cầu lông</span>
+                                            <span class="sport-choice-indicator hidden w-5 h-5 rounded-full bg-white text-primary items-center justify-center">
+                                                <span class="material-symbols-outlined text-sm font-bold">check</span>
+                                            </span>
+                                        </label>
+                                        <label class="sport-chip flex items-center gap-space-xs px-space-md py-2.5 rounded-full font-medium text-sm transition-all bg-primary-container text-on-primary shadow-sm cursor-pointer select-none" data-sport="soccer">
+                                            <input checked required class="sr-only" name="favorite_sport" type="radio" value="soccer">
+                                            <span class="material-symbols-outlined text-lg">sports_soccer</span>
+                                            <span>Bóng đá mini</span>
+                                            <span class="sport-choice-indicator w-5 h-5 rounded-full bg-white text-primary flex items-center justify-center">
+                                                <span class="material-symbols-outlined text-sm font-bold">check</span>
+                                            </span>
+                                        </label>
+                                        <label class="sport-chip flex items-center gap-space-xs px-space-md py-2.5 rounded-full font-medium text-sm transition-all bg-surface-container text-on-surface-variant cursor-pointer select-none" data-sport="pickleball">
+                                            <input required class="sr-only" name="favorite_sport" type="radio" value="pickleball">
+                                            <span class="material-symbols-outlined text-lg">sports_cricket</span>
+                                            <span>Pickleball</span>
+                                            <span class="sport-choice-indicator hidden w-5 h-5 rounded-full bg-white text-primary items-center justify-center">
+                                                <span class="material-symbols-outlined text-sm font-bold">check</span>
+                                            </span>
+                                        </label>
+                                    </div>
+                                    <p class="auth-field-error" data-field-error="favorite_sport"></p>
+                                </div>
+
+                                <!-- Trình độ -->
+                                <div class="flex flex-col gap-space-xs">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm font-semibold text-on-surface">Trình độ thực tế của bạn:</span>
+                                        <span class="text-xs text-primary font-medium flex items-center gap-1">
+                                            <span class="material-symbols-outlined text-sm">verified</span>
+                                            Đánh giá trung thực để có trận đấu chất lượng
+                                        </span>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-space-md" id="levelGroup">
+                                        <!-- Level 1: Mới chơi -->
+                                        <label class="level-card cursor-pointer relative p-space-md rounded-xl bg-surface hover:bg-surface-container-high transition-all shadow-sm flex flex-col justify-between select-none border border-transparent" data-level="BEGINNER">
+                                            <input required class="sr-only" name="skill_level" type="radio" value="BEGINNER">
+                                            <div class="flex flex-col gap-space-xs">
+                                                <div class="flex items-center justify-between">
+                                                    <div class="w-10 h-10 rounded-xl bg-surface-container-highest flex items-center justify-center text-on-surface-variant level-icon">
+                                                        <span class="material-symbols-outlined">sentiment_satisfied</span>
+                                                    </div>
+                                                    <span class="px-2 py-0.5 rounded text-[11px] font-bold text-on-surface-variant bg-surface-container-highest uppercase">Beginner</span>
+                                                </div>
+                                                <div class="mt-space-xs">
+                                                    <h4 class="text-base font-bold text-on-surface">Mới chơi</h4>
+                                                    <p class="text-xs text-on-surface-variant mt-1 leading-relaxed">
+                                                        Mới làm quen, nắm sơ luật, rèn luyện thể lực &amp; sức khỏe nhẹ nhàng, giao lưu vui vẻ.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div class="mt-space-md pt-space-xs flex items-center justify-between text-xs text-on-surface-variant border-t border-gray-100/60">
+                                                <span class="flex items-center gap-1">
+                                                    <span class="material-symbols-outlined text-base text-primary">speed</span> Kèo giải trí
+                                                </span>
+                                                <span class="select-badge w-6 h-6 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant">
+                                                    <span class="material-symbols-outlined text-sm">radio_button_unchecked</span>
+                                                </span>
+                                            </div>
+                                        </label>
+
+                                        <!-- Level 2: Trung bình -->
+                                        <label class="level-card cursor-pointer relative p-space-md rounded-xl bg-surface-container-lowest shadow-md transition-all flex flex-col justify-between select-none active-level border border-primary/20" data-level="INTERMEDIATE">
+                                            <input checked required class="sr-only" name="skill_level" type="radio" value="INTERMEDIATE">
+                                            <div class="flex flex-col gap-space-xs">
+                                                <div class="flex items-center justify-between">
+                                                    <div class="w-10 h-10 rounded-xl bg-primary-container text-on-primary flex items-center justify-center level-icon shadow-sm">
+                                                        <span class="material-symbols-outlined">bolt</span>
+                                                    </div>
+                                                    <span class="px-2 py-0.5 rounded text-[11px] font-bold text-on-primary-container bg-primary-container uppercase">Intermediate</span>
+                                                </div>
+                                                <div class="mt-space-xs">
+                                                    <h4 class="text-base font-bold text-primary">Trung bình</h4>
+                                                    <p class="text-xs text-on-surface mt-1 leading-relaxed">
+                                                        Nắm vững luật đấu, chuyền bóng/đánh cầu ổn định, duy trì nhịp độ trận đấu phong trào tốt.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div class="mt-space-md pt-space-xs flex items-center justify-between text-xs text-on-surface border-t border-gray-100/60">
+                                                <span class="flex items-center gap-1 text-primary font-medium">
+                                                    <span class="material-symbols-outlined text-base">groups</span> Kèo phong trào
+                                                </span>
+                                                <span class="select-badge w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center">
+                                                    <span class="material-symbols-outlined text-sm">check</span>
+                                                </span>
+                                            </div>
+                                        </label>
+
+                                        <!-- Level 3: Khá / Bán chuyên -->
+                                        <label class="level-card cursor-pointer relative p-space-md rounded-xl bg-surface hover:bg-surface-container-high transition-all shadow-sm flex flex-col justify-between select-none border border-transparent" data-level="ADVANCED">
+                                            <input required class="sr-only" name="skill_level" type="radio" value="ADVANCED">
+                                            <div class="flex flex-col gap-space-xs">
+                                                <div class="flex items-center justify-between">
+                                                    <div class="w-10 h-10 rounded-xl bg-surface-container-highest flex items-center justify-center text-on-surface-variant level-icon">
+                                                        <span class="material-symbols-outlined">military_tech</span>
+                                                    </div>
+                                                    <span class="px-2 py-0.5 rounded text-[11px] font-bold text-on-surface-variant bg-surface-container-highest uppercase">Advanced</span>
+                                                </div>
+                                                <div class="mt-space-xs">
+                                                    <h4 class="text-base font-bold text-on-surface">Khá / Bán chuyên</h4>
+                                                    <p class="text-xs text-on-surface-variant mt-1 leading-relaxed">
+                                                        Kỹ chiến thuật bài bản, phản xạ sắc bén, thể lực dồi dào, thường xuyên tham gia giải đấu cọ xát.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div class="mt-space-md pt-space-xs flex items-center justify-between text-xs text-on-surface-variant border-t border-gray-100/60">
+                                                <span class="flex items-center gap-1">
+                                                    <span class="material-symbols-outlined text-base text-secondary">workspace_premium</span> Kèo tranh tài
+                                                </span>
+                                                <span class="select-badge w-6 h-6 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant">
+                                                    <span class="material-symbols-outlined text-sm">radio_button_unchecked</span>
+                                                </span>
+                                            </div>
+                                        </label>
+                                    </div>
+                                    <p class="auth-field-error" data-field-error="skill_level"></p>
+                                </div>
+                            </div>
+
+                            <!-- ĐIỀU KHOẢN & BẢO MẬT: CHECKBOX ĐỒNG Ý -->
+                            <div class="flex flex-col gap-2 p-4 rounded-2xl bg-surface-container-low/70 border border-gray-100" id="termsAgreementBox">
+<div class="sb-legal-documents" aria-label="Điều khoản và chính sách">
+                                    <details class="sb-legal-document" id="legal-privacy">
+                                        <summary>Chính sách bảo mật</summary>
+                                        <div class="sb-legal-content"><h3>Chính sách Bảo mật &amp; Bảo vệ Dữ liệu Cá nhân</h3>
+<p>Tuân thủ Nghị định 13/2023/NĐ-CP về Bảo vệ dữ liệu cá nhân</p>
+<p>Áp dụng từ: Năm 2026 • Nền tảng: SportBooking Hà Nội</p>
+<p>Chào mừng bạn đến với SportBooking Hà Nội. Chúng tôi nhận thức sâu sắc rằng quyền riêng tư và dữ liệu cá nhân của bạn là tài sản cần được bảo vệ nghiêm ngặt. SportBooking cam kết xử lý dữ liệu minh bạch, hợp pháp và tuân thủ các quy định hiện hành của pháp luật Việt Nam.</p>
+<h3>Điều 1. Các loại dữ liệu cá nhân được thu thập</h3>
+<p>Chúng tôi chỉ thu thập các dữ liệu cần thiết phục vụ cho việc cung cấp dịch vụ đặt sân và trải nghiệm của bạn:</p>
+<ul>
+<li><strong>Dữ liệu định danh:</strong> Họ và tên, số điện thoại, địa chỉ email, giới tính.</li>
+<li><strong>Dữ liệu giao dịch:</strong> Mã đặt sân (SPB-YYYYMMDD-xxxxxx), lịch sử đặt sân, khung giờ thi đấu, chi phí thuê sân, biên lai hoàn tiền cọc.</li>
+<li><strong>Dữ liệu tìm đối (MatchMaker):</strong> Môn thể thao quan tâm (Cầu lông, Bóng đá mini, Pickleball), trình độ thi đấu tự khai báo, lịch sử ghép trận.</li>
+<li><strong>Dữ liệu kỹ thuật:</strong> Địa chỉ IP, cookie phiên đăng nhập, loại thiết bị và hệ điều hành sử dụng khi truy cập website.</li>
+</ul>
+<h3>Điều 2. Mục đích xử lý dữ liệu cá nhân</h3>
+<p>Dữ liệu của bạn được sử dụng vào các mục đích hợp pháp sau:</p>
+<p><strong>event_available</strong> Xác nhận &amp; Giữ slot sân Thực hiện khóa slot 10 phút, gửi mã xác nhận và đối chiếu nhận sân tại cơ sở.</p>
+<p><strong>group_add</strong> Kết nối đấu thủ MatchMaker Giúp bạn tìm đồng đội hoặc đối thủ cùng trình độ, cùng khu vực tại Hà Nội.</p>
+<p><strong>notifications_active</strong> Nhắc lịch &amp; Cảnh báo Thông báo trước giờ thi đấu, cập nhật tiến độ hoàn tiền hoặc xác nhận kèo ghép.</p>
+<p><strong>shield</strong> Bảo mật &amp; Phòng ngừa gian lận Ngăn ngừa tài khoản ảo giữ slot sân trái phép và bảo vệ an toàn cho cơ sở dữ liệu.</p>
+<h3>Điều 3. Nguyên tắc Chia sẻ Dữ liệu</h3>
+<ol>
+<li><strong>Tuyệt đối không thương mại hóa:</strong> SportBooking cam kết không bán, không cho thuê và không chia sẻ thông tin cá nhân của bạn cho bên thứ ba vì mục đích tiếp thị khi chưa có sự đồng ý của bạn.</li>
+</ol>
+<ol>
+<li><strong>Phạm vi chia sẻ bắt buộc:</strong></li>
+</ol>
+<ul>
+<li><strong>Chủ cụm sân / Nhà quản lý cơ sở:</strong> Nhận Tên, Số điện thoại và Mã đặt chỗ của bạn để bố trí sân và phục vụ trực tiếp tại sân.</li>
+<li><strong>Cơ quan pháp luật:</strong> Cung cấp thông tin khi có yêu cầu bằng văn bản đúng thẩm quyền theo quy định của pháp luật Việt Nam.</li>
+</ul>
+<h3>Điều 4. Quyền của Chủ thể Dữ liệu</h3>
+<p>Theo Nghị định 13/2023/NĐ-CP, bạn có toàn quyền kiểm soát dữ liệu cá nhân của mình:</p>
+<ul>
+<li><strong>Quyền xem &amp; Chỉnh sửa:</strong> Truy cập mục Hồ sơ cá nhân để kiểm tra và cập nhật lại thông tin bất cứ lúc nào.</li>
+<li><strong>Quyền rút lại sự đồng ý &amp; Yêu cầu xóa:</strong> Yêu cầu đóng tài khoản và xóa vĩnh viễn dữ liệu cá nhân khỏi hệ thống (trừ các chứng từ thanh toán/kế toán bắt buộc lưu giữ theo Luật Kế toán).</li>
+<li><strong>Quyền khiếu nại:</strong> Gửi khiếu nại về hành vi thu thập, sử dụng dữ liệu không đúng mục đích tới Bộ phận Bảo vệ dữ liệu của SportBooking.</li>
+</ul>
+<h3>Điều 5. Lưu trữ &amp; Biện pháp Kỹ thuật Bảo mật</h3>
+<ol>
+<li><strong>Mã hóa dữ liệu:</strong> Mọi thông tin truyền tải giữa trình duyệt của bạn và hệ thống máy chủ đều được mã hóa bằng giao thức HTTPS/SSL 256-bit chuẩn quốc tế.</li>
+</ol>
+<ol>
+<li><strong>Phân quyền truy cập nội bộ (RBAC):</strong> Chỉ nhân sự phụ trách kỹ thuật và điều hành được cấp quyền truy cập dữ liệu để giải quyết sự cố, tuân thủ nguyên tắc bảo mật thông tin nội bộ.</li>
+</ol>
+<ol>
+<li><strong>Thời hạn lưu trữ:</strong> Dữ liệu được lưu trữ an toàn trong suốt thời gian bạn duy trì tài khoản hoạt động trên SportBooking.</li>
+</ol>
+<h3>Điều 6. Bộ phận Tiếp nhận &amp; Bảo vệ Dữ liệu</h3>
+<p>Nếu bạn có bất kỳ câu hỏi, yêu cầu trích xuất hoặc xóa dữ liệu cá nhân, vui lòng liên hệ:</p>
+<p><strong>Đơn vị kiểm soát dữ liệu:</strong> Ban quản trị SportBooking Hà Nội</p>
+<p><strong>Hotline 24/7:</strong> 1900 8899</p>
+<p><strong>Email chuyên trách bảo mật:</strong> privacy@sportbooking.vn</p>
+<p><strong>Trụ sở:</strong> Tầng 6, Tháp Thể Thao Đống Đa, TP. Hà Nội</p></div>
+                                    </details>
+                                    <details class="sb-legal-document" id="legal-terms">
+                                        <summary>Điều khoản sử dụng</summary>
+                                        <div class="sb-legal-content"><h3>Điều khoản sử dụng dịch vụ SportBooking</h3>
+<p><strong>gavel</strong> Văn bản pháp lý nền tảng</p>
+<p>Áp dụng từ: Tháng 10/2026 • Khu vực: Thành phố Hà Nội</p>
+<h3>Điều 1. Chấp thuận Điều khoản</h3>
+<ol>
+<li>Bằng việc tạo tài khoản và đánh dấu ô đồng ý sau khi đã mở, cuộn hết Điều khoản sử dụng và Chính sách bảo mật, người dùng ("Bạn" hoặc "Khách hàng") xác nhận đã đọc, hiểu và đồng ý chịu sự ràng buộc bởi các văn bản này. Đăng ký chỉ thành công khi bạn đã đồng ý.</li>
+</ol>
+<ol>
+<li>SportBooking có quyền cập nhật, chỉnh sửa nội dung điều khoản bất kỳ lúc nào để phù hợp với quy định pháp luật và hoạt động thực tế. Phiên bản điều chỉnh có hiệu lực ngay khi được đăng tải công khai trên hệ thống.</li>
+</ol>
+<h3>Điều 2. Định nghĩa thuật ngữ</h3>
+<ul>
+<li><strong>Cụm sân / Cơ sở thể thao:</strong> Các sân bóng đá mini, cầu lông, pickleball liên kết trên hệ thống SportBooking.</li>
+<li><strong>Slot / Khung giờ:</strong> Khoảng thời gian cụ thể của một sân đấu mà khách hàng đăng ký sử dụng.</li>
+<li><strong>Khóa giữ chỗ (Slot-locking):</strong> Trạng thái giữ chỗ tạm thời trong 10 phút để người dùng thanh toán, ngăn ngừa tình trạng hai người cùng đặt một sân (double-booking).</li>
+<li><strong>Mã đặt sân (SPB-YYYYMMDD-xxxxxx):</strong> Mã định danh xác nhận giao dịch thành công giữa khách hàng và cụm sân.</li>
+</ul>
+<h3>Điều 3. Tài khoản và Bảo mật</h3>
+<ol>
+<li>Khách hàng cam kết cung cấp thông tin liên hệ chính xác (Số điện thoại, Họ tên, Email). Người dùng tự chịu trách nhiệm bảo mật mật khẩu và các hoạt động thực hiện dưới tài khoản của mình.</li>
+</ol>
+<ol>
+<li>SportBooking có quyền đình chỉ hoặc hủy tài khoản nếu phát hiện hành vi gian lận thanh toán, giữ slot ảo nhiều lần hoặc vi phạm văn hóa giao lưu thể thao.</li>
+</ol>
+<h3>Điều 4. Quy trình Đặt sân và Khóa giữ chỗ (10 phút)</h3>
+<ol>
+<li>Khi chọn khung giờ và bấm "Đặt sân ngay", hệ thống sẽ tự động khóa giữ chỗ trong 10 phút để khách hàng điền thông tin và thanh toán.</li>
+</ol>
+<ol>
+<li>Sau 10 phút nếu khách hàng chưa hoàn tất thanh toán, hệ thống sẽ tự động giải phóng slot sân để phục vụ người chơi khác.</li>
+</ol>
+<h3>Điều 5. Chính sách Hủy sân và Hoàn tiền</h3>
+<table><thead><tr><th>Thời điểm hủy trước giờ bắt đầu</th><th>Tỷ lệ hoàn</th><th>Cách tính</th></tr></thead><tbody>
+<tr><td>Từ 24 giờ trở lên</td><td>Hoàn 100%</td><td>Hoàn 100% số tiền đã thanh toán.</td></tr>
+<tr><td>Từ 6 giờ đến dưới 24 giờ</td><td>Hoàn 50%</td><td>Hoàn 50% số tiền đã thanh toán; phần còn lại bồi hoàn chi phí giữ chỗ cho cụm sân.</td></tr>
+<tr><td>Dưới 6 giờ / Vắng mặt</td><td>Không hoàn cọc</td><td>Không áp dụng hoàn cọc đối với lịch hủy sát giờ.</td></tr>
+</tbody></table>
+<ul>
+<li>Trường hợp thời tiết mưa bão (đối với sân ngoài trời) hoặc sự cố kỹ thuật từ phía nhà thi đấu: chỉ khi Admin chủ động hủy booking do sự cố vận hành, khách hàng được nhận hoàn tiền 100% số tiền đã thanh toán.</li>
+</ul>
+<h3>Điều 6. Giới hạn Trách nhiệm</h3>
+<ol>
+<li>Khách hàng tự chịu trách nhiệm về tình trạng sức khỏe cá nhân và rủi ro chấn thương khi vận động thể thao tại cụm sân.</li>
+</ol>
+<ol>
+<li>SportBooking không chịu trách nhiệm đối với tư trang, tài sản cá nhân bị mất mát hoặc hư hỏng tại cơ sở thi đấu.</li>
+</ol>
+<h3>Điều 7. Thông tin Liên hệ</h3>
+<p>Mọi thắc mắc và khiếu nại về dịch vụ xin vui lòng liên hệ:</p>
+<p><strong>Đơn vị vận hành:</strong> SportBooking Hà Nội</p>
+<p><strong>Hotline hỗ trợ 24/7:</strong> 1900 8899</p>
+<p><strong>Email tiếp nhận:</strong> support@sportbooking.vn</p>
+<p><strong>Trụ sở:</strong> Tầng 6, Tháp Thể Thao Đống Đa, TP. Hà Nội</p></div>
+                                    </details>
+                                </div>
+                                <label class="flex items-start gap-3 cursor-pointer">
+                                    <input type="checkbox" id="register-terms" name="termsAccepted" required aria-describedby="register-terms-error" class="mt-1 w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary accent-primary cursor-pointer">
+                                    <span class="text-xs sm:text-sm text-gray-700 leading-snug">
+                                        Tôi đã đọc và đồng ý với 
+                                        <a href="#legal-terms" class="font-bold text-primary hover:underline">Điều khoản sử dụng</a> và 
+                                        <a href="#legal-privacy" class="font-bold text-primary hover:underline">Chính sách bảo mật</a> của SportBooking.
+                                    </span>
+                                </label>
+<p class="auth-field-error" id="register-terms-error" data-field-error="termsAccepted"></p>
+                            </div>
+
+                            <!-- Nút Đăng Ký Chính -->
+                            <div class="flex flex-col gap-space-md">
+                                <button class="w-full py-4 rounded-xl bg-secondary-container hover:bg-secondary text-on-secondary font-bold text-base tracking-wide shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-space-xs active:scale-[0.99] cursor-pointer" id="submitBtn" type="submit" data-submit data-idle-label="ĐĂNG KÝ TÀI KHOẢN" data-loading-label="ĐANG TẠO TÀI KHOẢN...">
+                                    <span class="material-symbols-outlined">how_to_reg</span>
+                                    <span>ĐĂNG KÝ TÀI KHOẢN</span>
+                                </button>
+
+                                <div class="flex items-center justify-center gap-1 text-sm text-on-surface-variant py-2">
+                                    <span>Đã có tài khoản SportBooking?</span>
+                                    <a class="text-primary hover:text-primary-container font-semibold transition-colors flex items-center gap-0.5" href="/dang-nhap.html">
+                                        <span>Đăng nhập ngay</span>
+                                        <span class="material-symbols-outlined text-base">arrow_forward</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
+
+                        <!-- Social Proof Mini Footer -->
+                        <div class="bg-surface-container-low px-space-xl py-space-md flex flex-wrap items-center justify-around gap-space-md border-t border-gray-100">
+                            <div class="flex items-center gap-2 text-on-surface-variant">
+                                <span class="material-symbols-outlined text-primary">verified_user</span>
+                                <span class="text-xs">Bảo mật thông tin cá nhân chuẩn NĐ 13/2023</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-on-surface-variant">
+                                <span class="material-symbols-outlined text-secondary">flash_on</span>
+                                <span class="text-xs">Khóa slot tự động 10 phút chống trùng sân</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-on-surface-variant">
+                                <span class="material-symbols-outlined text-tertiary">groups_3</span>
+                                <span class="text-xs">+45,000 Người chơi hoạt động tại Hà Nội</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- FOOTER ĐỒNG BỘ -->
+    <footer class="w-full bg-[#f1f3ff] border-t border-gray-200 shadow-[0_-1px_6px_rgba(0,0,0,0.02)]">
+        <div class="max-w-[1440px] mx-auto px-margin py-8 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="flex flex-col gap-1 text-left">
+                <div class="flex items-center gap-2">
+                    <span class="font-bold text-base text-primary">SportBooking Hà Nội</span>
+                    <span class="text-on-surface-variant text-xs">| Nền tảng đặt sân thể thao thông minh</span>
+                </div>
+                <p class="text-on-surface-variant text-xs">Hệ thống đặt sân thể thao SportBooking Hà Nội - Đặt sân trực tuyến nhanh chóng, tiện lợi &amp; chuẩn xác</p>
+                <p class="text-on-surface text-sm">Hotline hỗ trợ 24/7: <span class="font-bold text-secondary">1900 8899</span></p>
+            </div>
+            <div class="flex flex-col md:items-end gap-1.5">
+                <div class="flex flex-wrap items-center gap-3 text-xs text-on-surface-variant">
+                    <a class="hover:text-primary transition-colors" href="#">Điều khoản sử dụng</a>
+                    <span>•</span>
+                    <a class="hover:text-primary transition-colors" href="#">Chính sách bảo mật</a>
+                </div>
+                <p class="text-xs text-on-surface-variant">© 2026 SportBooking Hà Nội. Tất cả các quyền được bảo lưu.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- POPUP MODAL ĐĂNG KÝ THÀNH CÔNG -->
+    
+<script>
+  document.querySelectorAll('[data-toggle-password]').forEach((button) => {
+    const input = document.getElementById(button.dataset.togglePassword);
+    const icon = button.querySelector('.material-symbols-outlined');
+    button.addEventListener('click', () => {
+      const showing = input.type === 'password';
+      input.type = showing ? 'text' : 'password';
+      icon.textContent = showing ? 'visibility_off' : 'visibility';
+      button.setAttribute('aria-label', showing ? 'Ẩn mật khẩu' : 'Hiện mật khẩu');
+    });
+  });
+</script>
+<script src="/shared/app.js" defer></script>
+</body>
+</html>

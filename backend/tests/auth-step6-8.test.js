@@ -156,6 +156,21 @@ test('auth routes, eight-hour hashed sessions, profile changes, password changes
   const newPassword = randomPassword();
 
   await withServer(app, async (baseUrl) => {
+    const home = await fetch(baseUrl, { redirect: 'manual' });
+    assert.equal(home.status, 302);
+    assert.equal(home.headers.get('location'), '/dang-nhap.html');
+
+    for (const page of ['/auth/login.html', '/auth/register.html', '/profile/profile.html']) {
+      const response = await fetch(`${baseUrl}${page}`);
+      assert.equal(response.status, 200, `${page} should be served`);
+      assert.match(response.headers.get('content-type'), /text\/html/);
+    }
+
+    const stylesheet = await fetch(`${baseUrl}/app.css`);
+    assert.equal(stylesheet.status, 200);
+    assert.match(stylesheet.headers.get('content-type'), /text\/css/);
+    assert.match(await stylesheet.text(), /--sb-primary:\s*#006b2c/);
+
     const health = await fetch(`${baseUrl}/health`);
     assert.equal(health.status, 200);
     assert.deepEqual(await health.json(), { status: 'ok' });

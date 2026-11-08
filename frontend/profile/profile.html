@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#006b2c">
+  <title>Hồ sơ cá nhân | SportBooking</title>
+  <link rel="stylesheet" href="/app.css">
+  <script src="/shared/app.js" defer></script>
+</head>
+<body data-page="profile">
+  <main class="sb-container sb-main-layout sb-profile-layout">
+    <a class="sb-back-link" href="/auth/login.html" data-back data-fallback="/auth/login.html">
+      <span aria-hidden="true">←</span> Quay lại
+    </a>
+    <section class="sb-card sb-profile-card" aria-labelledby="page-title">
+      <header class="sb-profile-heading">
+        <a class="sb-brand" href="/auth/login.html" aria-label="SportBooking - Đăng nhập">
+          <span class="sb-brand-mark" aria-hidden="true">S</span>
+          <span class="sb-logo-text">SportBooking</span>
+        </a>
+        <p class="sb-auth-eyebrow">Tài khoản của bạn</p>
+        <h1 id="page-title">Hồ sơ cá nhân</h1>
+        <p class="sb-auth-intro">Cập nhật thông tin và bảo vệ tài khoản của bạn.</p>
+      </header>
+      <p class="sb-notice" role="status" aria-live="polite" data-notice hidden></p>
+      <div class="sb-loading-state" data-profile-loading role="status">
+        <span class="sb-spinner" aria-hidden="true"></span>
+        <span>Đang tải hồ sơ…</span>
+      </div>
+      <div class="sb-empty-state" data-profile-error hidden>
+        <p>Chưa tải được hồ sơ của bạn.</p>
+        <button class="sb-btn sb-btn-outline" type="button" data-retry>Tải lại</button>
+      </div>
+      <div data-profile-content hidden>
+        <form class="sb-form-stack sb-section-form" data-form="profile" novalidate>
+          <h2>Thông tin cá nhân</h2>
+          <div class="sb-field">
+            <label class="sb-field-label" for="profile-full-name">Họ và tên</label>
+            <input class="sb-field-input" id="profile-full-name" name="fullName" type="text" autocomplete="name" maxlength="120" required
+              aria-describedby="profile-full-name-error">
+            <p class="sb-field-error" id="profile-full-name-error" data-field-error="fullName"></p>
+          </div>
+          <div class="sb-field">
+            <label class="sb-field-label" for="profile-email">Email</label>
+            <input class="sb-field-input" id="profile-email" name="email" type="email" autocomplete="email" readonly>
+          </div>
+          <div class="sb-field">
+            <label class="sb-field-label" for="profile-phone">Số điện thoại</label>
+            <input class="sb-field-input" id="profile-phone" name="phone" type="tel" autocomplete="tel" maxlength="20" required
+              aria-describedby="profile-phone-error">
+            <p class="sb-field-error" id="profile-phone-error" data-field-error="phone"></p>
+          </div>
+          <div class="sb-field-row">
+            <div class="sb-field">
+              <label class="sb-field-label" for="profile-gender">Giới tính</label>
+              <select class="sb-field-input" id="profile-gender" name="gender">
+                <option value="">Chưa cập nhật</option>
+                <option value="MALE">Nam</option>
+                <option value="FEMALE">Nữ</option>
+                <option value="OTHER">Khác</option>
+              </select>
+              <p class="sb-field-error" data-field-error="gender"></p>
+            </div>
+            <div class="sb-field">
+              <label class="sb-field-label" for="profile-skill">Trình độ</label>
+              <select class="sb-field-input" id="profile-skill" name="skillLevel">
+                <option value="">Chưa cập nhật</option>
+                <option value="BEGINNER">Mới chơi</option>
+                <option value="INTERMEDIATE">Trung bình</option>
+                <option value="GOOD">Khá</option>
+              </select>
+              <p class="sb-field-error" data-field-error="skillLevel"></p>
+            </div>
+          </div>
+          <p class="sb-profile-role" data-profile-role></p>
+          <button class="sb-btn sb-btn-primary" type="submit" data-submit
+            data-idle-label="Lưu thay đổi" data-loading-label="Đang lưu…">Lưu thay đổi</button>
+        </form>
+        <form class="sb-form-stack sb-section-form" data-form="password" novalidate>
+          <h2>Đổi mật khẩu</h2>
+          <div class="sb-field">
+            <label class="sb-field-label" for="current-password">Mật khẩu hiện tại</label>
+            <input class="sb-field-input" id="current-password" name="currentPassword" type="password" autocomplete="current-password" required
+              aria-describedby="current-password-error">
+            <p class="sb-field-error" id="current-password-error" data-field-error="currentPassword"></p>
+          </div>
+          <div class="sb-field">
+            <label class="sb-field-label" for="new-password">Mật khẩu mới <span class="sb-label-hint">(ít nhất 8 ký tự)</span></label>
+            <input class="sb-field-input" id="new-password" name="newPassword" type="password" autocomplete="new-password" required
+              aria-describedby="new-password-error">
+            <p class="sb-field-error" id="new-password-error" data-field-error="newPassword"></p>
+          </div>
+          <div class="sb-field">
+            <label class="sb-field-label" for="confirm-new-password">Nhập lại mật khẩu mới</label>
+            <input class="sb-field-input" id="confirm-new-password" name="confirmNewPassword" type="password" autocomplete="new-password" required
+              aria-describedby="confirm-new-password-error">
+            <p class="sb-field-error" id="confirm-new-password-error" data-field-error="confirmNewPassword"></p>
+          </div>
+          <button class="sb-btn sb-btn-secondary" type="submit" data-submit
+            data-idle-label="Cập nhật mật khẩu" data-loading-label="Đang cập nhật…">Cập nhật mật khẩu</button>
+        </form>
+        <div class="sb-logout-row">
+          <p>Phiên đăng nhập được quản lý an toàn bằng cookie.</p>
+          <button class="sb-btn sb-btn-error-subtle" type="button" data-logout
+            data-idle-label="Đăng xuất" data-loading-label="Đang đăng xuất…">Đăng xuất</button>
+        </div>
+      </div>
+    </section>
+    <footer class="sb-site-footer"><p>SportBooking · Đặt sân thể thao dễ dàng</p></footer>
+  </main>
+</body>
+</html>
