@@ -6,6 +6,11 @@ const { getAllowedPool, readDatabaseTarget } = require('./facilities-db');
 
 const backendRequire = createRequire(path.resolve(__dirname, '..', '..', 'backend', 'package.json'));
 const ExcelJS = backendRequire('exceljs');
+const {
+  insertMissingSlotsForCourt,
+  localDateString,
+  readSlotDaysAhead
+} = require('../../backend/src/facilities/slot-generator');
 const WORKBOOK_PATH = path.resolve(__dirname, '..', 'data', 'khao-sat-san.xlsx');
 const EXPECTED_SPORT_COUNTS = {
   BADMINTON: 10,
@@ -243,26 +248,6 @@ function findAddressDistrictMismatch(address, district) {
     const candidateKey = normalizeKey(candidate);
     return candidateKey !== districtKey && addressKey.includes(candidateKey);
   });
-}
-
-function getLocalDateParts(date) {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Ho_Chi_Minh',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  }).formatToParts(date);
-  return Object.fromEntries(parts.map(({ type, value }) => [type, value]));
-}
-
-function dateOffset(dateString, offset) {
-  const [year, month, day] = dateString.split('-').map(Number);
-  const date = new Date(Date.UTC(year, month - 1, day + offset));
-  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
-}
-
-function databaseDate(value) {
-  return value instanceof Date ? value.toISOString().slice(0, 10) : String(value).slice(0, 10);
 }
 
 function validateHeaders(sheet) {
@@ -535,59 +520,22 @@ async function insertCourt(connection, facility) {
   return result.insertId;
 }
 
-async function seedTimeSlots(connection, courtId, facility, firstDate, updateExisting) {
-  let inserted = 0;
-  let existing = 0;
-  let updated = 0;
-  const lastDate = dateOffset(firstDate, 13);
-  const [existingRows] = await connection.execute(
-    `SELECT service_date, starts_at
-     FROM time_slots
-     WHERE court_id = ?
-       AND service_date BETWEEN ? AND ?`,
-    [courtId, firstDate, lastDate]
-  );
-  const existingSlots = new Set(
-    existingRows.map((row) => `${databaseDate(row.service_date)}|${String(row.starts_at).slice(0, 8)}`)
-  );
-  for (let day = 0; day < 14; day += 1) {
-    const serviceDate = dateOffset(firstDate, day);
-    for (let start = facility.hours.openingMinutes; start < facility.hours.closingMinutes; start += 60) {
-      const end = start + 60;
-      const price = start >= 17 * 60 && start < 21 * 60
-        ? facility.price.peak
-        : facility.price.normal;
-      const key = `${serviceDate}|${formatTime(start).slice(0, 8)}`;
-      const alreadyExists = existingSlots.has(key);
-      const onDuplicate = updateExisting
-        ? `ON DUPLICATE KEY UPDATE
-           updated_at = IF(status = 'AVAILABLE' AND NOT (price <=> VALUES(price)), UTC_TIMESTAMP(3), updated_at),
-           price = IF(status = 'AVAILABLE' AND NOT (price <=> VALUES(price)), VALUES(price), price)`
-        : 'ON DUPLICATE KEY UPDATE id = id';
-      const [result] = await connection.execute(
-        `INSERT INTO time_slots
-           (court_id, service_date, starts_at, ends_at, price, status,
-            created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, 'AVAILABLE', UTC_TIMESTAMP(3), UTC_TIMESTAMP(3))
-         ${onDuplicate}`,
-        [courtId, serviceDate, formatTime(start), formatTime(end), price]
-      );
-      if (alreadyExists) {
-        if (result.affectedRows === 2) {
-          updated += 1;
-        } else {
-          existing += 1;
-        }
-      } else {
-        inserted += 1;
-      }
-    }
-  }
-  return { inserted, existing, updated };
+async function seedTimeSlots(connection, courtId, facility, firstDate, daysAhead, updateExisting) {
+  return insertMissingSlotsForCourt(connection, {
+    courtId,
+    firstDate,
+    daysAhead,
+    openingMinutes: facility.hours.openingMinutes,
+    closingMinutes: facility.hours.closingMinutes,
+    priceNormal: facility.price.normal,
+    pricePeak: facility.price.peak,
+    updateAvailablePrices: updateExisting
+  });
 }
 
 async function seedFacilities(databaseName, survey) {
   const pool = getAllowedPool(databaseName);
+  const daysAhead = readSlotDaysAhead();
   const connection = await pool.getConnection();
   const summary = {
     database: databaseName,
@@ -601,8 +549,7 @@ async function seedFacilities(databaseName, survey) {
     slotsExisting: 0,
     slotsUpdated: 0
   };
-  const localDate = getLocalDateParts(new Date());
-  const firstDate = `${localDate.year}-${localDate.month}-${localDate.day}`;
+  const firstDate = localDateString();
   const lockName = `sportbooking_facilities_seed_${databaseName}`;
   let lockAcquired = false;
 
@@ -634,7 +581,14 @@ async function seedFacilities(databaseName, survey) {
         summary.courtsUpdated += await updateCourt(connection, courtRow, facility);
       }
 
-      const slots = await seedTimeSlots(connection, courtRow.id, facility, firstDate, Boolean(courtRow.is_seed));
+      const slots = await seedTimeSlots(
+        connection,
+        courtRow.id,
+        facility,
+        firstDate,
+        daysAhead,
+        Boolean(courtRow.is_seed)
+      );
       summary.slotsInserted += slots.inserted;
       summary.slotsExisting += slots.existing;
       summary.slotsUpdated += slots.updated;

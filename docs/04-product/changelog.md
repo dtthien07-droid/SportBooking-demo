@@ -1,5 +1,12 @@
 # 2026-11-08
 
+## 2026-11-08 — Tự sinh khung giờ
+
+- Tách logic sinh slot dùng chung cho seed và job nền; seed và server đọc SLOT_DAYS_AHEAD (mặc định 14, hợp lệ 1–60). Job chạy lúc khởi động và mỗi giờ ở development, chỉ chèn slot thiếu cho sân/cơ sở đang hoạt động; test mặc định tắt.
+- Kiểm thử tích hợp trên sportbooking_test: slot còn thiếu, chạy lặp, bảo toàn LOCKED/BOOKED, bỏ sân tắt, 24:00 và qua tháng.
+- `node --check` các JavaScript liên quan đạt; `npm test` với APP_ENV=test, DB_NAME=sportbooking_test đạt 26/26.
+- Nạp dotenv rõ ràng tại entrypoint, log cấu hình và kết quả từng lượt; startup trên sportbooking_dev đã bù 914 slot tới 2026-11-23. Thêm test log thành công/lỗi; `npm test` đạt 27/27.
+
 ## Tài liệu
 - Chốt business-flow, spec, plan-auth, plan-seed-data, roadmap.
 - Cập nhật số liệu khảo sát thành cầu lông 10, bóng đá mini 8, pickleball 11 (tổng 29, 6 quận).
