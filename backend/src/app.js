@@ -1,9 +1,13 @@
 'use strict';
 
 const express = require('express');
+const path = require('node:path');
 const passwordHelper = require('./auth/password.helper');
 const { createAuthService } = require('./auth/auth.service');
 const { createProfileService } = require('./auth/profile.service');
+const createFacilitiesRepository = require('./facilities/facilities.repository');
+const { createFacilitiesService } = require('./facilities/facilities.service');
+const createFacilitiesRouter = require('./facilities/facilities.routes');
 const createSessionRouter = require('./auth/routes/auth.routes');
 const createProfileRouter = require('./auth/routes/profile.routes');
 const createRequireAuth = require('./auth/middleware/require-auth');
@@ -23,9 +27,11 @@ function createApp({ pool, env = process.env } = {}) {
   }
 
   const userRepository = createUserRepository(pool);
+  const facilitiesRepository = createFacilitiesRepository(pool);
   const sessionRepository = createSessionRepository(pool);
   const authService = createAuthService({ userRepository });
   const profileService = createProfileService({ userRepository, passwords: passwordHelper });
+  const facilitiesService = createFacilitiesService(facilitiesRepository);
   const sessionService = createSessionService({ sessionRepository });
   const cookieName = getCookieName(env);
   const secureCookie = getSecureCookieSetting(env);
@@ -47,6 +53,11 @@ function createApp({ pool, env = process.env } = {}) {
     cookieName
   }));
   app.use('/api/v1/users', createProfileRouter({ profileService, requireAuth }));
+  app.use('/api/v1', createFacilitiesRouter({ facilitiesService, requireAuth }));
+  app.get('/', (request, response) => {
+    response.redirect(302, '/dang-nhap.html');
+  });
+  app.use(express.static(path.resolve(__dirname, '../../frontend'), { index: false }));
 
   app.use((request, response) => {
     sendError(response, 404, 'NOT_FOUND', 'The requested resource was not found.');
