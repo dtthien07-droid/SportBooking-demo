@@ -19,6 +19,17 @@ function createUserRepository(pool) {
       return rows[0] || null;
     },
 
+    async findByPhone(phone) {
+      const [rows] = await pool.execute(
+        `SELECT id
+         FROM users
+         WHERE phone = ?
+         LIMIT 1`,
+        [phone]
+      );
+      return rows[0] || null;
+    },
+
     async findById(id) {
       const [rows] = await pool.execute(
         `SELECT id, full_name, email, password_hash, phone, gender, skill_level,
@@ -40,6 +51,42 @@ function createUserRepository(pool) {
         [fullName, email, passwordHash, phone, termsAcceptedAt]
       );
       return result.insertId;
+    },
+
+    async recordFailedLogin(email) {
+      const [result] = await pool.execute(
+        `UPDATE users
+         SET failed_login_count = CASE
+               WHEN login_locked_until IS NOT NULL
+                    AND login_locked_until <= UTC_TIMESTAMP(3) THEN 1
+               WHEN login_locked_until IS NOT NULL THEN failed_login_count
+               ELSE LEAST(failed_login_count + 1, ?)
+             END,
+             login_locked_until = CASE
+               WHEN login_locked_until IS NOT NULL
+                    AND login_locked_until <= UTC_TIMESTAMP(3) THEN NULL
+               WHEN login_locked_until IS NOT NULL THEN login_locked_until
+               WHEN failed_login_count >= ? THEN
+                    DATE_ADD(UTC_TIMESTAMP(3), INTERVAL ? MINUTE)
+               ELSE NULL
+             END,
+             updated_at = UTC_TIMESTAMP(3)
+         WHERE email = ?`,
+        [5, 5, 15, email]
+      );
+      return result.affectedRows;
+    },
+
+    async resetFailedLogins(email) {
+      const [result] = await pool.execute(
+        `UPDATE users
+         SET failed_login_count = 0,
+             login_locked_until = NULL,
+             updated_at = UTC_TIMESTAMP(3)
+         WHERE email = ?`,
+        [email]
+      );
+      return result.affectedRows;
     }
   };
 }
