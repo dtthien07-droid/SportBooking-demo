@@ -87,6 +87,37 @@ function createUserRepository(pool) {
         [email]
       );
       return result.affectedRows;
+    },
+
+    async updateProfile(id, { fullName, phone, gender, skillLevel }) {
+      const [result] = await pool.execute(
+        `UPDATE users
+         SET full_name = IF(?, ?, full_name),
+             phone = IF(?, ?, phone),
+             gender = IF(?, ?, gender),
+             skill_level = IF(?, ?, skill_level),
+             updated_at = UTC_TIMESTAMP(3)
+         WHERE id = ?`,
+        [
+          fullName !== undefined, fullName,
+          phone !== undefined, phone,
+          gender !== undefined, gender,
+          skillLevel !== undefined, skillLevel,
+          id
+        ]
+      );
+      return result.affectedRows;
+    },
+
+    async updatePassword(id, passwordHash) {
+      const [result] = await pool.execute(
+        `UPDATE users
+         SET password_hash = ?,
+             updated_at = UTC_TIMESTAMP(3)
+         WHERE id = ?`,
+        [passwordHash, id]
+      );
+      return result.affectedRows;
     }
   };
 }

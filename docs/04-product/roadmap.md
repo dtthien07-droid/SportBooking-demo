@@ -6,8 +6,8 @@ Trạng thái: Chưa làm / Đang làm / Xong
 
 | # | Module | Mã | Nhóm | Trạng thái | Ghi chú |
 |---|---|---|---|---|---|
-| 1 | Đăng ký, đăng nhập, phân quyền, hồ sơ | FR-01, FR-03 | Cốt lõi | Chưa làm | Có /health, .env.example |
-| 1b | Migration 002 + seed 29 cơ sở và khung giờ | FR-04 | Cốt lõi | Chưa làm | |
+| 1 | Đăng ký, đăng nhập, phân quyền, hồ sơ | FR-01, FR-03 | Cốt lõi | Đang làm | Xong: migration 001 (users, user_sessions), kết nối MySQL có guard, repository, đăng ký/đăng nhập, bcrypt, khóa 15 phút sau 5 lần sai, seed-admin, 7 unit test đạt. Còn: route HTTP, phiên/cookie 8 giờ, hồ sơ, đổi mật khẩu, /health, express.static, test tích hợp trên MariaDB, frontend đăng nhập/đăng ký |
+| 1b | Migration 002 + seed 29 cơ sở và khung giờ | FR-04 | Cốt lõi | Chưa làm | Cần migration 002 (facilities, courts, time_slots) và seed-facilities.js; xem plan-seed-data.md |
 | 2 | Admin quản lý cơ sở, sân, khung giờ, giá | FR-04 | Cốt lõi | Chưa làm | Dữ liệu mẫu; cần cách sinh khung giờ hằng ngày vì seed chỉ sinh 14 ngày |
 | 3 | Tìm kiếm và xem chi tiết sân | FR-05 | Cốt lõi | Chưa làm | |
 | 4 | Đặt sân, giữ chỗ 10 phút, chống đặt trùng | FR-06, FR-12 | Cốt lõi | Chưa làm | Phần khó nhất, có test (chi tiết bên dưới) |
