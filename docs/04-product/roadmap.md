@@ -10,7 +10,7 @@ Trạng thái: Chưa làm / Đang làm / Xong
 | 2 | Seed 29 sân, khung giờ, API sân, trang chủ, tìm sân | FR-04, FR-05 | Cốt lõi | Xong | 29 sân/6 quận; API lọc, phân trang, chi tiết, lịch khung giờ; trang chủ, tìm sân, chi tiết sân. Job tự sinh khung giờ nền mỗi giờ theo `SLOT_DAYS_AHEAD` (mặc định 14, UTC+7), chỉ chèn khung thiếu, giữ nguyên LOCKED/BOOKED. `npm test` 27/27. |
 | 3 | Admin quản lý cơ sở, sân, khung giờ, giá | FR-04 | Cốt lõi | Chưa làm | Dữ liệu mẫu; khung giờ đã được tự sinh ở module 2. |
 | 4 | Đặt sân, giữ chỗ 10 phút, chống đặt trùng | FR-06, FR-12 | Cốt lõi | Đang làm | Backend 4.C, test 4.D và frontend xác nhận giữ chỗ 4.E đã được triển khai. Chưa xác nhận tích hợp thật: `npm test` còn 3 integration test bị chặn do tài khoản `sportbooking_app` chưa có quyền `sportbooking_test`. |
-| 5 | Thanh toán giả lập, vé QR | FR-07 | Cốt lõi | Chưa làm | |
+| 5 | Thanh toán giả lập, vé QR | FR-07 | Cốt lõi | Đã duyệt kế hoạch | Plan `docs/03-build/plan-payment-ticket.md` đã được duyệt; chưa viết code. Phụ thuộc module 4 (booking/lock) và migration 004 (payments); thông báo thuộc module 8, tìm đối hiển thị ẩn hoặc “Sắp có”, hủy/hoàn tiền thuộc module 6 với plan riêng. Cụm triển khai: migration 005; API payment attempts/payments/ticket; test tích hợp (SUCCESS, FAILURE rồi retry, hết hạn, quyền sở hữu, thanh toán lặp, expiry không đụng CONFIRMED/BOOKED); trang thanh toán giả lập và vé QR theo mockup. |
 | 6 | Hủy và hoàn tiền | FR-08 | Cốt lõi | Chưa làm | |
 | 7 | Lịch sử đặt sân | FR-09 | Cốt lõi | Chưa làm | |
 | 8 | Thông báo trong app | FR-17 | Cốt lõi | Chưa làm | Ghi chú: nối API khi làm module thông báo. |
