@@ -143,8 +143,17 @@ test('slot generation fills active courts idempotently without changing existing
   } finally {
     try {
       if (facilityIds.length) {
-        const placeholders = facilityIds.map(() => '?').join(', ');
-        await pool.execute(`DELETE FROM facilities WHERE id IN (${placeholders})`, facilityIds);
+        const cleanupErrors = [];
+        for (const facilityId of facilityIds) {
+          try {
+            await pool.execute('DELETE FROM facilities WHERE id = ?', [facilityId]);
+          } catch (error) {
+            cleanupErrors.push(error);
+          }
+        }
+        if (cleanupErrors.length > 0) {
+          throw new AggregateError(cleanupErrors, 'Slot generator integration test cleanup failed.');
+        }
       }
     } finally {
       await closePool();

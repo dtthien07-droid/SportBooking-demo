@@ -16,7 +16,7 @@ if (testEnvironment.APP_ENV !== 'test'
   process.exit(1);
 }
 
-const result = spawnSync(process.execPath, ['--test'], {
+const result = spawnSync(process.execPath, ['--test', '--test-concurrency=1'], {
   env: testEnvironment,
   stdio: 'inherit'
 });

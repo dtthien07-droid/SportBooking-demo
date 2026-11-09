@@ -26,7 +26,7 @@ function localDateOffset(days) {
   return date.toISOString().slice(0, 10);
 }
 
-async function createFixture(pool) {
+async function createFixture(pool, fixture) {
   const suffix = crypto.randomUUID();
   const [facilityResult] = await pool.execute(
     `INSERT INTO facilities
@@ -35,15 +35,15 @@ async function createFixture(pool) {
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP(3), UTC_TIMESTAMP(3))`,
     [`API test ${suffix}`, 'API test address', 'API test district', '00:00:00', '24:00:00', '[]', false, false]
   );
-  const facilityId = facilityResult.insertId;
+  fixture.facilityId = facilityResult.insertId;
   const [courtResult] = await pool.execute(
     `INSERT INTO courts
        (facility_id, name, sport_type, price_normal, price_peak, is_active, is_seed,
         created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP(3), UTC_TIMESTAMP(3))`,
-    [facilityId, `24-hour court ${suffix}`, 'BADMINTON', 100000, 130000, false, false]
+    [fixture.facilityId, `24-hour court ${suffix}`, 'BADMINTON', 100000, 130000, false, false]
   );
-  const courtId = courtResult.insertId;
+  fixture.courtId = courtResult.insertId;
   const futureDate = localDateOffset(1);
   const expiredAt = new Date(Date.now() - 60 * 1000);
   const soon = new Date(Date.now() + 7 * 60 * 60 * 1000 + 5 * 60 * 1000);
@@ -68,23 +68,24 @@ async function createFixture(pool) {
          (court_id, service_date, starts_at, ends_at, price, status, lock_expires_at,
           created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP(3), UTC_TIMESTAMP(3))`,
-      [courtId, futureDate, startsAt, endsAt, 100000, status, lockExpiresAt]
+      [fixture.courtId, futureDate, startsAt, endsAt, 100000, status, lockExpiresAt]
     );
   }
   await pool.execute(
     `INSERT INTO time_slots
        (court_id, service_date, starts_at, ends_at, price, status, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, UTC_TIMESTAMP(3), UTC_TIMESTAMP(3))`,
-    [courtId, localDateOffset(0), '00:00:00', '01:00:00', 100000, 'AVAILABLE']
+    [fixture.courtId, localDateOffset(0), '00:00:00', '01:00:00', 100000, 'AVAILABLE']
   );
   await pool.execute(
     `INSERT INTO time_slots
        (court_id, service_date, starts_at, ends_at, price, status, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, UTC_TIMESTAMP(3), UTC_TIMESTAMP(3))`,
-    [courtId, soonDate, soonStart, soonEnd, 100000, 'AVAILABLE']
+    [fixture.courtId, soonDate, soonStart, soonEnd, 100000, 'AVAILABLE']
   );
 
-  return { facilityId, courtId, futureDate, soonDate, soonStart };
+  Object.assign(fixture, { futureDate, soonDate, soonStart });
+  return fixture;
 }
 
 test('facility listing, details, and time slots are authenticated and reflect live availability', async () => {
@@ -92,6 +93,7 @@ test('facility listing, details, and time slots are authenticated and reflect li
   let server;
   let fixture;
   let userId;
+  let userEmail;
 
   try {
     const [databaseRows] = await pool.execute('SELECT DATABASE() AS database_name');
@@ -117,6 +119,7 @@ test('facility listing, details, and time slots are authenticated and reflect li
 
     const password = crypto.randomBytes(24).toString('base64url');
     const email = `facilities-${crypto.randomUUID()}@example.test`;
+    userEmail = email;
     const registration = await fetch(`${baseUrl}/api/v1/auth/register`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -183,7 +186,8 @@ test('facility listing, details, and time slots are authenticated and reflect li
     const missingFacility = await getJson('/api/v1/facilities/9999999999999999999');
     assert.equal(missingFacility.status, 404);
 
-    fixture = await createFixture(pool);
+    fixture = {};
+    await createFixture(pool, fixture);
     await pool.execute('UPDATE facilities SET is_active = ? WHERE id = ?', [true, fixture.facilityId]);
     await pool.execute('UPDATE courts SET is_active = ? WHERE id = ?', [true, fixture.courtId]);
 
@@ -232,13 +236,25 @@ test('facility listing, details, and time slots are authenticated and reflect li
         server.close((error) => error ? reject(error) : resolve());
       });
     }
-    if (fixture) {
-      await pool.execute('DELETE FROM facilities WHERE id = ?', [fixture.facilityId]);
+    try {
+      if (fixture?.facilityId) {
+        await pool.execute('DELETE FROM facilities WHERE id = ?', [fixture.facilityId]);
+      }
+    } finally {
+      try {
+        if (userId) {
+          await pool.execute('DELETE FROM user_sessions WHERE user_id = ?', [userId]);
+          await pool.execute('DELETE FROM users WHERE id = ?', [userId]);
+        } else if (userEmail) {
+          await pool.execute(
+            'DELETE FROM user_sessions WHERE user_id IN (SELECT id FROM users WHERE email = ?)',
+            [userEmail]
+          );
+          await pool.execute('DELETE FROM users WHERE email = ?', [userEmail]);
+        }
+      } finally {
+        await closePool();
+      }
     }
-    if (userId) {
-      await pool.execute('DELETE FROM user_sessions WHERE user_id = ?', [userId]);
-      await pool.execute('DELETE FROM users WHERE id = ?', [userId]);
-    }
-    await closePool();
   }
 });

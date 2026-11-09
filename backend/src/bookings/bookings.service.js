@@ -97,6 +97,19 @@ function normalizeBookingId(id) {
   return id;
 }
 
+function normalizePaymentAttempt(body) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)
+      || Object.keys(body).some((key) => !['method', 'simulation_result'].includes(key))) {
+    throw createBookingError(400, 'INVALID_PAYMENT_ATTEMPT', 'The payment attempt payload is invalid.');
+  }
+  const methods = ['BANK_TRANSFER', 'MOMO', 'DOMESTIC_ATM', 'INTERNATIONAL_CARD'];
+  if (!methods.includes(body.method)
+      || !['SUCCESS', 'FAILURE'].includes(body.simulation_result)) {
+    throw createBookingError(400, 'INVALID_PAYMENT_ATTEMPT', 'method or simulation_result is invalid.');
+  }
+  return { method: body.method, simulationResult: body.simulation_result };
+}
+
 function asNumber(value) {
   return Number(value);
 }
@@ -358,6 +371,101 @@ function createBookingsService(repository) {
     return result;
   }
 
+  async function createPaymentAttempt(user, rawBookingId, body) {
+    const bookingId = normalizeBookingId(rawBookingId);
+    const input = normalizePaymentAttempt(body);
+    let expired = false;
+    try {
+      const result = await repository.withTransaction(async (connection) => {
+        const booking = await repository.lockBooking(connection, bookingId);
+        if (!booking || (String(booking.user_id) !== String(user.id) && user.role !== 'ADMIN')) {
+          throw createBookingError(404, 'BOOKING_NOT_FOUND', 'The booking was not found.');
+        }
+        if (String(booking.user_id) !== String(user.id)) {
+          throw createBookingError(403, 'BOOKING_NOT_OWNED', 'Only the booking owner can pay.');
+        }
+        if (booking.status === 'EXPIRED') {
+          expired = true;
+          return null;
+        }
+        if (booking.status !== 'PENDING') {
+          throw createBookingError(409, 'BOOKING_NOT_PENDING', 'Only a pending booking can be paid.');
+        }
+
+        const payment = await repository.lockPaymentForBooking(connection, bookingId);
+        if (!payment) {
+          throw createBookingError(409, 'PAYMENT_NOT_FOUND', 'The booking payment was not found.');
+        }
+        const slotIds = await repository.lockSlotsForBooking(connection, bookingId);
+        const slots = await repository.lockTimeSlots(connection, slotIds);
+        if (slots.length !== slotIds.length) {
+          throw createBookingError(409, 'BOOKING_SLOTS_CHANGED', 'The booking slots changed.');
+        }
+        if (Number(booking.lock_expired) === 1 || !booking.lock_expires_at) {
+          await repository.updateBookingStatus(connection, bookingId, 'EXPIRED');
+          await repository.releaseBookingSlots(connection, bookingId);
+          expired = true;
+          return null;
+        }
+        if (payment.status !== 'PENDING') {
+          throw createBookingError(409, 'PAYMENT_NOT_PENDING', 'The payment is no longer pending.');
+        }
+
+        const attempt = await repository.createPaymentAttempt(connection, {
+          paymentId: payment.id,
+          method: input.method,
+          amount: payment.amount_due,
+          result: input.simulationResult === 'SUCCESS' ? 'SUCCEEDED' : 'FAILED'
+        });
+
+        let ticket = null;
+        if (input.simulationResult === 'SUCCESS') {
+          await repository.markPaymentPaid(connection, payment.id, payment.amount_due);
+          await repository.confirmBooking(connection, bookingId);
+          const bookedSlots = await repository.bookSlotsForBooking(connection, bookingId);
+          if (bookedSlots !== slotIds.length) {
+            throw createBookingError(409, 'BOOKING_SLOTS_CHANGED', 'Not all booking slots could be confirmed.');
+          }
+          ticket = await repository.createBookingTicket(connection, bookingId);
+        }
+
+        return {
+          attempt,
+          payment: {
+            status: input.simulationResult === 'SUCCESS' ? 'PAID' : 'PENDING',
+            amount_due: String(payment.amount_due),
+            paid_amount: input.simulationResult === 'SUCCESS' ? String(payment.amount_due) : '0'
+          },
+          booking: {
+            id: String(booking.id),
+            booking_code: booking.booking_code,
+            status: input.simulationResult === 'SUCCESS' ? 'CONFIRMED' : 'PENDING',
+            lock_expires_at: input.simulationResult === 'SUCCESS' ? null : booking.lock_expires_at
+          },
+          ticket
+        };
+      });
+      if (expired) {
+        throw createBookingError(410, 'BOOKING_EXPIRED', 'The booking hold has expired.');
+      }
+      return result;
+    } catch (error) {
+      if (error.code === 'ER_LOCK_DEADLOCK' || error.code === 'ER_LOCK_WAIT_TIMEOUT') {
+        throw createBookingError(409, 'BOOKING_CONFLICT', 'The payment conflicted with another request.');
+      }
+      throw error;
+    }
+  }
+
+  async function getPayments(user, rawBookingId) {
+    const bookingId = normalizeBookingId(rawBookingId);
+    const booking = await repository.findBookingById(bookingId);
+    if (!booking || (String(booking.user_id) !== String(user.id) && user.role !== 'ADMIN')) {
+      throw createBookingError(404, 'BOOKING_NOT_FOUND', 'The booking was not found.');
+    }
+    return repository.findPaymentsByBookingId(bookingId);
+  }
+
   async function releaseExpiredBookings(batchSize = 100) {
     const bookingIds = await repository.findExpiredBookingIds(batchSize);
     let released = 0;
@@ -371,7 +479,14 @@ function createBookingsService(repository) {
     return released;
   }
 
-  return { createBooking, getBooking, cancelBooking, releaseExpiredBookings };
+  return {
+    createBooking,
+    getBooking,
+    cancelBooking,
+    createPaymentAttempt,
+    getPayments,
+    releaseExpiredBookings
+  };
 }
 
 module.exports = { createBookingsService };

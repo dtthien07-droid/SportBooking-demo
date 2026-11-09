@@ -49,6 +49,7 @@ function createSoonSlotTime(minutes = 5) {
 test('booking holds, locking, cancellation, and expiry work on sportbooking_test', async (t) => {
   const pool = getPool();
   const userIds = [];
+  const userEmails = [];
   let facilityId;
   let courtId;
   let footballCourtId;
@@ -71,6 +72,7 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
 
     async function createUser() {
       const email = `booking-${crypto.randomUUID()}@example.test`;
+      userEmails.push(email);
       const registration = await postJson(baseUrl, '/api/v1/auth/register', {
         fullName: 'Booking Integration Test',
         email,
@@ -489,46 +491,92 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
       assert.equal(otherUserRead.status, 404);
     });
   } finally {
+    const cleanupErrors = [];
+    const cleanup = async (operation) => {
+      try {
+        await operation();
+      } catch (error) {
+        cleanupErrors.push(error);
+      }
+    };
     if (rollbackTriggerName) {
-      await pool.query(`DROP TRIGGER IF EXISTS ${rollbackTriggerName}`);
+      await cleanup(() => pool.query(`DROP TRIGGER IF EXISTS ${rollbackTriggerName}`));
     }
     if (server) {
-      await new Promise((resolve) => server.close(resolve));
+      await cleanup(() => new Promise((resolve, reject) => {
+        server.close((error) => error ? reject(error) : resolve());
+      }));
     }
-    if (facilityId && courtId) {
-      const [bookingRows] = await pool.execute(
-        `SELECT DISTINCT b.id
-         FROM bookings AS b
-         INNER JOIN booking_slots AS bs ON bs.booking_id = b.id
-         INNER JOIN time_slots AS ts ON ts.id = bs.time_slot_id
-         WHERE ts.court_id = ?`,
-        [courtId]
-      );
-      const bookingIds = bookingRows.map((row) => String(row.id));
-      if (bookingIds.length > 0) {
-        const placeholders = bookingIds.map(() => '?').join(', ');
-        await pool.execute(
-          `DELETE FROM booking_slots WHERE booking_id IN (${placeholders})`,
-          bookingIds
+
+    let bookingIds = [];
+    if (courtId) {
+      await cleanup(async () => {
+        const [bookingRows] = await pool.execute(
+          `SELECT DISTINCT b.id
+           FROM bookings AS b
+           INNER JOIN booking_slots AS bs ON bs.booking_id = b.id
+           INNER JOIN time_slots AS ts ON ts.id = bs.time_slot_id
+           WHERE ts.court_id IN (?, ?)`,
+          [courtId, footballCourtId || courtId]
         );
-        await pool.execute(
-          `UPDATE time_slots
-           SET current_booking_id = NULL, lock_expires_at = NULL
-           WHERE current_booking_id IN (${placeholders})`,
-          bookingIds
+        bookingIds = bookingRows.map((row) => String(row.id));
+      });
+    }
+    if (bookingIds.length > 0) {
+      const placeholders = bookingIds.map(() => '?').join(', ');
+      let paymentIds = [];
+      await cleanup(async () => {
+        const [rows] = await pool.execute(
+          `SELECT id FROM payments WHERE booking_id IN (${placeholders})`, bookingIds
         );
-        await pool.execute(`DELETE FROM payments WHERE booking_id IN (${placeholders})`, bookingIds);
-        await pool.execute(`DELETE FROM bookings WHERE id IN (${placeholders})`, bookingIds);
+        paymentIds = rows.map((row) => String(row.id));
+      });
+      await cleanup(() => pool.execute(
+        `DELETE FROM booking_tickets WHERE booking_id IN (${placeholders})`, bookingIds
+      ));
+      if (paymentIds.length > 0) {
+        const paymentPlaceholders = paymentIds.map(() => '?').join(', ');
+        await cleanup(() => pool.execute(
+          `DELETE FROM payment_attempts WHERE payment_id IN (${paymentPlaceholders})`, paymentIds
+        ));
       }
-      await pool.execute('DELETE FROM time_slots WHERE court_id = ?', [courtId]);
-      await pool.execute('DELETE FROM time_slots WHERE court_id = ?', [footballCourtId]);
-      await pool.execute('DELETE FROM courts WHERE id = ?', [courtId]);
-      await pool.execute('DELETE FROM courts WHERE id = ?', [footballCourtId]);
-      await pool.execute('DELETE FROM facilities WHERE id = ?', [facilityId]);
+      await cleanup(() => pool.execute(
+        `DELETE FROM booking_slots WHERE booking_id IN (${placeholders})`, bookingIds
+      ));
+      await cleanup(() => pool.execute(
+        `UPDATE time_slots SET current_booking_id = NULL, lock_expires_at = NULL
+         WHERE current_booking_id IN (${placeholders})`, bookingIds
+      ));
+      await cleanup(() => pool.execute(
+        `DELETE FROM payments WHERE booking_id IN (${placeholders})`, bookingIds
+      ));
+      await cleanup(() => pool.execute(
+        `DELETE FROM bookings WHERE id IN (${placeholders})`, bookingIds
+      ));
     }
-    for (const userId of userIds) {
-      await pool.execute('DELETE FROM users WHERE id = ?', [userId]);
+    if (courtId) await cleanup(() => pool.execute('DELETE FROM time_slots WHERE court_id = ?', [courtId]));
+    if (footballCourtId) await cleanup(() => pool.execute('DELETE FROM time_slots WHERE court_id = ?', [footballCourtId]));
+    if (facilityId) await cleanup(() => pool.execute('DELETE FROM facilities WHERE id = ?', [facilityId]));
+
+    if (userIds.length > 0) {
+      const placeholders = userIds.map(() => '?').join(', ');
+      await cleanup(() => pool.execute(
+        `DELETE FROM user_sessions WHERE user_id IN (${placeholders})`, userIds
+      ));
     }
-    await closePool();
+    if (userEmails.length > 0) {
+      const placeholders = userEmails.map(() => '?').join(', ');
+      await cleanup(() => pool.execute(
+        `DELETE FROM user_sessions WHERE user_id IN (SELECT id FROM users WHERE email IN (${placeholders}))`,
+        userEmails
+      ));
+      await cleanup(() => pool.execute(
+        `DELETE FROM users WHERE email IN (${placeholders})`, userEmails
+      ));
+    }
+    await cleanup(() => closePool());
+    if (cleanupErrors.length > 0) {
+      throw new AggregateError(cleanupErrors, 'Booking integration test cleanup failed.');
+    }
   }
 });

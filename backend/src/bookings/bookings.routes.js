@@ -23,6 +23,20 @@ function createBookingsRouter({ bookingsService, requireAuth }) {
     response.json(booking);
   });
 
+  router.post('/:id/payment-attempts', requireAuth, async (request, response) => {
+    const result = await bookingsService.createPaymentAttempt(
+      request.auth.user,
+      request.params.id,
+      request.body
+    );
+    response.status(201).json(result);
+  });
+
+  router.get('/:id/payments', requireAuth, async (request, response) => {
+    const payments = await bookingsService.getPayments(request.auth.user, request.params.id);
+    response.json(payments);
+  });
+
   return router;
 }
 

@@ -1,3 +1,10 @@
+# 2026-11-09 — Thanh toán giả lập và vé QR (FR-07)
+
+- Thêm migration 005 cho `payment_attempts` và `booking_tickets`, cùng kiểm tra trạng thái migration trong runner.
+- Thêm API tạo payment attempt giả lập và đọc payment history/ticket; SUCCESS cập nhật payment, booking, slots và tạo vé trong một transaction; FAILURE giữ booking chờ thanh toán.
+- Thêm test tích hợp cho SUCCESS, FAILURE/retry, hết hạn, quyền sở hữu, thanh toán lặp cạnh tranh, expiry job và quyền Admin đọc payments.
+- Chưa đánh dấu hoàn tất: migration chưa áp dụng/xác minh được vì MariaDB localhost:3306 không hoạt động; `npm test` bị sandbox chặn tiến trình con (`spawn EPERM`). Syntax check đạt và test unit slot-generator chạy trực tiếp đạt 3/3. Không kết nối hay thay đổi `sportbooking_dev` hoặc `sportbooking_system`.
+
 # 2026-11-08
 
 ## 2026-11-08 — Tự sinh khung giờ

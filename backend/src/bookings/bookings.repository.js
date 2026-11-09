@@ -1,5 +1,7 @@
 'use strict';
 
+const crypto = require('node:crypto');
+
 function createBookingRepository(pool) {
   if (!pool || typeof pool.execute !== 'function') {
     throw new TypeError('A MySQL-compatible pool is required.');
@@ -258,6 +260,145 @@ function createBookingRepository(pool) {
         [bookingId]
       );
       return rows[0] || null;
+    },
+
+    async lockPaymentForBooking(connection, bookingId) {
+      const [rows] = await connection.execute(
+        `SELECT id, status, amount_due, paid_amount
+         FROM payments
+         WHERE booking_id = ?
+         LIMIT 1
+         FOR UPDATE`,
+        [bookingId]
+      );
+      return rows[0] || null;
+    },
+
+    async createPaymentAttempt(connection, { paymentId, method, amount, result }) {
+      const [numberRows] = await connection.execute(
+        `SELECT COALESCE(MAX(attempt_no), 0) + 1 AS attempt_no
+         FROM payment_attempts
+         WHERE payment_id = ?`,
+        [paymentId]
+      );
+      const attemptNo = numberRows[0].attempt_no;
+      const [insert] = await connection.execute(
+        `INSERT INTO payment_attempts
+           (payment_id, attempt_no, method, amount, result, created_at, completed_at)
+         VALUES (?, ?, ?, ?, ?, UTC_TIMESTAMP(3), UTC_TIMESTAMP(3))`,
+        [paymentId, attemptNo, method, amount, result]
+      );
+      const [attemptRows] = await connection.execute(
+        `SELECT created_at, completed_at
+         FROM payment_attempts WHERE id = ?`,
+        [insert.insertId]
+      );
+      return {
+        id: String(insert.insertId),
+        attempt_no: Number(attemptNo),
+        method,
+        amount: String(amount),
+        result,
+        created_at: attemptRows[0].created_at,
+        completed_at: attemptRows[0].completed_at
+      };
+    },
+
+    async markPaymentPaid(connection, paymentId, amount) {
+      const [result] = await connection.execute(
+        `UPDATE payments
+         SET status = ?, paid_amount = ?, paid_at = UTC_TIMESTAMP(3),
+             updated_at = UTC_TIMESTAMP(3)
+         WHERE id = ? AND status = ?`,
+        ['PAID', amount, paymentId, 'PENDING']
+      );
+      if (result.affectedRows !== 1) {
+        throw new Error('Payment changed before it could be marked paid.');
+      }
+    },
+
+    async confirmBooking(connection, bookingId) {
+      const [result] = await connection.execute(
+        `UPDATE bookings
+         SET status = ?, updated_at = UTC_TIMESTAMP(3)
+         WHERE id = ? AND status = ?
+           AND lock_expires_at > UTC_TIMESTAMP(3)`,
+        ['CONFIRMED', bookingId, 'PENDING']
+      );
+      if (result.affectedRows !== 1) {
+        throw new Error('Booking changed before it could be confirmed.');
+      }
+    },
+
+    async bookSlotsForBooking(connection, bookingId) {
+      const [result] = await connection.execute(
+        `UPDATE time_slots
+         SET status = ?, lock_expires_at = NULL, updated_at = UTC_TIMESTAMP(3)
+         WHERE current_booking_id = ? AND status = ?
+           AND lock_expires_at > UTC_TIMESTAMP(3)`,
+        ['BOOKED', bookingId, 'LOCKED']
+      );
+      if (result.affectedRows === 0) {
+        throw new Error('No locked booking slots could be confirmed.');
+      }
+      return result.affectedRows;
+    },
+
+    async createBookingTicket(connection, bookingId) {
+      const qrCode = `QR-${crypto.randomBytes(24).toString('hex').toUpperCase()}`;
+      const [result] = await connection.execute(
+        `INSERT INTO booking_tickets (booking_id, qr_code, created_at)
+         VALUES (?, ?, UTC_TIMESTAMP(3))`,
+        [bookingId, qrCode]
+      );
+      return { id: String(result.insertId), qr_code: qrCode };
+    },
+
+    async findPaymentsByBookingId(bookingId) {
+      const [rows] = await pool.execute(
+        `SELECT p.id AS payment_id, p.status AS payment_status, p.amount_due,
+                p.paid_amount, p.refunded_amount, p.payment_option, p.paid_at, p.refunded_at,
+                pa.id AS attempt_id, pa.attempt_no, pa.method, pa.amount AS attempt_amount,
+                pa.result, pa.provider_reference, pa.created_at AS attempt_created_at,
+                pa.completed_at, bt.id AS ticket_id, bt.qr_code, bt.created_at AS ticket_created_at
+         FROM payments p
+         LEFT JOIN payment_attempts pa ON pa.payment_id = p.id
+         LEFT JOIN booking_tickets bt ON bt.booking_id = p.booking_id
+         WHERE p.booking_id = ?
+         ORDER BY pa.attempt_no ASC`,
+        [bookingId]
+      );
+      if (rows.length === 0) return null;
+      const payment = rows[0];
+      const attempts = rows.filter((row) => row.attempt_id !== null).map((attempt) => ({
+        id: String(attempt.attempt_id),
+        attempt_no: Number(attempt.attempt_no),
+        method: attempt.method,
+        amount: String(attempt.attempt_amount),
+        result: attempt.result,
+        provider_reference: attempt.provider_reference,
+        created_at: attempt.attempt_created_at,
+        completed_at: attempt.completed_at
+      }));
+      const ticketRow = rows.find((row) => row.ticket_id !== null);
+      return {
+        payment: {
+          id: String(payment.payment_id),
+          status: payment.payment_status,
+          amount_due: String(payment.amount_due),
+          paid_amount: String(payment.paid_amount),
+          refunded_amount: String(payment.refunded_amount),
+          payment_option: payment.payment_option,
+          paid_at: payment.paid_at,
+          refunded_at: payment.refunded_at
+        },
+        attempts,
+        ticket: !ticketRow ? null : {
+          id: String(ticketRow.ticket_id),
+          qr_code: ticketRow.qr_code,
+          created_at: ticketRow.ticket_created_at
+        }
+      };
     },
 
     async updateBookingStatus(connection, bookingId, status) {
