@@ -47,16 +47,40 @@ function createBookingRepository(pool) {
       return rows[0] || null;
     },
 
-    async findPendingBookingForUser(connection, userId) {
+    async lockPendingBookingsForUser(connection, userId) {
       const [rows] = await connection.execute(
+        `SELECT id, lock_expires_at,
+                CASE
+                  WHEN lock_expires_at IS NULL
+                       OR lock_expires_at <= UTC_TIMESTAMP(3)
+                  THEN 1 ELSE 0
+                END AS lock_expired,
+                CASE
+                  WHEN lock_expires_at IS NULL THEN 0
+                  ELSE GREATEST(
+                    0,
+                    CEIL(TIMESTAMPDIFF(MICROSECOND, UTC_TIMESTAMP(3), lock_expires_at) / 1000000)
+                  )
+                END AS remaining_seconds
+         FROM bookings
+         WHERE user_id = ?
+           AND status = 'PENDING'
+         ORDER BY id ASC
+         FOR UPDATE`,
+        [userId]
+      );
+      return rows;
+    },
+
+    async findActivePendingBookingByUser(userId) {
+      const [rows] = await pool.execute(
         `SELECT id
          FROM bookings
          WHERE user_id = ?
            AND status = 'PENDING'
-           AND (lock_expires_at IS NULL OR lock_expires_at > UTC_TIMESTAMP(3))
+           AND lock_expires_at > UTC_TIMESTAMP(3)
          ORDER BY id ASC
-         LIMIT 1
-         FOR UPDATE`,
+         LIMIT 1`,
         [userId]
       );
       return rows[0] || null;
@@ -162,7 +186,7 @@ function createBookingRepository(pool) {
          SET status = 'EXPIRED', updated_at = UTC_TIMESTAMP(3)
          WHERE id = ?
            AND status = 'PENDING'
-           AND lock_expires_at <= UTC_TIMESTAMP(3)`,
+           AND (lock_expires_at IS NULL OR lock_expires_at <= UTC_TIMESTAMP(3))`,
         [bookingId]
       );
       await connection.execute(

@@ -2,10 +2,11 @@
 
 const crypto = require('node:crypto');
 
-function createBookingError(status, code, message) {
+function createBookingError(status, code, message, details = {}) {
   const error = new Error(message);
   error.status = status;
   error.code = code;
+  error.details = details;
   return error;
 }
 
@@ -139,13 +140,30 @@ function createBookingsService(repository) {
     const paymentOption = normalizePaymentOption(body && body.payment_option);
     const matchPreference = normalizeMatchPreference(body && body.match_preference);
     try {
-      return await repository.withTransaction(async (connection) => {
+      const result = await repository.withTransaction(async (connection) => {
         const user = await repository.lockUser(connection, userId);
         if (!user) {
           throw createBookingError(401, 'UNAUTHENTICATED', 'Authentication is required.');
         }
-        if (await repository.findPendingBookingForUser(connection, userId)) {
-          throw createBookingError(409, 'PENDING_BOOKING_EXISTS', 'You already have an active booking.');
+        const pendingBookings = await repository.lockPendingBookingsForUser(connection, userId);
+        const activePending = pendingBookings.find((booking) => Number(booking.lock_expired) !== 1);
+        const expiredPendingIds = pendingBookings
+          .filter((booking) => Number(booking.lock_expired) === 1)
+          .map((booking) => String(booking.id));
+        if (expiredPendingIds.length > 0) {
+          const staleSlotIds = await repository.findSlotIdsForBookings(connection, expiredPendingIds);
+          const uniqueStaleSlotIds = [...new Set(staleSlotIds.map(String))]
+            .sort((left, right) => (BigInt(left) < BigInt(right) ? -1 : 1));
+          const staleSlots = await repository.lockTimeSlots(connection, uniqueStaleSlotIds);
+          if (staleSlots.length !== uniqueStaleSlotIds.length) {
+            throw createBookingError(409, 'SLOT_CHANGED', 'An expired booking slot changed while it was being released.');
+          }
+          for (const expiredBookingId of expiredPendingIds) {
+            await repository.expireStaleBooking(connection, expiredBookingId);
+          }
+        }
+        if (activePending) {
+          return { pendingConflict: activePending };
         }
 
         const initialSlots = await repository.findRequestedSlotStates(connection, slotIds);
@@ -287,6 +305,18 @@ function createBookingsService(repository) {
           slots: chronologicalSlots.map(toSlotResponse)
         };
       });
+      if (result?.pendingConflict) {
+        throw createBookingError(
+          409,
+          'PENDING_BOOKING_EXISTS',
+          'You already have an active booking.',
+          {
+            pending_booking_id: String(result.pendingConflict.id),
+            remaining_seconds: Number(result.pendingConflict.remaining_seconds)
+          }
+        );
+      }
+      return result;
     } catch (error) {
       if (error.code === 'ER_LOCK_DEADLOCK' || error.code === 'ER_LOCK_WAIT_TIMEOUT') {
         throw createBookingError(409, 'BOOKING_CONFLICT', 'The booking conflicted with another request.');
@@ -342,6 +372,18 @@ function createBookingsService(repository) {
         facility_name: slot.facility_name
       }))
     };
+  }
+
+  async function getPendingBooking(user) {
+    const pending = await repository.findActivePendingBookingByUser(user.id);
+    if (!pending) return null;
+    try {
+      const booking = await getBooking(user, String(pending.id));
+      return { ...booking, id: booking.booking_id };
+    } catch (error) {
+      if (error.status === 410) return null;
+      throw error;
+    }
   }
 
   async function cancelBooking(userId, rawBookingId) {
@@ -482,6 +524,7 @@ function createBookingsService(repository) {
   return {
     createBooking,
     getBooking,
+    getPendingBooking,
     cancelBooking,
     createPaymentAttempt,
     getPayments,

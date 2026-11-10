@@ -20,8 +20,8 @@ const createSessionRepository = require('./auth/repositories/session.repository'
 const createUserRepository = require('./auth/repositories/user.repository');
 const healthRouter = require('./routes/health.routes');
 
-function sendError(response, status, code, message) {
-  response.status(status).json({ error: { code, message, details: {} } });
+function sendError(response, status, code, message, details = {}) {
+  response.status(status).json({ error: { code, message, details } });
 }
 
 function createApp({ pool, env = process.env } = {}) {
@@ -84,7 +84,8 @@ function createApp({ pool, env = process.env } = {}) {
         response,
         error.status,
         error.code || 'REQUEST_ERROR',
-        error.message || 'The request could not be completed.'
+        error.message || 'The request could not be completed.',
+        error.details || {}
       );
     }
     return sendError(response, 500, 'INTERNAL_ERROR', 'An unexpected error occurred.');

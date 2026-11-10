@@ -10,8 +10,15 @@ function createBookingsRouter({ bookingsService, requireAuth }) {
     response.status(201).json(booking);
   });
 
+  router.get('/pending', requireAuth, async (request, response) => {
+    const booking = await bookingsService.getPendingBooking(request.auth.user);
+    response.set('Cache-Control', 'no-store');
+    response.json(booking);
+  });
+
   router.get('/:id', requireAuth, async (request, response) => {
     const booking = await bookingsService.getBooking(request.auth.user, request.params.id);
+    response.set('Cache-Control', 'no-store');
     response.json(booking);
   });
 

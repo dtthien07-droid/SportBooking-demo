@@ -55,6 +55,7 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
   let footballCourtId;
   let server;
   let multiSlotBookingId;
+  let oneSlotBookingId;
   let rollbackTriggerName;
 
   try {
@@ -90,7 +91,7 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
     }
 
     const users = [];
-    for (let index = 0; index < 5; index += 1) {
+    for (let index = 0; index < 6; index += 1) {
       users.push(await createUser());
     }
 
@@ -195,6 +196,7 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
       );
       assert.equal(oneSlotResponse.status, 201);
       const oneSlotBooking = await oneSlotResponse.json();
+      oneSlotBookingId = oneSlotBooking.booking_id;
       assert.match(oneSlotBooking.booking_code, /^SPB-[A-F0-9]{32}$/);
       assert.equal(oneSlotBooking.status, 'PENDING');
       assert.equal(oneSlotBooking.total_amount, '123455');
@@ -247,6 +249,7 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
         { headers: { cookie: users[1].cookie } }
       );
       assert.equal(detailResponse.status, 200);
+      assert.equal(detailResponse.headers.get('cache-control'), 'no-store');
       const detail = await detailResponse.json();
       assert.equal(detail.slots[0].court_name, `Booking test court ${suffix}`);
       assert.equal(detail.slots[0].price_at_booking, '120000');
@@ -279,6 +282,30 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
         users[0].cookie
       );
       assert.equal(secondPending.status, 409);
+      const secondPendingError = await secondPending.json();
+      assert.equal(secondPendingError.error.code, 'PENDING_BOOKING_EXISTS');
+      assert.equal(secondPendingError.error.details.pending_booking_id, oneSlotBookingId);
+      assert.ok(Number(secondPendingError.error.details.remaining_seconds) > 0);
+
+      const ownerPending = await fetch(`${baseUrl}/api/v1/bookings/pending`, {
+        headers: { cookie: users[0].cookie }
+      });
+      assert.equal(ownerPending.status, 200);
+      assert.equal(ownerPending.headers.get('cache-control'), 'no-store');
+      const ownerPendingBooking = await ownerPending.json();
+      assert.equal(ownerPendingBooking.id, oneSlotBookingId);
+      assert.equal(ownerPendingBooking.booking_id, oneSlotBookingId);
+      assert.equal(ownerPendingBooking.slots[0].facility_name, `Booking test ${suffix}`);
+      assert.equal(ownerPendingBooking.slots[0].court_name, `Booking test court ${suffix}`);
+      assert.equal(ownerPendingBooking.slots[0].service_date, serviceDate);
+      assert.equal(ownerPendingBooking.slots[0].starts_at, '00:00:00');
+      assert.equal(ownerPendingBooking.slots[0].ends_at, '01:00:00');
+      assert.ok(Number(ownerPendingBooking.remaining_seconds) > 0);
+      const otherUserPending = await fetch(`${baseUrl}/api/v1/bookings/pending`, {
+        headers: { cookie: users[5].cookie }
+      });
+      assert.equal(otherUserPending.status, 200);
+      assert.equal(await otherUserPending.json(), null);
 
       const nonContiguous = await postJson(
         baseUrl,
@@ -476,6 +503,46 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
         { headers: { cookie: users[2].cookie } }
       );
       assert.equal(expiredRead.status, 410);
+
+      const staleBookingResponse = await postJson(
+        baseUrl,
+        '/api/v1/bookings',
+        { slot_ids: [slotIds[11]] },
+        users[2].cookie
+      );
+      assert.equal(staleBookingResponse.status, 201);
+      const staleBooking = await staleBookingResponse.json();
+      await pool.execute(
+        `UPDATE bookings SET lock_expires_at = DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 1 SECOND)
+         WHERE id = ?`,
+        [staleBooking.booking_id]
+      );
+      await pool.execute(
+        `UPDATE time_slots SET lock_expires_at = DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 1 SECOND)
+         WHERE current_booking_id = ?`,
+        [staleBooking.booking_id]
+      );
+      const afterExpiredPending = await postJson(
+        baseUrl,
+        '/api/v1/bookings',
+        { slot_ids: [slotIds[6]] },
+        users[2].cookie
+      );
+      assert.equal(afterExpiredPending.status, 201);
+      const replacementBooking = await afterExpiredPending.json();
+      assert.notEqual(replacementBooking.booking_id, staleBooking.booking_id);
+      const [staleStateRows] = await pool.execute(
+        `SELECT b.status, ts.status AS slot_status, ts.current_booking_id, ts.lock_expires_at
+         FROM bookings AS b
+         INNER JOIN booking_slots AS bs ON bs.booking_id = b.id
+         INNER JOIN time_slots AS ts ON ts.id = bs.time_slot_id
+         WHERE b.id = ?`,
+        [staleBooking.booking_id]
+      );
+      assert.equal(staleStateRows[0].status, 'EXPIRED');
+      assert.equal(staleStateRows[0].slot_status, 'AVAILABLE');
+      assert.equal(staleStateRows[0].current_booking_id, null);
+      assert.equal(staleStateRows[0].lock_expires_at, null);
     });
 
     await t.test('does not disclose bookings to a different user', async () => {
