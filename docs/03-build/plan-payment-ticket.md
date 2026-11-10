@@ -61,7 +61,7 @@ Request đề xuất: `{ "method": "BANK_TRANSFER|MOMO|DOMESTIC_ATM|INTERNATIONA
 1. **Migration:** migration 005, cập nhật runner/kiểm tra schema MariaDB 10.4, không đụng migration đã phát hành.
 2. **API:** repository/service/routes cho attempt và đọc payments/ticket; xác thực sở hữu, transaction, timeout, trạng thái lỗi, chống lặp.
 3. **Test tích hợp:** SUCCESS (payment PAID + booking CONFIRMED + tất cả slot BOOKED + đúng một vé); FAILURE rồi retry SUCCESS; lock hết hạn trả 410/slot được thả và không tạo attempt; user khác thanh toán nhận 403/404 theo cách xử lý của `GET /bookings/:id`; thanh toán lặp sau SUCCESS trả 409, không tạo attempt/ticket dư hoặc cập nhật trạng thái lần nữa; tác vụ dọn hết hạn không đụng booking `CONFIRMED` và slot `BOOKED`.
-4. **Giao diện:** trang thanh toán giả lập chọn phương thức và kết quả theo mockup cùng trạng thái loading/lỗi/410; lựa chọn `SUCCESS`/`FAILURE` từ client là thiết kế giả lập, không phải tích hợp cổng thanh toán thật. Trang vé theo `dat-san-thanh-cong.html` với một QR, mã đơn, toàn bộ slot, hotline/map và số tiền đã trả/còn thu tại sân. Phần tìm đối trên vé ẩn hoặc hiển thị **Sắp có** vì thuộc module riêng. Frontend chỉ gọi API, không tự quyết định trạng thái thanh toán hay tự dựng dữ liệu vé; thư viện render QR đặt trong `frontend/assets/`.
+4. **Giao diện:** trang thanh toán lấy riêng phần Bước 2 của mockup `xac-nhan-dat-san.html`, giữ bố cục/class/style và dùng dữ liệu booking, payment, facility, user từ API. Nút xác nhận mặc định chỉ gửi `SUCCESS`; liên kết `FAILURE` chỉ xuất hiện với URL `?demo=1`. QR chuyển khoản được vẽ cục bộ từ `SPORTBOOKING|<booking_code>|<amount_due>`, không phải VietQR và không dùng dịch vụ ngoài. Trang vé theo `dat-san-thanh-cong.html` với QR vé, mã đơn, toàn bộ slot, hotline/map và số tiền đã trả/còn thu tại sân. Phần tìm đối trên vé ẩn hoặc hiển thị **Sắp có** vì thuộc module riêng.
 
 ## 5. Quyết định đã chốt
 
@@ -69,11 +69,21 @@ Request đề xuất: `{ "method": "BANK_TRANSFER|MOMO|DOMESTIC_ATM|INTERNATIONA
 2. Nếu lock hết hạn, không ghi payment attempt; trong transaction chuyển booking sang `EXPIRED`, nhả slot rồi trả 410.
 3. Admin được đọc `GET /bookings/{id}/payments`.
 4. Thanh toán lặp sau SUCCESS trả 409.
-5. Database lưu `qr_code` dạng `QR-<random>`; ma trận QR được render phía client từ `booking_code` bằng thư viện trong `frontend/assets/`, không dùng dịch vụ ngoài.
+5. Database lưu `qr_code` dạng `QR-<random>`; ma trận QR vé được render phía client từ `booking_code` bằng thư viện trong `frontend/assets/`, không dùng dịch vụ ngoài. QR chuyển khoản là mã nội bộ riêng, chứa `SPORTBOOKING|<booking_code>|<amount_due>` và không phải VietQR.
 6. Với người không phải chủ đơn, route thanh toán và route đọc payments áp dụng cùng cách xử lý 403/404 như `GET /bookings/:id` hiện có.
 7. Test tác vụ dọn hết hạn phải xác nhận không tác động booking `CONFIRMED` hoặc slot `BOOKED`.
 8. Trang vé ẩn phần tìm đối hoặc hiển thị **Sắp có**; thông báo thanh toán thuộc module 8.
-9. Client chọn `SUCCESS`/`FAILURE` là một phần của mô phỏng thanh toán, không phải cổng thanh toán thật.
+9. Nút xác nhận thanh toán gửi `SUCCESS`. Chỉ liên kết nhỏ khi URL có `?demo=1` mới gửi `FAILURE`; đây vẫn là mô phỏng, không phải cổng thanh toán thật.
+
+## 6. Cập nhật triển khai giao diện
+
+- `frontend/thanh-toan.html` lấy bố cục Bước 2, gồm lưu ý giữ chỗ, bốn phương thức, quy định và cột tóm tắt; không còn các nút chọn kết quả SUCCESS/FAILURE trên giao diện thường.
+- `frontend/booking/payment-page.js` tải booking/payments, facility và user; chỉ hiển thị dữ liệu API, dùng ảnh mặc định theo môn khi thiếu/lỗi ảnh, che số điện thoại và gửi request theo phương thức đã chọn.
+- `frontend/booking/payment-data.js` dựng payload attempt và chuỗi QR chuyển khoản; `frontend/tests/payment-data.test.js` kiểm tra SUCCESS, FAILURE và chuỗi QR.
+- Tạo booking thành công chuyển thẳng sang trang thanh toán. Banner giữ chỗ dùng chung ẩn trên trang đặt sân và thanh toán; hộp đơn PENDING chỉ hiện khi đã có đơn được xác nhận từ API.
+- Thanh bước dùng chung được hiển thị trên cả `dat-san.html`, `thanh-toan.html` và `dat-san-thanh-cong.html`; kiểm tra trực quan: **Chờ người dùng xác nhận**.
+- `node --check` JavaScript frontend đạt; `node --test` các test frontend đạt 26/26; `npm test` với `APP_ENV=test`, `DB_NAME=sportbooking_test` đạt 34/34.
+- Smoke test luồng trên trình duyệt: **Chờ người dùng xác nhận**.
 
 ## Tham chiếu
 

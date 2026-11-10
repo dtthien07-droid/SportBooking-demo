@@ -1,3 +1,36 @@
+# 2026-11-09 - Shared booking stepper
+
+- Extracted the three-step booking progress UI into a shared component used by booking, payment, and ticket pages; step 1 is reachable from payment only while its hold remains active.
+- Added step-state tests; frontend tests: 26/26. Visual browser confirmation: waiting for user confirmation.
+
+# 2026-11-09 - Payment page follows booking step 2
+
+- Rebuilt `thanh-toan.html` from the payment/hold section of the approved booking mockup; removed the normal-flow result buttons and static sample amounts.
+- Payment confirmation now sends `SUCCESS`; the failure link is available only with `?demo=1`. Local transfer QR encodes `SPORTBOOKING|<booking_code>|<amount_due>` and is explicitly not VietQR.
+- Creating a hold now navigates directly to payment. The shared pending banner is hidden on booking and payment pages; empty/expired holds no longer show an active-hold timer.
+- `node --check` changed frontend JavaScript passed; frontend tests: 13/13; `npm test` with `APP_ENV=test`, `DB_NAME=sportbooking_test`: 34/34.
+- Browser smoke test: waiting for user confirmation.
+
+# 2026-11-09 - Shared pending-hold banner and encoding guard
+
+- Added a shared pending-hold banner with server-based countdown, continue-payment and cancel actions; hidden on the payment page.
+- Extended `GET /api/v1/bookings/pending` with `id`, facility/court, date, time ranges and remaining seconds.
+- Restored the pending-booking Vietnamese message and added a UTF-8/no-BOM source scan.
+- `npm test` with `APP_ENV=test`, `DB_NAME=sportbooking_test`: 34/34 passed.
+
+# 2026-11-09 - Existing pending booking handling
+
+- Added pending booking details to the 409 response and an authenticated `GET /api/v1/bookings/pending` endpoint.
+- Expired PENDING bookings are marked EXPIRED and their locked slots released in the same transaction that attempts the next booking.
+- Added continue/cancel actions and a remaining-time display on the booking page; cancellation retries the requested booking.
+- `npm test` with `APP_ENV=test`, `DB_NAME=sportbooking_test`: 33/33 passed.
+
+# 2026-11-09 ? Payment and ticket UI
+
+- Added payment and QR ticket pages based on the existing mockups, wired to the booking/payment APIs, and enabled the booking-page CTA.
+- Ticket QR is generated locally from the booking code; no external QR service is used.
+- JavaScript syntax checks and local QR SVG generation passed. Browser smoke testing was not run; backend 33/33 result is user-reported.
+
 # 2026-11-09 — Thanh toán giả lập và vé QR (FR-07)
 
 - Thêm migration 005 cho `payment_attempts` và `booking_tickets`, cùng kiểm tra trạng thái migration trong runner.
