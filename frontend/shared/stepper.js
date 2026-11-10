@@ -13,77 +13,97 @@
     'Thanh toán &amp; Giữ chỗ',
     'Hoàn tất đặt lịch'
   ];
+  const completeValues = new Set([4, 'complete', 'done', 'all-complete']);
+
+  function isComplete(currentStep) {
+    return completeValues.has(currentStep);
+  }
+
+  function validateCurrentStep(currentStep) {
+    if (isComplete(currentStep)) return;
+    if (!Number.isInteger(currentStep) || currentStep < 1 || currentStep > steps.length) {
+      throw new RangeError('Bước đặt sân phải là số nguyên từ 1 đến 3 hoặc complete.');
+    }
+  }
 
   function getStepState(step, currentStep) {
-    if (!Number.isInteger(step) || step < 1 || step > steps.length
-        || !Number.isInteger(currentStep) || currentStep < 1 || currentStep > steps.length) {
+    if (!Number.isInteger(step) || step < 1 || step > steps.length) {
       throw new RangeError('Bước đặt sân phải là số nguyên từ 1 đến 3.');
     }
-    if (step < currentStep) return 'completed';
+    validateCurrentStep(currentStep);
+    if (isComplete(currentStep) || step < currentStep) return 'completed';
     if (step === currentStep) return 'current';
     return 'upcoming';
+  }
+
+  function escapeAttribute(value) {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function itemContent(step, state, title) {
+    const completed = state === 'completed';
+    const numberOrCheck = completed
+      ? '<svg class="booking-stepper__check" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>'
+      : String(step);
+    const status = completed
+      ? 'Đã xong'
+      : state === 'current' ? 'Đang thực hiện' : 'Chưa tới';
+    const statusColor = state === 'upcoming' ? 'text-on-surface-variant' : 'text-primary';
+    const circle = `booking-stepper__circle ${completed
+      ? 'bg-primary text-on-primary'
+      : state === 'current'
+        ? 'bg-primary-container text-on-primary-container'
+        : 'bg-surface-container-high text-on-surface-variant'}`;
+
+    return `<span class="${circle}" aria-hidden="true">${numberOrCheck}</span>
+      <span class="booking-stepper__label">
+        <span class="booking-stepper__title">${title}</span>
+        <span class="booking-stepper__status ${statusColor}">${status}</span>
+      </span>`;
   }
 
   function render(mount, currentStep, { previousHref = '' } = {}) {
     if (!mount || typeof mount !== 'object') {
       throw new TypeError('Không tìm thấy vị trí hiển thị thanh bước.');
     }
-    const stateByStep = steps.map((_, index) => getStepState(index + 1, currentStep));
-    const progress = `${((currentStep - 1) / (steps.length - 1)) * 100}%`;
-    const safePreviousHref = previousHref.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+    validateCurrentStep(currentStep);
+    const completedSteps = isComplete(currentStep) ? steps.length : currentStep - 1;
     const items = steps.map((title, index) => {
       const step = index + 1;
-      const state = stateByStep[index];
-      const isCurrent = state === 'current';
-      const isCompleted = state === 'completed';
-      const side = step === 1 ? 'pl-space-xs' : step === 3 ? 'pr-space-xs' : '';
-      const alignment = step === 1 ? '' : step === 2 ? 'justify-center' : 'justify-end';
-      const textAlignment = step === 3 ? 'text-right' : '';
-      const iconClass = isCompleted || isCurrent
-        ? 'bg-primary text-on-primary shadow-sm'
-        : 'bg-surface-container-high text-on-surface-variant';
-      const tagClass = isCurrent
-        ? 'text-primary'
-        : isCompleted
-          ? 'text-on-surface-variant'
-          : 'text-on-surface-variant';
-      const titleClass = isCurrent || isCompleted
-        ? 'text-on-surface'
-        : 'text-on-surface-variant';
-      const icon = isCompleted
-        ? '<span class="material-symbols-outlined text-xl" aria-hidden="true">check</span>'
-        : String(step);
-      const commonClass = `booking-stepper__item flex items-center gap-space-sm z-10 ${alignment} ${side}`;
-      let control;
-      if (isCurrent) {
-        control = `<button type="button" class="${commonClass} booking-stepper__control cursor-default" aria-current="step">`;
-      } else if (step === 1 && currentStep === 2 && previousHref) {
-        control = `<a class="${commonClass} booking-stepper__control cursor-pointer" href="${safePreviousHref}">`;
-      } else {
-        control = `<span class="${commonClass} cursor-default" aria-disabled="true">`;
-      }
-      const closingTag = isCurrent || (step === 1 && currentStep === 2 && previousHref)
-        ? (isCurrent ? '</button>' : '</a>')
-        : '</span>';
-      const tagText = isCurrent ? 'text-primary' : tagClass;
-      const weight = isCurrent || isCompleted ? 'font-bold' : 'font-medium';
-      return `${control}
-        <span class="booking-stepper__icon w-10 h-10 rounded-xl ${iconClass} flex items-center justify-center font-bold text-base transition-all">${icon}</span>
-        <span class="booking-stepper__label flex flex-col min-w-0 ${textAlignment}">
-          <span class="text-[11px] ${tagText} uppercase font-bold tracking-wider">Bước ${step}</span>
-          <span class="text-sm ${weight} ${titleClass} truncate">${title}</span>
-        </span>
-      ${closingTag}`;
+      const state = getStepState(step, currentStep);
+      const current = state === 'current' ? ' aria-current="step"' : '';
+      const content = itemContent(step, state, title);
+      const href = step === 1 && currentStep === 2 && previousHref
+        ? ` href="${escapeAttribute(previousHref)}"`
+        : '';
+      const tag = href ? 'a' : 'span';
+      const linkAttrs = href ? ' class="booking-stepper__link"' : '';
+      const accessibleTitle = title.replace(/&amp;/g, '&');
+      const accessibleStatus = state === 'completed'
+        ? 'Đã xong'
+        : state === 'current' ? 'Đang thực hiện' : 'Chưa tới';
+      const label = escapeAttribute(`Bước ${step}: ${accessibleStatus}, ${accessibleTitle}`);
+      return `<li class="booking-stepper__item" aria-label="${label}"${current}><${tag}${linkAttrs}${href}>${content}</${tag}></li>`;
+    }).join('');
+    const connectors = [1, 2].map((step) => {
+      const complete = getStepState(step, currentStep) === 'completed';
+      return `<span class="booking-stepper__connector ${complete
+        ? 'bg-primary'
+        : 'bg-surface-container-high'}"></span>`;
     }).join('');
 
-    mount.innerHTML = `<div class="booking-stepper mb-space-lg bg-surface-container-lowest p-space-md rounded-2xl shadow-sm border border-gray-100" aria-label="Tiến trình đặt sân">
-      <div class="grid grid-cols-3 items-center relative">
-        <div class="booking-stepper__track absolute left-[16.6%] right-[16.6%] top-1/2 -translate-y-1/2 h-1 bg-surface-container-high rounded-full -z-0" aria-hidden="true">
-          <div class="h-full bg-primary rounded-full transition-all duration-300" style="width: ${progress}"></div>
-        </div>
-        ${items}
+    mount.innerHTML = `<nav class="booking-stepper mb-space-lg bg-surface-container-lowest p-space-md rounded-2xl shadow-sm border border-gray-100" aria-label="Tiến trình đặt sân">
+      <div class="booking-stepper__layout">
+        <div class="booking-stepper__connectors" aria-hidden="true">${connectors}</div>
+        <ol class="booking-stepper__steps">${items}</ol>
       </div>
-    </div>`;
+    </nav>`;
+    mount.dataset.currentStep = String(currentStep);
+    mount.dataset.completedSteps = String(completedSteps);
   }
 
   return { getStepState, render };

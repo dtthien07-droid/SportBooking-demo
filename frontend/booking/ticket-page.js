@@ -92,7 +92,7 @@
   }
 
   function renderTicket(model, user) {
-    window.SportBookingStepper.render(stepper, 3);
+    window.SportBookingStepper.render(stepper, 'complete');
     setText('bookingIdText', window.SportBookingFormat.formatBookingCode(model.bookingCode));
     setText('ticketFacilityName', model.facilityName);
     setText('ticketCourtName', model.courtName);
