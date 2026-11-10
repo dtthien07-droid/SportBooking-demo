@@ -115,6 +115,113 @@ function asNumber(value) {
   return Number(value);
 }
 
+const BOOKING_STATUSES = new Set(['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'EXPIRED']);
+const MAX_PAGE_SIZE = 50;
+
+function createInvalidQueryError(message) {
+  return createBookingError(400, 'INVALID_BOOKING_QUERY', message);
+}
+
+function parsePageValue(value, fallback, field, maximum = Number.MAX_SAFE_INTEGER) {
+  if (value === undefined) {
+    return fallback;
+  }
+  if (typeof value !== 'string' || !/^[1-9]\d*$/.test(value)) {
+    throw createInvalidQueryError(`${field} must be a positive integer.`);
+  }
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed > maximum) {
+    throw createInvalidQueryError(`${field} is outside the allowed range.`);
+  }
+  return parsed;
+}
+
+function parseLocalTimestamp(value) {
+  if (typeof value !== 'string') {
+    throw new TypeError('The database returned an invalid booking slot timestamp.');
+  }
+  const match = value.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})$/);
+  if (!match) {
+    throw new TypeError('The database returned an invalid booking slot timestamp.');
+  }
+  const timestamp = Date.parse(`${match[1]}T${match[2]}+07:00`);
+  if (!Number.isFinite(timestamp)) {
+    throw new TypeError('The database returned an invalid booking slot timestamp.');
+  }
+  return timestamp;
+}
+
+function getBookingDisplayState(booking, now = new Date()) {
+  const nowMs = now instanceof Date ? now.getTime() : Number.NaN;
+  if (!Number.isFinite(nowMs)) {
+    throw new TypeError('A valid current time is required.');
+  }
+
+  switch (booking.status) {
+    case 'PENDING':
+      return Number(booking.lock_expired) === 1
+        ? { code: 'EXPIRED', label: 'Đã hết hạn' }
+        : { code: 'PENDING', label: 'Chờ thanh toán' };
+    case 'EXPIRED':
+      return { code: 'EXPIRED', label: 'Đã hết hạn' };
+    case 'CANCELLED':
+      return { code: 'CANCELLED', label: 'Đã hủy' };
+    case 'COMPLETED':
+      return { code: 'COMPLETED', label: 'Hoàn thành' };
+    case 'CONFIRMED':
+      break;
+    default:
+      throw new TypeError('The database returned an unsupported booking status.');
+  }
+
+  let startAt;
+  let endAt;
+  if (booking.first_slot_start && booking.last_slot_end) {
+    startAt = parseLocalTimestamp(booking.first_slot_start);
+    endAt = parseLocalTimestamp(booking.last_slot_end);
+  } else {
+    if (!Array.isArray(booking.slots) || booking.slots.length === 0) {
+      throw new TypeError('A confirmed booking must have at least one slot.');
+    }
+    const orderedSlots = [...booking.slots].sort((left, right) => {
+      const startDifference = parseLocalTimestamp(
+        `${left.service_date}T${left.starts_at}`
+      ) - parseLocalTimestamp(`${right.service_date}T${right.starts_at}`);
+      return startDifference;
+    });
+    const first = orderedSlots[0];
+    const last = orderedSlots[orderedSlots.length - 1];
+    startAt = parseLocalTimestamp(`${first.service_date}T${first.starts_at}`);
+    endAt = parseLocalTimestamp(`${last.service_date}T${last.ends_at}`);
+  }
+  if (endAt < startAt) {
+    throw new TypeError('The database returned invalid booking slot boundaries.');
+  }
+
+  if (nowMs < startAt) {
+    return { code: 'UPCOMING', label: 'Sắp tới' };
+  }
+  if (nowMs < endAt) {
+    return { code: 'IN_PROGRESS', label: 'Đang trong trận' };
+  }
+  return { code: 'COMPLETED', label: 'Hoàn thành' };
+}
+
+function toHistorySlot(slot) {
+  return {
+    time_slot_id: String(slot.time_slot_id),
+    court_id: String(slot.court_id),
+    service_date: slot.service_date,
+    starts_at: slot.starts_at,
+    ends_at: slot.ends_at,
+    price_at_booking: String(slot.price_at_booking),
+    court_name: slot.court_name,
+    sport_type: slot.sport_type,
+    facility_id: String(slot.facility_id),
+    facility_name: slot.facility_name
+  };
+}
+
 function toSlotResponse(slot) {
   return {
     time_slot_id: String(slot.id || slot.time_slot_id),
@@ -130,9 +237,12 @@ function toSlotResponse(slot) {
   };
 }
 
-function createBookingsService(repository) {
+function createBookingsService(repository, { now = () => new Date() } = {}) {
   if (!repository || typeof repository.withTransaction !== 'function') {
     throw new TypeError('A compatible bookings repository is required.');
+  }
+  if (typeof now !== 'function') {
+    throw new TypeError('A current-time function is required.');
   }
 
   async function createBooking(userId, body) {
@@ -325,22 +435,83 @@ function createBookingsService(repository) {
     }
   }
 
+  async function listBookings(user, query) {
+    if (query.mine !== 'true') {
+      throw createInvalidQueryError('mine must be true.');
+    }
+    const status = query.status;
+    if (status !== undefined && !BOOKING_STATUSES.has(status)) {
+      throw createInvalidQueryError('status is not supported.');
+    }
+    const pageSize = parsePageValue(query.page_size, 10, 'page_size', MAX_PAGE_SIZE);
+    const maxPage = Math.floor(Number.MAX_SAFE_INTEGER / pageSize) + 1;
+    const page = parsePageValue(query.page, 1, 'page', maxPage);
+    const result = await repository.listBookingsForUser({
+      userId: user.id,
+      status: status || null,
+      page,
+      pageSize
+    });
+    const bookingIds = result.rows.map((booking) => String(booking.id));
+    const slotRows = await repository.findOwnedBookingSlotsByIds(user.id, bookingIds);
+    const slotsByBookingId = new Map(bookingIds.map((id) => [id, []]));
+    for (const slot of slotRows) {
+      slotsByBookingId.get(String(slot.booking_id)).push(toHistorySlot(slot));
+    }
+    const currentTime = now();
+    const bookings = result.rows.map((booking) => {
+      const slots = slotsByBookingId.get(String(booking.id));
+      const displayState = getBookingDisplayState({
+        status: booking.status,
+        lock_expired: booking.lock_expired,
+        slots
+      }, currentTime);
+      return {
+        booking_id: String(booking.id),
+        booking_code: booking.booking_code,
+        status: booking.status,
+        display_status_code: displayState.code,
+        display_status: displayState.label,
+        total_amount: String(booking.total_amount),
+        payment_status: booking.payment_status,
+        paid_amount: booking.paid_amount === null ? null : String(booking.paid_amount),
+        refunded_amount: booking.refunded_amount === null ? null : String(booking.refunded_amount),
+        remaining_seconds: booking.remaining_seconds === null
+          ? null
+          : asNumber(booking.remaining_seconds),
+        slots
+      };
+    });
+    return {
+      bookings,
+      pagination: {
+        page,
+        page_size: pageSize,
+        total: result.total,
+        total_pages: Math.ceil(result.total / pageSize)
+      }
+    };
+  }
+
   async function getBooking(user, rawBookingId) {
     const bookingId = normalizeBookingId(rawBookingId);
-    const booking = await repository.findBookingById(bookingId);
-    if (!booking || (String(booking.user_id) !== String(user.id) && user.role !== 'ADMIN')) {
+    const booking = await repository.findOwnedBookingById(bookingId, user.id);
+    if (!booking) {
       throw createBookingError(404, 'BOOKING_NOT_FOUND', 'The booking was not found.');
     }
-    if (booking.status === 'EXPIRED'
-        || booking.status === 'PENDING'
-          && (booking.lock_expires_at === null || Number(booking.lock_expired) === 1)) {
-      throw createBookingError(410, 'BOOKING_EXPIRED', 'The booking hold has expired.');
-    }
-    const slots = await repository.findBookingSlotsById(bookingId);
+    const slots = (await repository.findOwnedBookingSlotsById(bookingId, user.id))
+      .map(toHistorySlot);
+    const displayState = getBookingDisplayState({
+      status: booking.status,
+      lock_expired: booking.lock_expired,
+      slots
+    }, now());
     return {
       booking_id: String(booking.id),
       booking_code: booking.booking_code,
       status: booking.status,
+      display_status_code: displayState.code,
+      display_status: displayState.label,
       total_amount: String(booking.total_amount),
       payment: booking.payment_status === null ? null : {
         status: booking.payment_status,
@@ -359,18 +530,7 @@ function createBookingsService(repository) {
       remaining_seconds: booking.remaining_seconds === null
         ? null
         : asNumber(booking.remaining_seconds),
-      slots: slots.map((slot) => ({
-        time_slot_id: String(slot.time_slot_id),
-        court_id: String(slot.court_id),
-        service_date: slot.service_date,
-        starts_at: slot.starts_at,
-        ends_at: slot.ends_at,
-        price_at_booking: String(slot.price_at_booking),
-        court_name: slot.court_name,
-        sport_type: slot.sport_type,
-        facility_id: String(slot.facility_id),
-        facility_name: slot.facility_name
-      }))
+      slots
     };
   }
 
@@ -379,7 +539,9 @@ function createBookingsService(repository) {
     if (!pending) return null;
     try {
       const booking = await getBooking(user, String(pending.id));
-      return { ...booking, id: booking.booking_id };
+      return booking.display_status_code === 'EXPIRED'
+        ? null
+        : { ...booking, id: booking.booking_id };
     } catch (error) {
       if (error.status === 410) return null;
       throw error;
@@ -521,15 +683,35 @@ function createBookingsService(repository) {
     return released;
   }
 
+  async function completeDueBookings(batchSize = 100) {
+    const candidates = await repository.findConfirmedBookingsDueForCompletion(batchSize);
+    let completed = 0;
+    const currentTime = now();
+    for (const booking of candidates) {
+      const state = getBookingDisplayState({
+        status: 'CONFIRMED',
+        first_slot_start: booking.first_slot_start,
+        last_slot_end: booking.last_slot_end
+      }, currentTime);
+      if (state.code === 'COMPLETED'
+          && await repository.markBookingCompletedIfDue(booking.id)) {
+        completed += 1;
+      }
+    }
+    return completed;
+  }
+
   return {
     createBooking,
+    listBookings,
     getBooking,
     getPendingBooking,
     cancelBooking,
     createPaymentAttempt,
     getPayments,
-    releaseExpiredBookings
+    releaseExpiredBookings,
+    completeDueBookings
   };
 }
 
-module.exports = { createBookingsService };
+module.exports = { createBookingsService, getBookingDisplayState };

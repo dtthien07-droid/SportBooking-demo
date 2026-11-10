@@ -228,6 +228,8 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
       assert.equal(oneSlotDetailResponse.status, 200);
       const oneSlotDetail = await oneSlotDetailResponse.json();
       assert.deepEqual(oneSlotDetail.match_preference, oneSlotBooking.match_preference);
+      assert.equal(oneSlotDetail.display_status_code, 'PENDING');
+      assert.equal(oneSlotDetail.display_status, 'Chờ thanh toán');
 
       const multiSlotResponse = await postJson(
         baseUrl,
@@ -257,6 +259,114 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
       assert.equal(detail.payment.payment_option, 'DEPOSIT_50');
       assert.equal(detail.deposit_amount, '120000');
       assert.equal(detail.amount_due_at_venue, '120000');
+      assert.equal(detail.display_status_code, 'PENDING');
+    });
+
+    await t.test('lists only the owner bookings with status filtering and pagination', async () => {
+      const unauthenticated = await fetch(`${baseUrl}/api/v1/bookings?mine=true`);
+      assert.equal(unauthenticated.status, 401);
+
+      const paid = await postJson(
+        baseUrl,
+        `/api/v1/bookings/${multiSlotBookingId}/payment-attempts`,
+        { method: 'MOMO', simulation_result: 'SUCCESS' },
+        users[1].cookie
+      );
+      assert.equal(paid.status, 201);
+
+      const nextBookingResponse = await postJson(
+        baseUrl,
+        '/api/v1/bookings',
+        { slot_ids: [slotIds[2]] },
+        users[1].cookie
+      );
+      assert.equal(nextBookingResponse.status, 201);
+      const nextBooking = await nextBookingResponse.json();
+
+      const firstPageResponse = await fetch(
+        `${baseUrl}/api/v1/bookings?mine=true&page=1&page_size=1`,
+        { headers: { cookie: users[1].cookie } }
+      );
+      assert.equal(firstPageResponse.status, 200);
+      assert.equal(firstPageResponse.headers.get('cache-control'), 'no-store');
+      const firstPage = await firstPageResponse.json();
+      assert.equal(firstPage.pagination.total, 2);
+      assert.equal(firstPage.pagination.total_pages, 2);
+      assert.equal(firstPage.pagination.page, 1);
+      assert.equal(firstPage.pagination.page_size, 1);
+      assert.equal(firstPage.bookings.length, 1);
+      assert.equal(firstPage.bookings[0].booking_id, nextBooking.booking_id);
+      assert.equal(firstPage.bookings[0].display_status_code, 'PENDING');
+
+      const secondPageResponse = await fetch(
+        `${baseUrl}/api/v1/bookings?mine=true&page=2&page_size=1`,
+        { headers: { cookie: users[1].cookie } }
+      );
+      const secondPage = await secondPageResponse.json();
+      assert.equal(secondPage.bookings.length, 1);
+      assert.equal(secondPage.bookings[0].booking_id, multiSlotBookingId);
+      assert.equal(secondPage.bookings[0].payment_status, 'PAID');
+      assert.equal(secondPage.bookings[0].paid_amount, '120000');
+      assert.equal(secondPage.bookings[0].slots.length, 2);
+
+      const confirmedFilterResponse = await fetch(
+        `${baseUrl}/api/v1/bookings?mine=true&status=CONFIRMED`,
+        { headers: { cookie: users[1].cookie } }
+      );
+      const confirmedFilter = await confirmedFilterResponse.json();
+      assert.equal(confirmedFilter.pagination.total, 1);
+      assert.equal(confirmedFilter.bookings[0].booking_id, multiSlotBookingId);
+
+      const emptyOwnerResponse = await fetch(
+        `${baseUrl}/api/v1/bookings?mine=true`,
+        { headers: { cookie: users[5].cookie } }
+      );
+      const emptyOwner = await emptyOwnerResponse.json();
+      assert.equal(emptyOwner.pagination.total, 0);
+      assert.equal(emptyOwner.pagination.total_pages, 0);
+      assert.deepEqual(emptyOwner.bookings, []);
+
+      const badPage = await fetch(
+        `${baseUrl}/api/v1/bookings?mine=true&page=0`,
+        { headers: { cookie: users[1].cookie } }
+      );
+      assert.equal(badPage.status, 400);
+      const oversizedPage = await fetch(
+        `${baseUrl}/api/v1/bookings?mine=true&page_size=51`,
+        { headers: { cookie: users[1].cookie } }
+      );
+      assert.equal(oversizedPage.status, 400);
+    });
+
+    await t.test('completion job waits for slot end and is idempotent', async () => {
+      assert.equal(await app.locals.bookingsService.completeDueBookings(), 0);
+      const [beforeRows] = await pool.execute(
+        'SELECT status FROM bookings WHERE id = ?',
+        [multiSlotBookingId]
+      );
+      assert.equal(beforeRows[0].status, 'CONFIRMED');
+
+      const yesterday = `DATE_SUB(DATE(DATE_ADD(UTC_TIMESTAMP(3), INTERVAL 7 HOUR)), INTERVAL 1 DAY)`;
+      await pool.execute(
+        `UPDATE time_slots
+         SET service_date = ${yesterday}, starts_at = '10:00:00', ends_at = '11:00:00'
+         WHERE id = ?`,
+        [slotIds[3]]
+      );
+      await pool.execute(
+        `UPDATE time_slots
+         SET service_date = ${yesterday}, starts_at = '11:00:00', ends_at = '12:00:00'
+         WHERE id = ?`,
+        [slotIds[4]]
+      );
+
+      assert.equal(await app.locals.bookingsService.completeDueBookings(), 1);
+      assert.equal(await app.locals.bookingsService.completeDueBookings(), 0);
+      const [afterRows] = await pool.execute(
+        'SELECT status FROM bookings WHERE id = ?',
+        [multiSlotBookingId]
+      );
+      assert.equal(afterRows[0].status, 'COMPLETED');
     });
 
     await t.test('rejects a second active booking and non-contiguous or near-term slots', async () => {
@@ -483,6 +593,15 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
          WHERE current_booking_id = ?`,
         [expiringBooking.booking_id]
       );
+      const stalePendingRead = await fetch(
+        `${baseUrl}/api/v1/bookings/${expiringBooking.booking_id}`,
+        { headers: { cookie: users[2].cookie } }
+      );
+      assert.equal(stalePendingRead.status, 200);
+      const stalePendingDetail = await stalePendingRead.json();
+      assert.equal(stalePendingDetail.status, 'PENDING');
+      assert.equal(stalePendingDetail.display_status_code, 'EXPIRED');
+
       const released = await app.locals.bookingsService.releaseExpiredBookings();
       assert.equal(released, 1);
       const [expiredRows] = await pool.execute(
@@ -502,7 +621,11 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
         `${baseUrl}/api/v1/bookings/${expiringBooking.booking_id}`,
         { headers: { cookie: users[2].cookie } }
       );
-      assert.equal(expiredRead.status, 410);
+      assert.equal(expiredRead.status, 200);
+      const expiredDetail = await expiredRead.json();
+      assert.equal(expiredDetail.status, 'EXPIRED');
+      assert.equal(expiredDetail.display_status_code, 'EXPIRED');
+      assert.equal(expiredDetail.display_status, 'Đã hết hạn');
 
       const staleBookingResponse = await postJson(
         baseUrl,

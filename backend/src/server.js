@@ -22,6 +22,9 @@ const expiryTimer = setInterval(() => {
   app.locals.bookingsService.releaseExpiredBookings().catch((error) => {
     console.error(`[Booking Expiry Job] Failed: ${error.message}`);
   });
+  app.locals.bookingsService.completeDueBookings().catch((error) => {
+    console.error(`[Booking Completion Job] Failed: ${error.message}`);
+  });
 }, 60_000);
 expiryTimer.unref();
 

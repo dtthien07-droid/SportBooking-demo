@@ -461,8 +461,9 @@ function createBookingRepository(pool) {
                   )
                 END AS remaining_seconds,
                 CASE
-                  WHEN b.lock_expires_at IS NOT NULL
-                       AND b.lock_expires_at <= UTC_TIMESTAMP(3)
+                  WHEN b.status = 'PENDING'
+                       AND (b.lock_expires_at IS NULL
+                            OR b.lock_expires_at <= UTC_TIMESTAMP(3))
                   THEN 1 ELSE 0
                 END AS lock_expired
          FROM bookings AS b
@@ -472,6 +473,122 @@ function createBookingRepository(pool) {
         [bookingId]
       );
       return rows[0] || null;
+    },
+
+    async findOwnedBookingById(bookingId, userId) {
+      const [rows] = await pool.execute(
+        `SELECT b.id, b.booking_code, b.user_id, b.status, b.total_amount,
+                b.match_preference, b.lock_expires_at,
+                p.status AS payment_status, p.amount_due, p.paid_amount,
+                p.refunded_amount, p.payment_option,
+                CASE
+                  WHEN b.status != 'PENDING' OR b.lock_expires_at IS NULL THEN NULL
+                  ELSE GREATEST(
+                    0,
+                    CEIL(TIMESTAMPDIFF(MICROSECOND, UTC_TIMESTAMP(3), b.lock_expires_at) / 1000000)
+                  )
+                END AS remaining_seconds,
+                CASE
+                  WHEN b.status = 'PENDING'
+                       AND (b.lock_expires_at IS NULL
+                            OR b.lock_expires_at <= UTC_TIMESTAMP(3))
+                  THEN 1 ELSE 0
+                END AS lock_expired
+         FROM bookings AS b
+         LEFT JOIN payments AS p ON p.booking_id = b.id
+         WHERE b.id = ? AND b.user_id = ?
+         LIMIT 1`,
+        [bookingId, userId]
+      );
+      return rows[0] || null;
+    },
+
+    async listBookingsForUser({ userId, status, page, pageSize }) {
+      const conditions = ['b.user_id = ?'];
+      const parameters = [userId];
+      if (status) {
+        conditions.push('b.status = ?');
+        parameters.push(status);
+      }
+      const whereClause = conditions.join(' AND ');
+      const [countRows] = await pool.execute(
+        `SELECT COUNT(*) AS total
+         FROM bookings AS b
+         WHERE ${whereClause}`,
+        parameters
+      );
+      const total = Number(countRows[0].total);
+      if (!Number.isSafeInteger(total)) {
+        throw new RangeError('The booking count exceeds the supported range.');
+      }
+      const [rows] = await pool.execute(
+        `SELECT b.id, b.booking_code, b.user_id, b.status, b.total_amount,
+                b.lock_expires_at, p.status AS payment_status,
+                p.paid_amount, p.refunded_amount,
+                CASE
+                  WHEN b.status != 'PENDING' OR b.lock_expires_at IS NULL THEN NULL
+                  ELSE GREATEST(
+                    0,
+                    CEIL(TIMESTAMPDIFF(MICROSECOND, UTC_TIMESTAMP(3), b.lock_expires_at) / 1000000)
+                  )
+                END AS remaining_seconds,
+                CASE
+                  WHEN b.lock_expires_at IS NOT NULL
+                       AND b.lock_expires_at <= UTC_TIMESTAMP(3)
+                  THEN 1 ELSE 0
+                END AS lock_expired
+         FROM bookings AS b
+         LEFT JOIN payments AS p ON p.booking_id = b.id
+         WHERE ${whereClause}
+         ORDER BY b.created_at DESC, b.id DESC
+         LIMIT ? OFFSET ?`,
+        [...parameters, pageSize, (page - 1) * pageSize]
+      );
+      return { rows, total };
+    },
+
+    async findOwnedBookingSlotsByIds(userId, bookingIds) {
+      if (bookingIds.length === 0) {
+        return [];
+      }
+      const placeholders = bookingIds.map(() => '?').join(', ');
+      const [rows] = await pool.execute(
+        `SELECT bs.booking_id, bs.time_slot_id, bs.court_id, bs.price_at_booking,
+                DATE_FORMAT(ts.service_date, '%Y-%m-%d') AS service_date,
+                TIME_FORMAT(ts.starts_at, '%H:%i:%s') AS starts_at,
+                TIME_FORMAT(ts.ends_at, '%H:%i:%s') AS ends_at,
+                c.name AS court_name, c.sport_type,
+                f.id AS facility_id, f.name AS facility_name
+         FROM booking_slots AS bs
+         INNER JOIN bookings AS b ON b.id = bs.booking_id
+         INNER JOIN time_slots AS ts ON ts.id = bs.time_slot_id
+         INNER JOIN courts AS c ON c.id = bs.court_id
+         INNER JOIN facilities AS f ON f.id = c.facility_id
+         WHERE b.user_id = ? AND bs.booking_id IN (${placeholders})
+         ORDER BY bs.booking_id ASC, ts.service_date ASC, ts.starts_at ASC, ts.id ASC`,
+        [userId, ...bookingIds]
+      );
+      return rows;
+    },
+
+    async findOwnedBookingSlotsById(bookingId, userId) {
+      const [rows] = await pool.execute(
+        `SELECT bs.time_slot_id, bs.court_id, bs.price_at_booking,
+                DATE_FORMAT(ts.service_date, '%Y-%m-%d') AS service_date,
+                TIME_FORMAT(ts.starts_at, '%H:%i:%s') AS starts_at,
+                TIME_FORMAT(ts.ends_at, '%H:%i:%s') AS ends_at,
+                c.name AS court_name, c.sport_type,
+                f.id AS facility_id, f.name AS facility_name
+         FROM booking_slots AS bs
+         INNER JOIN bookings AS b ON b.id = bs.booking_id
+         INNER JOIN time_slots AS ts ON ts.id = bs.time_slot_id
+         INNER JOIN courts AS c ON c.id = bs.court_id
+         INNER JOIN facilities AS f ON f.id = c.facility_id
+         WHERE bs.booking_id = ? AND b.user_id = ?
+         ORDER BY ts.service_date ASC, ts.starts_at ASC, ts.id ASC`,
+        [bookingId, userId]
+      );
+      return rows;
     },
 
     async findBookingSlotsById(bookingId) {
@@ -491,6 +608,47 @@ function createBookingRepository(pool) {
         [bookingId]
       );
       return rows;
+    },
+
+    async findConfirmedBookingsDueForCompletion(limit) {
+      const [rows] = await pool.execute(
+        `SELECT b.id,
+                MIN(CONCAT(DATE_FORMAT(ts.service_date, '%Y-%m-%d'), 'T',
+                           TIME_FORMAT(ts.starts_at, '%H:%i:%s'))) AS first_slot_start,
+                MAX(CONCAT(DATE_FORMAT(ts.service_date, '%Y-%m-%d'), 'T',
+                           TIME_FORMAT(ts.ends_at, '%H:%i:%s'))) AS last_slot_end
+         FROM bookings AS b
+         INNER JOIN booking_slots AS bs ON bs.booking_id = b.id
+         INNER JOIN time_slots AS ts ON ts.id = bs.time_slot_id
+         WHERE b.status = 'CONFIRMED'
+         GROUP BY b.id
+         HAVING MAX(TIMESTAMP(ts.service_date, ts.ends_at))
+                  <= DATE_ADD(UTC_TIMESTAMP(3), INTERVAL 7 HOUR)
+         ORDER BY last_slot_end ASC, b.id ASC
+         LIMIT ?`,
+        [limit]
+      );
+      return rows;
+    },
+
+    async markBookingCompletedIfDue(bookingId) {
+      const [result] = await pool.execute(
+        `UPDATE bookings AS b
+         SET b.status = 'COMPLETED', b.updated_at = UTC_TIMESTAMP(3)
+         WHERE b.id = ?
+           AND b.status = 'CONFIRMED'
+           AND EXISTS (
+             SELECT 1
+             FROM booking_slots AS bs
+             INNER JOIN time_slots AS ts ON ts.id = bs.time_slot_id
+             WHERE bs.booking_id = b.id
+             GROUP BY bs.booking_id
+             HAVING MAX(TIMESTAMP(ts.service_date, ts.ends_at))
+                      <= DATE_ADD(UTC_TIMESTAMP(3), INTERVAL 7 HOUR)
+           )`,
+        [bookingId]
+      );
+      return result.affectedRows === 1;
     },
 
     async findExpiredBookingIds(limit) {
