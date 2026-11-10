@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>SportBooking - Lịch sử đặt sân của tôi</title>
+   
+    <link href="https://fonts.googleapis.com" rel="preconnect">
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&family=Inter:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
+   
+    <style>
+        @layer base {
+            html, body { margin: 0; padding: 0; }
+            body { overscroll-behavior: none; }
+            main > :first-child { margin-top: 0 !important; }
+            main > :last-child { margin-bottom: 0 !important; }
+        }
+        ::-webkit-scrollbar { display: none; }
+        [hidden] { display: none !important; }
+    </style>
+   
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#006b2c",
+                        "on-primary": "#ffffff",
+                        "primary-container": "#00873a",
+                        "on-primary-container": "#f7fff2",
+                        "secondary": "#9d4300",
+                        "secondary-container": "#fd761a",
+                        "on-secondary": "#ffffff",
+                        "secondary-fixed": "#ffdbca",
+                        "on-secondary-fixed-variant": "#783200",
+                        "tertiary": "#0051d5",
+                        "tertiary-fixed": "#dbe1ff",
+                        "on-tertiary-fixed-variant": "#003ea8",
+                        "surface": "#f9f9ff",
+                        "on-surface": "#141b2b",
+                        "on-surface-variant": "#3e4a3d",
+                        "surface-container": "#e9edff",
+                        "surface-container-low": "#f1f3ff",
+                        "surface-container-high": "#e1e8fd",
+                        "surface-container-lowest": "#ffffff",
+                        "outline": "#6e7b6c",
+                        "outline-variant": "#bdcaba",
+                        "error": "#ba1a1a",
+                        "error-container": "#ffdad6",
+                        "on-error-container": "#93000a",
+                        "inverse-surface": "#293040"
+                    },
+                    spacing: {
+                        "space-xs": "0.25rem",
+                        "space-sm": "0.5rem",
+                        "space-md": "1rem",
+                        "space-lg": "1.5rem",
+                        "space-xl": "2rem",
+                        "margin": "1.25rem"
+                    },
+                    fontFamily: {
+                        "body-md": ["Be Vietnam Pro"],
+                        "headline-sm": ["Be Vietnam Pro"],
+                        "headline-lg": ["Be Vietnam Pro"],
+                        "label-sm": ["Inter"],
+                        "label-md": ["Inter"],
+                        "label-lg": ["Inter"]
+                    }
+                }
+            }
+        };
+    </script>
+    <link rel="stylesheet" href="/shared/header.css">
+</head>
+<body class="bg-surface font-['Be_Vietnam_Pro'] text-on-surface antialiased" data-page="booking-history">
+    <!-- HEADER ĐỒNG BỘ -->
+    <div data-shared-header></div>
+    <header class="fixed top-0 left-0 right-0 w-full z-50 bg-surface/95 backdrop-blur-md shadow-sm hidden" aria-hidden="true" inert>
+        <div class="h-20 max-w-[1440px] mx-auto px-margin flex items-center justify-between gap-space-lg">
+            <div class="flex items-center gap-space-xl">
+                <a class="flex items-center gap-space-sm" href="trangchu-user.html">
+                    <span class="text-xl text-primary font-bold tracking-tight">SportBooking</span>
+                </a>
+
+                <nav class="hidden md:flex items-center gap-2 text-sm font-semibold">
+                    <a class="px-4 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container transition-all" href="trangchu-user.html">Trang chủ</a>
+                    <a class="px-4 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container transition-all" href="tim-san.html">Tìm sân</a>
+                    <a class="px-4 py-2 rounded-xl bg-primary-container text-on-primary-container shadow-sm transition-all" href="lich-su-dat-san.html">Lịch sử đặt sân</a>
+                    <a class="px-4 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container transition-all" href="tim-doi-choi.html">Tìm đối chơi</a>
+                    <a class="px-4 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container transition-all" href="tin-tuc-the-thao.html">Tin tức thể thao</a>
+                </nav>
+            </div>
+
+            <div class="flex items-center gap-space-lg">
+                <div class="relative" id="notifDropdownContainer">
+                    <button aria-label="Thông báo" id="btnToggleNotifDropdown" class="relative p-2.5 rounded-xl text-on-surface-variant hover:bg-surface-container transition-colors cursor-pointer flex items-center justify-center outline-none" type="button" title="Thông báo">
+                        <span class="material-symbols-outlined text-[24px] align-middle">notifications</span>
+                        <span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full hidden" id="badgeQuickCount"></span>
+                    </button>
+
+                    <div class="hidden absolute right-0 top-full mt-2 w-[360px] max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl border border-gray-100 flex-col z-50 overflow-hidden" id="quickNotifPopover">
+                        <div class="p-3.5 border-b border-gray-100 bg-surface-container-lowest flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <h3 class="text-sm font-bold text-on-surface">Thông báo</h3>
+                                <span class="px-2 py-0.5 rounded-full bg-red-100 text-error text-[10px] font-bold" id="badgePopoverUnread">0 chưa đọc</span>
+                            </div>
+                            <button type="button" id="btnMarkAllNotifs" class="text-xs text-primary font-bold hover:underline cursor-pointer">
+                                Đã đọc tất cả
+                            </button>
+                        </div>
+                        <div class="max-h-[340px] overflow-y-auto divide-y divide-gray-100" id="quickNotifList"></div>
+                        <div class="p-2.5 bg-surface-container-low text-center border-t border-gray-100">
+                            <a class="inline-flex items-center justify-center gap-1 text-xs font-bold text-primary hover:text-primary-container transition-colors cursor-pointer" href="thong-bao.html">
+                                <span>Xem tất cả thông báo</span>
+                                <span class="material-symbols-outlined text-[15px]">chevron_right</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KHU VỰC TÀI KHOẢN -->
+                <div id="userHeaderArea" class="flex items-center gap-2 pl-2"></div>
+            </div>
+        </div>
+    </header>
+
+    <main class="w-full pt-20 min-h-screen bg-surface">
+        <div class="flex flex-col w-full">
+            <div class="max-w-[1440px] w-full mx-auto px-margin py-space-xl flex flex-col gap-space-xl">
+                <!-- Tiêu đề & tác vụ nhanh -->
+                <div class="flex flex-col gap-space-xs">
+                    <div class="flex flex-col gap-space-xs">
+                        <h1 class="text-2xl sm:text-3xl md:text-4xl font-extrabold text-on-surface tracking-tight font-['Be_Vietnam_Pro']">
+                            Lịch sử đặt sân của tôi
+                        </h1>
+                        <p class="text-sm text-on-surface-variant max-w-2xl">
+                            Theo dõi trạng thái các đơn đặt sân của bạn.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Thống kê nhanh -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-space-md">
+                    <div class="p-space-lg rounded-2xl bg-surface-container-lowest shadow-sm flex items-center justify-between border border-gray-100">
+                        <div class="flex flex-col gap-1">
+                            <span class="text-xs uppercase tracking-wide text-on-surface-variant font-bold">Lịch sắp tới</span>
+                            <div class="flex items-baseline gap-1">
+                                <span id="stat-upcoming-count" class="text-3xl font-bold text-on-surface">--</span>
+                                <span class="text-sm text-on-surface-variant">đơn đặt sân</span>
+                            </div>
+                            <span id="stat-upcoming-subtext" class="text-xs text-primary font-medium flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                                <span>Đơn chưa kết thúc</span>
+                            </span>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                            <span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">sports_tennis</span>
+                        </div>
+                    </div>
+
+                    <div class="p-space-lg rounded-2xl bg-surface-container-lowest shadow-sm flex items-center justify-between border border-gray-100">
+                        <div class="flex flex-col gap-1">
+                            <span class="text-xs uppercase tracking-wide text-on-surface-variant font-bold">Tích lũy thi đấu</span>
+                            <div class="flex items-baseline gap-1">
+                                <span id="stat-completed-count" class="text-3xl font-bold text-on-surface">--</span>
+                                <span class="text-sm text-on-surface-variant">lượt hoàn thành</span>
+                            </div>
+                            <span id="stat-reputation-subtext" class="text-xs text-tertiary font-medium">Đơn đã hoàn thành</span>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl bg-tertiary-fixed text-on-tertiary-fixed-variant flex items-center justify-center">
+                            <span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">verified</span>
+                        </div>
+                    </div>
+
+                    <div class="p-space-lg rounded-2xl bg-surface-container-lowest shadow-sm flex items-center justify-between border border-gray-100">
+                        <div class="flex flex-col gap-1">
+                            <span class="text-xs uppercase tracking-wide text-on-surface-variant font-bold">Tổng ngân sách sân</span>
+                            <div class="flex items-baseline gap-1">
+                                <span id="stat-total-spent" class="text-3xl font-bold text-secondary">--</span>
+                                <span class="text-base text-secondary font-bold"></span>
+                            </div>
+                            <span id="stat-total-subtext" class="text-xs text-on-surface-variant">Thanh toán trừ hoàn tiền</span>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl bg-secondary-fixed text-on-secondary-fixed-variant flex items-center justify-center">
+                            <span class="material-symbols-outlined text-2xl">account_balance_wallet</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bảng lọc và tìm kiếm -->
+                <div class="flex flex-col gap-space-md p-space-md rounded-2xl bg-surface-container-lowest shadow-sm border border-gray-100">
+                    <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0" id="status-tab-group">
+                        <button class="status-tab px-4 py-2 rounded-xl text-sm transition-all whitespace-nowrap bg-primary-container text-on-primary-container font-bold shadow-sm cursor-pointer" data-filter="all" type="button">
+                            Tất cả <span id="count-all" class="ml-1 opacity-90 text-xs">(--)</span>
+                        </button>
+                        <button class="status-tab px-4 py-2 rounded-xl text-sm transition-all whitespace-nowrap bg-surface-container-low hover:bg-surface-container text-on-surface-variant font-medium cursor-pointer" data-filter="upcoming" type="button">
+                            Sắp tới / Đang trong trận <span id="count-upcoming" class="ml-1 opacity-80 text-xs">(--)</span>
+                        </button>
+                        <button class="status-tab px-4 py-2 rounded-xl text-sm transition-all whitespace-nowrap bg-surface-container-low hover:bg-surface-container text-on-surface-variant font-medium cursor-pointer" data-filter="payment-pending" type="button">
+                            Chờ thanh toán <span id="count-payment-pending" class="ml-1 opacity-80 text-xs">(--)</span>
+                        </button>
+                        <button class="status-tab px-4 py-2 rounded-xl text-sm transition-all whitespace-nowrap bg-surface-container-low hover:bg-surface-container text-on-surface-variant font-medium cursor-pointer" data-filter="completed" type="button">
+                            Hoàn thành <span id="count-completed" class="ml-1 opacity-80 text-xs">(--)</span>
+                        </button>
+                        <button class="status-tab px-4 py-2 rounded-xl text-sm transition-all whitespace-nowrap bg-surface-container-low hover:bg-surface-container text-on-surface-variant font-medium cursor-pointer" data-filter="cancelled" type="button">
+                            Đã hủy <span id="count-cancelled" class="ml-1 opacity-80 text-xs">(--)</span>
+                        </button>
+                        <button class="status-tab px-4 py-2 rounded-xl text-sm transition-all whitespace-nowrap bg-surface-container-low hover:bg-surface-container text-on-surface-variant font-medium cursor-pointer" data-filter="expired" type="button">
+                            Hết hạn <span id="count-expired" class="ml-1 opacity-80 text-xs">(--)</span>
+                        </button>
+                    </div>
+
+                    <div class="flex flex-col md:flex-row items-center gap-space-md pt-space-xs">
+                        <div class="relative w-full md:flex-1">
+                            <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">search</span>
+                            <input class="w-full pl-11 pr-4 py-2.5 rounded-xl bg-surface-container-low text-on-surface placeholder:text-gray-400 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all" id="search-input" placeholder="Tìm theo mã đặt sân hoặc tên cơ sở..." type="text">
+                        </div>
+                        <div class="w-full md:w-64 relative">
+                            <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-lg">sports</span>
+                            <select class="w-full pl-11 pr-8 py-2.5 rounded-xl bg-surface-container-low text-on-surface text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none cursor-pointer" id="sport-filter">
+                                <option value="all">Tất cả môn thể thao</option>
+                                <option value="BADMINTON">Cầu lông</option>
+                                <option value="FOOTBALL_MINI">Bóng đá mini</option>
+                                <option value="PICKLEBALL">Pickleball</option>
+                            </select>
+                            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-base">expand_more</span>
+                        </div>
+                    </div>
+                </div>
+
+                <section id="history-loading" class="p-8 rounded-xl bg-surface-container-low text-center" role="status">
+                    <span class="inline-block w-8 h-8 rounded-full border-4 border-primary/20 border-t-primary animate-spin" aria-hidden="true"></span>
+                    <p class="text-sm text-on-surface-variant mt-3">Đang tải lịch sử đặt sân...</p>
+                </section>
+                <section id="history-error" class="p-6 rounded-xl bg-error-container/40 border border-error/20 text-center" role="alert" hidden>
+                    <p id="history-error-message" class="text-sm font-semibold text-error"></p>
+                    <button id="history-retry" class="mt-4 px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary-container" type="button">Thử lại</button>
+                </section>
+                <section id="history-empty" class="p-8 rounded-xl bg-surface-container-low text-center" hidden>
+                    <svg aria-hidden="true" viewBox="0 0 24 24" class="w-12 h-12 mx-auto text-primary" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5h16v16H4zM8 3v4m8-4v4M4 10h16M8 14h3m-3 3h7"/></svg>
+                    <h2 id="history-empty-title" class="text-base font-bold text-on-surface mt-3">Bạn chưa có đơn đặt sân nào</h2>
+                    <p id="history-empty-description" class="text-sm text-on-surface-variant mt-1">Hãy tìm sân và đặt khung giờ phù hợp để đơn xuất hiện tại đây.</p>
+                    <a href="/tim-san.html" class="inline-flex mt-4 px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-bold">Tìm sân</a>
+                </section>
+
+                <!-- Danh sách thẻ đặt sân -->
+                <div class="flex flex-col gap-space-lg" id="bookings-list"></div>
+                <template id="booking-card-template">
+                    <article class="booking-card bg-surface-container-lowest rounded-2xl shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col lg:flex-row border border-gray-100">
+                        <a data-detail-image-link class="lg:w-72 xl:w-80 relative min-h-[190px] shrink-0 cursor-pointer block" title="Bấm để xem chi tiết đơn đặt sân này">
+                            <img data-booking-image class="w-full h-full object-cover min-h-[190px]" alt="Ảnh sân">
+                            <span class="absolute top-3 left-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-lowest/90 backdrop-blur-md text-on-surface text-xs font-bold shadow-sm">
+                                <span data-sport-icon class="material-symbols-outlined text-sm text-primary">sports_soccer</span>
+                                <span data-sport-label>Thể thao</span>
+                            </span>
+                        </a>
+                        <div class="flex-1 p-space-lg flex flex-col justify-between gap-space-md">
+                            <div class="flex flex-col gap-2">
+                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                    <div class="flex items-center gap-2">
+                                        <span data-booking-code class="font-mono bg-surface-container px-2 py-0.5 rounded text-xs text-on-surface-variant font-bold">--</span>
+                                        <span class="text-outline-variant">•</span>
+                                        <span data-court-name class="text-sm text-primary font-bold">--</span>
+                                    </div>
+                                    <span data-status-badge class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold"></span>
+                                </div>
+                                <h2 data-facility-name class="text-lg font-bold text-on-surface">--</h2>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-on-surface-variant">
+                                    <div class="flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-base text-primary">schedule</span>
+                                        <span data-time-range class="text-on-surface font-semibold">--</span>
+                                        <span data-date class="px-2 py-0.5 rounded bg-secondary-fixed text-on-secondary-fixed-variant text-xs font-bold">--</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-base text-gray-400">location_on</span>
+                                        <span data-facility-address class="truncate">--</span>
+                                    </div>
+                                </div>
+                                <p data-countdown class="text-xs font-semibold text-secondary" hidden></p>
+                            </div>
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t">
+                                <div class="flex flex-col">
+                                    <span data-paid-label class="text-xs text-gray-500">Tiền đã trả:</span>
+                                    <span data-paid-amount class="text-lg font-bold text-primary">--</span>
+                                </div>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <button data-disabled-action class="px-4 py-2 rounded-xl text-error bg-red-50 text-xs font-bold transition-all cursor-not-allowed opacity-60" type="button" disabled title="Sắp có">Hủy · Sắp có</button>
+                                    <a data-primary-action class="px-5 py-2 rounded-xl bg-primary hover:bg-primary-container text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5" hidden></a>
+                                    <a data-detail-link class="px-4 py-2 rounded-xl bg-surface-container hover:bg-surface-container-high text-xs font-bold text-on-surface transition-all flex items-center gap-1">
+                                        <span>Xem chi tiết</span>
+                                        <span class="material-symbols-outlined text-sm">receipt_long</span>
+                                    </a>
+                                    <button data-soon-action class="px-4 py-2 rounded-xl bg-surface-container text-xs font-bold text-on-surface transition-all cursor-not-allowed opacity-60" type="button" disabled title="Sắp có" hidden></button>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                </template>
+
+                <!-- Phân trang -->
+                <div id="history-pagination" class="flex flex-col sm:flex-row items-center justify-between gap-space-md pt-space-md pb-space-lg" hidden>
+                    <div class="text-xs text-on-surface-variant">
+                        <span id="pagination-info" class="font-bold text-on-surface"></span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <button id="previous-page" class="w-9 h-9 rounded-xl bg-primary text-white font-bold text-sm shadow-sm flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed" type="button" aria-label="Trang trước">‹</button>
+                        <span id="current-page" class="min-w-9 text-center text-sm font-bold text-on-surface"></span>
+                        <button id="next-page" class="w-9 h-9 rounded-xl bg-primary text-white font-bold text-sm shadow-sm flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed" type="button" aria-label="Trang sau">›</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- HỘP THOẠI MODAL XÁC NHẬN HỦY -->
+        <div class="fixed inset-0 z-50 bg-inverse-surface/65 backdrop-blur-md hidden flex items-center justify-center p-4 transition-all duration-300" id="cancel-modal">
+            <div aria-labelledby="modal-title" aria-modal="true" class="relative w-full max-w-[620px] bg-surface-container-lowest rounded-2xl shadow-2xl overflow-hidden flex flex-col transition-all transform scale-100 border border-gray-100" role="dialog">
+                <div class="w-full h-1.5 bg-gradient-to-r from-error via-secondary-container to-error"></div>
+
+                <button aria-label="Đóng cửa sổ" class="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors cursor-pointer" id="btn-close-modal">
+                    <span class="material-symbols-outlined text-lg">close</span>
+                </button>
+
+                <div class="p-5 md:p-6 flex flex-col gap-4">
+                    <div class="flex items-start gap-3.5">
+                        <div class="relative shrink-0 w-12 h-12 rounded-2xl bg-error-container text-error flex items-center justify-center shadow-xs">
+                            <span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">event_busy</span>
+                        </div>
+                        <div class="flex flex-col gap-1 pr-6">
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-[10px] bg-red-100 text-error px-2 py-0.5 rounded font-bold uppercase tracking-wider">Xác nhận lần cuối</span>
+                                <span class="text-xs text-on-surface-variant font-medium">• Không thể đảo ngược</span>
+                            </div>
+                            <h2 class="text-xl font-bold text-on-surface tracking-tight" id="modal-title">
+                                Hủy đơn đặt sân · Sắp có
+                            </h2>
+                            <p class="text-xs text-on-surface-variant leading-relaxed">
+                                Tính năng hủy đơn chưa được hỗ trợ. Vui lòng theo dõi các cập nhật tiếp theo.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="bg-surface-container-low rounded-xl p-4 flex flex-col gap-3 border border-gray-100">
+                        <div class="flex items-center justify-between pb-2 border-b border-gray-200">
+                            <div class="flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-primary text-base">receipt_long</span>
+                                <span class="text-xs text-on-surface font-bold">Mã đơn đặt sân:</span>
+                            </div>
+                            <span class="font-mono text-xs font-bold text-primary tracking-wide" id="displayModalOrderId">--</span>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-2.5 gap-x-4 text-xs">
+                            <div class="flex flex-col">
+                                <span class="text-gray-500 font-medium">Sân thi đấu</span>
+                                <span class="font-bold text-on-surface truncate" id="displayModalVenueName">-</span>
+                                <span class="text-gray-500 text-[11px]" id="displayModalCourtNumber">-</span>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-gray-500 font-medium">Thời gian thi đấu</span>
+                                <span class="font-bold text-on-surface" id="displayModalMatchTime">-</span>
+                                <span class="text-gray-500 text-[11px]" id="displayModalMatchDate">-</span>
+                            </div>
+                            <div class="flex flex-col pt-1">
+                                <span class="text-gray-500 font-medium">Lý do hủy đơn</span>
+                                <select id="selectCancelReason" class="mt-0.5 p-1.5 bg-white border border-gray-300 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-primary">
+                                    <option value="Bận việc đột xuất / Lịch công tác">Bận việc đột xuất / Lịch công tác</option>
+                                    <option value="Thay đổi địa điểm hoặc thời gian chơi">Thay đổi địa điểm hoặc thời gian chơi</option>
+                                    <option value="Thời tiết không thuận lợi">Thời tiết không thuận lợi</option>
+                                    <option value="Không đủ thành viên thi đấu">Không đủ thành viên thi đấu</option>
+                                    <option value="Lý do cá nhân khác">Lý do cá nhân khác</option>
+                                </select>
+                            </div>
+                            <div class="flex flex-col pt-1">
+                                <span class="text-gray-500 font-medium">Kênh hoàn tiền</span>
+                                <div class="flex items-center gap-1 text-on-surface font-bold mt-1">
+                                    <span class="material-symbols-outlined text-primary text-sm">account_balance</span>
+                                    <span>Sắp có</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-3 flex items-center justify-between shadow-2xs border border-gray-200 mt-0.5">
+                            <div class="flex flex-col">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-xs font-bold text-on-surface">Tổng tiền hoàn lại:</span>
+                                    <span class="text-[10px] bg-green-100 text-primary px-1.5 py-0.5 rounded-full font-bold" id="displayModalRefundPercentBadge">Sắp có</span>
+                                </div>
+                                <span class="text-[11px] text-gray-500 mt-0.5" id="displayModalRefundPolicyDesc">Thông tin sẽ có sau</span>
+                            </div>
+                            <div class="flex flex-col items-end">
+                                <span class="text-xl font-bold text-primary tracking-tight" id="displayModalRefundAmount">0₫</span>
+                                <span class="text-[11px] text-gray-400">Chuyển về tài khoản thanh toán</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-secondary-fixed/50 text-on-secondary-fixed-variant rounded-xl p-3 flex items-start gap-2.5 border border-secondary-fixed">
+                        <span class="material-symbols-outlined text-secondary shrink-0 text-lg mt-0.5" style="font-variation-settings: 'FILL' 1;">info</span>
+                        <div class="flex flex-col gap-0.5 text-xs">
+                            <span class="font-bold text-secondary">Quy trình hoàn tất tự động</span>
+                            <p class="leading-relaxed text-slate-700">
+                                Hủy đơn và hoàn tiền · <strong class="font-bold text-on-secondary-fixed">Sắp có</strong>.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col-reverse sm:flex-row items-center gap-2 pt-1" id="modalActionsGroup">
+                        <button class="w-full sm:flex-1 py-3 px-4 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface text-sm font-semibold flex items-center justify-center gap-1.5 transition-all cursor-not-allowed opacity-60" id="btn-keep-court" type="button" disabled title="Sắp có">
+                            <span class="material-symbols-outlined text-primary text-[18px]">sports_tennis</span>
+                            <span>                            Đóng · Sắp có</span>
+                        </button>
+                        <button class="w-full sm:flex-1 py-3 px-4 rounded-xl bg-error hover:bg-red-700 text-white text-sm font-bold shadow-md flex items-center justify-center gap-1.5 transition-all cursor-not-allowed active:scale-95 opacity-60" id="btn-confirm-cancel" type="button" disabled title="Sắp có">
+                            <span class="material-symbols-outlined text-[18px]">delete_forever</span>
+                            <span>                            Hủy sân · Sắp có</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-surface-container px-6 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-1 text-on-surface-variant text-xs border-t border-gray-100">
+                    <div class="flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-xs text-primary">verified_user</span>
+                        <span>Thông tin đơn đặt sân</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <span>Hỗ trợ 24/7:</span>
+                        <a class="font-bold text-secondary hover:underline" href="tel:19008899">1900 8899</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- FOOTER ĐỒNG BỘ -->
+    <footer class="w-full bg-[#f1f3ff] border-t border-gray-200 shadow-[0_-1px_6px_rgba(0,0,0,0.02)]">
+        <div class="max-w-[1440px] mx-auto px-margin py-8 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="flex flex-col gap-1 text-left">
+                <div class="flex items-center gap-2">
+                    <span class="font-bold text-base text-primary">SportBooking Hà Nội</span>
+                    <span class="text-on-surface-variant text-xs">| Nền tảng đặt sân thể thao thông minh</span>
+                </div>
+                <p class="text-on-surface-variant text-xs">Hệ thống đặt sân thể thao SportBooking Hà Nội - Đặt sân trực tuyến nhanh chóng, tiện lợi &amp; chuẩn xác</p>
+                <p class="text-on-surface text-sm">Hotline hỗ trợ 24/7: <span class="font-bold text-secondary">1900 8899</span></p>
+            </div>
+            <div class="flex flex-col md:items-end gap-1.5">
+                <div class="flex flex-wrap items-center gap-3 text-xs text-on-surface-variant">
+                    <span class="hover:text-primary transition-colors" aria-disabled="true" title="Sắp có">Hỗ trợ khách hàng · Sắp có</span>
+                    <span>•</span>
+                    <span class="hover:text-primary transition-colors" aria-disabled="true" title="Sắp có">Điều khoản sử dụng · Sắp có</span>
+                    <span>•</span>
+                    <span class="hover:text-primary transition-colors" aria-disabled="true" title="Sắp có">Chính sách bảo mật · Sắp có</span>
+                </div>
+                <p class="text-xs text-on-surface-variant">© 2026 SportBooking Hà Nội. Tất cả các quyền được bảo lưu.</p>
+            </div>
+        </div>
+    </footer>
+
+    
+
+    
+    
+<script src="/booking/bookings-api.js"></script>
+    <script src="/shared/header.js"></script>
+    <script src="/shared/back-nav.js"></script>
+    <script src="/booking/booking-history-state.js"></script>
+    <script src="/booking/booking-history-page.js"></script>
+</body>
+</html>

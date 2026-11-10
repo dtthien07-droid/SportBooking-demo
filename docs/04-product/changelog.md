@@ -1,3 +1,10 @@
+# 2026-11-09 — Module 7: Tóm tắt và lọc lịch sử đặt sân
+
+- Thêm API chỉ đọc `/api/v1/bookings/summary` với số liệu và tổng thanh toán ròng chỉ thuộc user hiện tại; danh sách hỗ trợ tìm kiếm và lọc môn.
+- Bổ sung các trường chỉ đọc cho API danh sách/chi tiết và định dạng mã mới `SPB-YYYYMMDD-xxxxxx` theo UTC+7; không đổi mã đơn hiện tại hay luồng đặt/giữ chỗ/thanh toán.
+- Nối số liệu, tabs, tìm kiếm, lọc môn và thông tin đặt/chi tiết vào frontend; thêm điều hướng quay lại an toàn.
+- Frontend tests: 67/67; `npm test` với `APP_ENV=test`, `DB_NAME=sportbooking_test`: 43/43; `node --check`: đạt. Kiểm tra trình duyệt: Chờ người dùng xác nhận.
+
 # 2026-11-09 - Shared booking stepper
 
 - Extracted the three-step booking progress UI into a shared component used by booking, payment, and ticket pages; step 1 is reachable from payment only while its hold remains active.

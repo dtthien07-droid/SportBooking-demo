@@ -91,7 +91,7 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
     }
 
     const users = [];
-    for (let index = 0; index < 6; index += 1) {
+    for (let index = 0; index < 8; index += 1) {
       users.push(await createUser());
     }
 
@@ -197,7 +197,7 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
       assert.equal(oneSlotResponse.status, 201);
       const oneSlotBooking = await oneSlotResponse.json();
       oneSlotBookingId = oneSlotBooking.booking_id;
-      assert.match(oneSlotBooking.booking_code, /^SPB-[A-F0-9]{32}$/);
+      assert.match(oneSlotBooking.booking_code, /^SPB-\d{8}-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{6}$/);
       assert.equal(oneSlotBooking.status, 'PENDING');
       assert.equal(oneSlotBooking.total_amount, '123455');
       assert.equal(oneSlotBooking.payment.status, 'PENDING');
@@ -230,6 +230,11 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
       assert.deepEqual(oneSlotDetail.match_preference, oneSlotBooking.match_preference);
       assert.equal(oneSlotDetail.display_status_code, 'PENDING');
       assert.equal(oneSlotDetail.display_status, 'Chờ thanh toán');
+      assert.ok(oneSlotDetail.created_at);
+      assert.equal(oneSlotDetail.total_amount, '123455');
+      assert.equal(oneSlotDetail.facility_id, facilityId);
+      assert.equal(oneSlotDetail.court_id, courtId);
+      assert.equal(oneSlotDetail.sport_type, 'BADMINTON');
 
       const multiSlotResponse = await postJson(
         baseUrl,
@@ -240,6 +245,15 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
       assert.equal(multiSlotResponse.status, 201);
       const multiSlotBooking = await multiSlotResponse.json();
       multiSlotBookingId = multiSlotBooking.booking_id;
+      assert.match(multiSlotBooking.booking_code, /^SPB-\d{8}-[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{6}$/);
+      assert.notEqual(multiSlotBooking.booking_code, oneSlotBooking.booking_code);
+      const [distinctBookingCodes] = await pool.execute(
+        `SELECT COUNT(DISTINCT booking_code) AS count
+         FROM bookings
+         WHERE id IN (?, ?)`,
+        [oneSlotBooking.booking_id, multiSlotBooking.booking_id]
+      );
+      assert.equal(Number(distinctBookingCodes[0].count), 2);
       assert.equal(multiSlotBooking.total_amount, '240000');
       assert.equal(multiSlotBooking.slots.length, 2);
       assert.deepEqual(
@@ -260,6 +274,35 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
       assert.equal(detail.deposit_amount, '120000');
       assert.equal(detail.amount_due_at_venue, '120000');
       assert.equal(detail.display_status_code, 'PENDING');
+      assert.ok(detail.created_at);
+      assert.equal(detail.facility_id, facilityId);
+      assert.equal(detail.court_id, courtId);
+      assert.equal(detail.sport_type, 'BADMINTON');
+    });
+
+    await t.test('booking fixed routes and IDs resolve through the mounted HTTP app', async () => {
+      const headers = { cookie: users[0].cookie };
+
+      const summaryResponse = await fetch(`${baseUrl}/api/v1/bookings/summary`, { headers });
+      assert.equal(summaryResponse.status, 200);
+      const summary = await summaryResponse.json();
+      assert.equal(typeof summary.upcoming_count, 'number');
+      assert.equal(typeof summary.completed_count, 'number');
+      assert.ok(Object.hasOwn(summary, 'total_spent'));
+      assert.ok(summary.counts_by_status);
+
+      const pendingResponse = await fetch(`${baseUrl}/api/v1/bookings/pending`, { headers });
+      assert.equal(pendingResponse.status, 200);
+
+      const bookingResponse = await fetch(
+        `${baseUrl}/api/v1/bookings/${oneSlotBookingId}`,
+        { headers }
+      );
+      assert.equal(bookingResponse.status, 200);
+
+      const invalidIdResponse = await fetch(`${baseUrl}/api/v1/bookings/abc`, { headers });
+      assert.equal(invalidIdResponse.status, 404);
+      assert.equal((await invalidIdResponse.json()).error.code, 'NOT_FOUND');
     });
 
     await t.test('lists only the owner bookings with status filtering and pagination', async () => {
@@ -297,6 +340,10 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
       assert.equal(firstPage.bookings.length, 1);
       assert.equal(firstPage.bookings[0].booking_id, nextBooking.booking_id);
       assert.equal(firstPage.bookings[0].display_status_code, 'PENDING');
+      assert.ok(firstPage.bookings[0].created_at);
+      assert.equal(firstPage.bookings[0].facility_id, facilityId);
+      assert.equal(firstPage.bookings[0].court_id, courtId);
+      assert.equal(firstPage.bookings[0].sport_type, 'BADMINTON');
 
       const secondPageResponse = await fetch(
         `${baseUrl}/api/v1/bookings?mine=true&page=2&page_size=1`,
@@ -317,6 +364,41 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
       assert.equal(confirmedFilter.pagination.total, 1);
       assert.equal(confirmedFilter.bookings[0].booking_id, multiSlotBookingId);
 
+      const codeSearchResponse = await fetch(
+        `${baseUrl}/api/v1/bookings?mine=true&q=${encodeURIComponent(nextBooking.booking_code.slice(-6))}`,
+        { headers: { cookie: users[1].cookie } }
+      );
+      const codeSearch = await codeSearchResponse.json();
+      assert.equal(codeSearch.pagination.total, 1);
+      assert.equal(codeSearch.bookings[0].booking_id, nextBooking.booking_id);
+
+      const facilitySearchResponse = await fetch(
+        `${baseUrl}/api/v1/bookings?mine=true&q=${encodeURIComponent(`Booking test ${suffix}`)}`,
+        { headers: { cookie: users[1].cookie } }
+      );
+      const facilitySearch = await facilitySearchResponse.json();
+      assert.equal(facilitySearch.pagination.total, 2);
+
+      const badmintonFilterResponse = await fetch(
+        `${baseUrl}/api/v1/bookings?mine=true&sport=BADMINTON`,
+        { headers: { cookie: users[1].cookie } }
+      );
+      const badmintonFilter = await badmintonFilterResponse.json();
+      assert.equal(badmintonFilter.pagination.total, 2);
+      const footballFilterResponse = await fetch(
+        `${baseUrl}/api/v1/bookings?mine=true&sport=FOOTBALL_MINI`,
+        { headers: { cookie: users[1].cookie } }
+      );
+      assert.equal((await footballFilterResponse.json()).pagination.total, 0);
+
+      for (const wildcard of ['%', '_']) {
+        const escapedSearchResponse = await fetch(
+          `${baseUrl}/api/v1/bookings?mine=true&q=${encodeURIComponent(wildcard)}`,
+          { headers: { cookie: users[1].cookie } }
+        );
+        assert.equal((await escapedSearchResponse.json()).pagination.total, 0);
+      }
+
       const emptyOwnerResponse = await fetch(
         `${baseUrl}/api/v1/bookings?mine=true`,
         { headers: { cookie: users[5].cookie } }
@@ -325,6 +407,12 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
       assert.equal(emptyOwner.pagination.total, 0);
       assert.equal(emptyOwner.pagination.total_pages, 0);
       assert.deepEqual(emptyOwner.bookings, []);
+
+      const invalidSport = await fetch(
+        `${baseUrl}/api/v1/bookings?mine=true&sport=UNKNOWN`,
+        { headers: { cookie: users[1].cookie } }
+      );
+      assert.equal(invalidSport.status, 400);
 
       const badPage = await fetch(
         `${baseUrl}/api/v1/bookings?mine=true&page=0`,
@@ -336,6 +424,160 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
         { headers: { cookie: users[1].cookie } }
       );
       assert.equal(oversizedPage.status, 400);
+    });
+
+    await t.test('returns owner-only status summary counts and net paid totals', async () => {
+      async function addSummaryBooking({
+        userId,
+        status,
+        serviceDate,
+        startsAt,
+        endsAt,
+        paymentStatus,
+        paidAmount,
+        refundedAmount
+      }) {
+        const [slotResult] = await pool.execute(
+          `INSERT INTO time_slots
+             (court_id, service_date, starts_at, ends_at, price, status,
+              created_at, updated_at)
+           VALUES (?, ?, ?, ?, 120000, 'AVAILABLE', UTC_TIMESTAMP(3), UTC_TIMESTAMP(3))`,
+          [courtId, serviceDate, startsAt, endsAt]
+        );
+        const [bookingResult] = await pool.execute(
+          `INSERT INTO bookings
+             (booking_code, user_id, status, total_amount, lock_expires_at,
+              created_at, updated_at)
+           VALUES (?, ?, ?, 120000, ?, UTC_TIMESTAMP(3), UTC_TIMESTAMP(3))`,
+          [
+            `SPB-SUMMARY-${crypto.randomUUID()}`,
+            userId,
+            status,
+            status === 'PENDING' ? new Date(Date.now() + 10 * 60 * 1000) : null
+          ]
+        );
+        const bookingId = String(bookingResult.insertId);
+        await pool.execute(
+          `INSERT INTO booking_slots (booking_id, time_slot_id, court_id, price_at_booking, created_at)
+           VALUES (?, ?, ?, 120000, UTC_TIMESTAMP(3))`,
+          [bookingId, String(slotResult.insertId), courtId]
+        );
+        await pool.execute(
+          `INSERT INTO payments
+             (booking_id, status, amount_due, paid_amount, refunded_amount,
+              payment_option, created_at, updated_at)
+           VALUES (?, ?, 120000, ?, ?, 'FULL', UTC_TIMESTAMP(3), UTC_TIMESTAMP(3))`,
+          [bookingId, paymentStatus, paidAmount, refundedAmount]
+        );
+        return bookingId;
+      }
+
+      await addSummaryBooking({
+        userId: users[6].id,
+        status: 'CONFIRMED',
+        serviceDate: localDateOffset(10),
+        startsAt: '10:00:00',
+        endsAt: '11:00:00',
+        paymentStatus: 'PAID',
+        paidAmount: 120000,
+        refundedAmount: 0
+      });
+      const pastConfirmedBookingId = await addSummaryBooking({
+        userId: users[6].id,
+        status: 'CONFIRMED',
+        serviceDate: localDateOffset(-1),
+        startsAt: '00:00:00',
+        endsAt: '01:00:00',
+        paymentStatus: 'REFUNDED',
+        paidAmount: 100000,
+        refundedAmount: 25000
+      });
+      await addSummaryBooking({
+        userId: users[6].id,
+        status: 'PENDING',
+        serviceDate: localDateOffset(10),
+        startsAt: '12:00:00',
+        endsAt: '13:00:00',
+        paymentStatus: 'PENDING',
+        paidAmount: 0,
+        refundedAmount: 0
+      });
+      await addSummaryBooking({
+        userId: users[6].id,
+        status: 'EXPIRED',
+        serviceDate: localDateOffset(10),
+        startsAt: '14:00:00',
+        endsAt: '15:00:00',
+        paymentStatus: 'PENDING',
+        paidAmount: 0,
+        refundedAmount: 0
+      });
+      await addSummaryBooking({
+        userId: users[6].id,
+        status: 'CANCELLED',
+        serviceDate: localDateOffset(10),
+        startsAt: '16:00:00',
+        endsAt: '17:00:00',
+        paymentStatus: 'PAID',
+        paidAmount: 50000,
+        refundedAmount: 50000
+      });
+      await addSummaryBooking({
+        userId: users[6].id,
+        status: 'COMPLETED',
+        serviceDate: localDateOffset(-1),
+        startsAt: '02:00:00',
+        endsAt: '03:00:00',
+        paymentStatus: 'PAID',
+        paidAmount: 0,
+        refundedAmount: 0
+      });
+      await addSummaryBooking({
+        userId: users[7].id,
+        status: 'CONFIRMED',
+        serviceDate: localDateOffset(10),
+        startsAt: '20:00:00',
+        endsAt: '21:00:00',
+        paymentStatus: 'PAID',
+        paidAmount: 999999,
+        refundedAmount: 0
+      });
+
+      const unauthenticatedSummary = await fetch(`${baseUrl}/api/v1/bookings/summary`);
+      assert.equal(unauthenticatedSummary.status, 401);
+
+      const summaryResponse = await fetch(`${baseUrl}/api/v1/bookings/summary`, {
+        headers: { cookie: users[6].cookie }
+      });
+      assert.equal(summaryResponse.status, 200);
+      assert.equal(summaryResponse.headers.get('cache-control'), 'no-store');
+      assert.deepEqual(await summaryResponse.json(), {
+        upcoming_count: 1,
+        completed_count: 2,
+        total_spent: '195000',
+        counts_by_status: {
+          'Chờ thanh toán': 1,
+          'Sắp tới/Đang trong trận': 1,
+          'Hoàn thành': 2,
+          'Đã hủy': 1,
+          'Hết hạn': 1
+        }
+      });
+
+      const otherUserSummaryResponse = await fetch(`${baseUrl}/api/v1/bookings/summary`, {
+        headers: { cookie: users[7].cookie }
+      });
+      const otherUserSummary = await otherUserSummaryResponse.json();
+      assert.equal(otherUserSummary.upcoming_count, 1);
+      assert.equal(otherUserSummary.completed_count, 0);
+      assert.equal(otherUserSummary.total_spent, '999999');
+      assert.equal(otherUserSummary.counts_by_status['Sắp tới/Đang trong trận'], 1);
+      await pool.execute(
+        `UPDATE bookings
+         SET status = 'COMPLETED', updated_at = UTC_TIMESTAMP(3)
+         WHERE id = ? AND status = 'CONFIRMED'`,
+        [pastConfirmedBookingId]
+      );
     });
 
     await t.test('completion job waits for slot end and is idempotent', async () => {

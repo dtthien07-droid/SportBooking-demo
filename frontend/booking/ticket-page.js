@@ -93,6 +93,13 @@
 
   function renderTicket(model, user) {
     window.SportBookingStepper.render(stepper, 'complete');
+    const detailLink = document.getElementById('bookingDetailLink');
+    if (detailLink) {
+      const fromPath = `${window.location.pathname}${window.location.search}`;
+      detailLink.href = window.SportBookingBackNav.buildDetailUrl(bookingId, fromPath);
+      detailLink.removeAttribute('aria-disabled');
+      detailLink.classList.remove('cursor-not-allowed', 'opacity-60');
+    }
     setText('bookingIdText', window.SportBookingFormat.formatBookingCode(model.bookingCode));
     setText('ticketFacilityName', model.facilityName);
     setText('ticketCourtName', model.courtName);

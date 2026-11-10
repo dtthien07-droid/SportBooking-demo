@@ -12,29 +12,29 @@ function createBookingError(status, code, message, details = {}) {
 
 function normalizeSlotIds(slotIds) {
   if (!Array.isArray(slotIds) || slotIds.length === 0) {
-    throw createBookingError(400, 'INVALID_SLOT_IDS', 'slot_ids must be a non-empty array.');
+    throw createBookingError(400, 'INVALID_SLOT_IDS', 'Danh sách slot_ids không được để trống.');
   }
 
   const ids = slotIds.map((id) => {
     const value = typeof id === 'number' && Number.isSafeInteger(id) ? String(id) : id;
     if (typeof value !== 'string' || !/^[1-9]\d*$/.test(value)) {
-      throw createBookingError(400, 'INVALID_SLOT_IDS', 'Each slot ID must be a positive integer.');
+      throw createBookingError(400, 'INVALID_SLOT_IDS', 'Mỗi ID khung giờ phải là số nguyên dương.');
     }
     if (BigInt(value) > 18446744073709551615n) {
-      throw createBookingError(400, 'INVALID_SLOT_IDS', 'A slot ID is out of range.');
+      throw createBookingError(400, 'INVALID_SLOT_IDS', 'ID khung giờ vượt quá phạm vi cho phép.');
     }
     return value;
   });
 
   if (new Set(ids).size !== ids.length) {
-    throw createBookingError(400, 'INVALID_SLOT_IDS', 'slot_ids must not contain duplicates.');
+    throw createBookingError(400, 'INVALID_SLOT_IDS', 'Danh sách slot_ids không được chứa giá trị trùng.');
   }
   return ids;
 }
 
 function normalizePaymentOption(value) {
   if (value !== 'DEPOSIT_50' && value !== 'FULL') {
-    throw createBookingError(400, 'INVALID_PAYMENT_OPTION', 'payment_option must be DEPOSIT_50 or FULL.');
+    throw createBookingError(400, 'INVALID_PAYMENT_OPTION', 'payment_option phải là DEPOSIT_50 hoặc FULL.');
   }
   return value;
 }
@@ -42,14 +42,14 @@ function normalizePaymentOption(value) {
 function normalizeMatchPreference(value) {
   if (value === undefined || value === null) return null;
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw createBookingError(400, 'INVALID_MATCH_PREFERENCE', 'match_preference must be an object or null.');
+    throw createBookingError(400, 'INVALID_MATCH_PREFERENCE', 'match_preference phải là một đối tượng hoặc null.');
   }
   const allowedKeys = new Set(['mode', 'gender', 'skill', 'format', 'message']);
   if (Object.keys(value).some((key) => !allowedKeys.has(key))) {
-    throw createBookingError(400, 'INVALID_MATCH_PREFERENCE', 'match_preference contains an unsupported field.');
+    throw createBookingError(400, 'INVALID_MATCH_PREFERENCE', 'match_preference chứa trường không được hỗ trợ.');
   }
   if (value.mode !== 'RANDOM' && value.mode !== 'CRITERIA') {
-    throw createBookingError(400, 'INVALID_MATCH_PREFERENCE', 'match_preference.mode must be RANDOM or CRITERIA.');
+    throw createBookingError(400, 'INVALID_MATCH_PREFERENCE', 'match_preference.mode phải là RANDOM hoặc CRITERIA.');
   }
   const validGender = value.gender === undefined || value.gender === null
     || ['ANY', 'MALE', 'FEMALE'].includes(value.gender);
@@ -58,14 +58,14 @@ function normalizeMatchPreference(value) {
   const validFormat = value.format === undefined || value.format === null
     || ['SINGLES', 'DOUBLES'].includes(value.format);
   if (!validGender || !validSkill || !validFormat) {
-    throw createBookingError(400, 'INVALID_MATCH_PREFERENCE', 'The match preference contains an unsupported criterion.');
+    throw createBookingError(400, 'INVALID_MATCH_PREFERENCE', 'Tùy chọn tìm đối chứa tiêu chí không được hỗ trợ.');
   }
   if (value.message !== undefined && value.message !== null
       && (typeof value.message !== 'string' || value.message.length > 1000)) {
-    throw createBookingError(400, 'INVALID_MATCH_PREFERENCE', 'match_preference.message must be at most 1000 characters.');
+    throw createBookingError(400, 'INVALID_MATCH_PREFERENCE', 'match_preference.message không được vượt quá 1000 ký tự.');
   }
   if (value.mode === 'RANDOM' && (value.gender != null || value.skill != null)) {
-    throw createBookingError(400, 'INVALID_MATCH_PREFERENCE', 'Random search cannot include gender or skill criteria.');
+    throw createBookingError(400, 'INVALID_MATCH_PREFERENCE', 'Tìm đối ngẫu nhiên không thể kèm tiêu chí giới tính hoặc trình độ.');
   }
   return {
     mode: value.mode,
@@ -84,7 +84,7 @@ function parseMatchPreference(value) {
     try {
       return JSON.parse(value);
     } catch (error) {
-      throw createBookingError(500, 'INVALID_STORED_MATCH_PREFERENCE', 'The saved match preference is invalid.');
+      throw createBookingError(500, 'INVALID_STORED_MATCH_PREFERENCE', 'Tùy chọn tìm đối đã lưu không hợp lệ.');
     }
   }
   return value;
@@ -93,7 +93,7 @@ function parseMatchPreference(value) {
 function normalizeBookingId(id) {
   if (typeof id !== 'string' || !/^[1-9]\d*$/.test(id)
       || BigInt(id) > 18446744073709551615n) {
-    throw createBookingError(400, 'INVALID_BOOKING_ID', 'The booking ID is invalid.');
+    throw createBookingError(400, 'INVALID_BOOKING_ID', 'Mã đơn đặt sân không hợp lệ.');
   }
   return id;
 }
@@ -101,12 +101,12 @@ function normalizeBookingId(id) {
 function normalizePaymentAttempt(body) {
   if (!body || typeof body !== 'object' || Array.isArray(body)
       || Object.keys(body).some((key) => !['method', 'simulation_result'].includes(key))) {
-    throw createBookingError(400, 'INVALID_PAYMENT_ATTEMPT', 'The payment attempt payload is invalid.');
+    throw createBookingError(400, 'INVALID_PAYMENT_ATTEMPT', 'Thông tin yêu cầu thanh toán không hợp lệ.');
   }
   const methods = ['BANK_TRANSFER', 'MOMO', 'DOMESTIC_ATM', 'INTERNATIONAL_CARD'];
   if (!methods.includes(body.method)
       || !['SUCCESS', 'FAILURE'].includes(body.simulation_result)) {
-    throw createBookingError(400, 'INVALID_PAYMENT_ATTEMPT', 'method or simulation_result is invalid.');
+    throw createBookingError(400, 'INVALID_PAYMENT_ATTEMPT', 'method hoặc simulation_result không hợp lệ.');
   }
   return { method: body.method, simulationResult: body.simulation_result };
 }
@@ -117,6 +117,53 @@ function asNumber(value) {
 
 const BOOKING_STATUSES = new Set(['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'EXPIRED']);
 const MAX_PAGE_SIZE = 50;
+const MAX_BOOKING_CODE_ATTEMPTS = 5;
+const BOOKING_CODE_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+const SUMMARY_STATUS_LABELS = Object.freeze({
+  pending: 'Chờ thanh toán',
+  active: 'Sắp tới/Đang trong trận',
+  completed: 'Hoàn thành',
+  cancelled: 'Đã hủy',
+  expired: 'Hết hạn'
+});
+
+function generateBookingCode(now = new Date(), randomBytes = crypto.randomBytes) {
+  if (!(now instanceof Date) || !Number.isFinite(now.getTime())) {
+    throw new TypeError('Thời điểm tạo đơn đặt sân phải hợp lệ.');
+  }
+  const date = new Date(now.getTime() + 7 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10)
+    .replaceAll('-', '');
+  const bytes = randomBytes(6);
+  if (!Buffer.isBuffer(bytes) || bytes.length !== 6) {
+    throw new TypeError('Hàm tạo mã đơn phải trả về sáu byte ngẫu nhiên.');
+  }
+  const suffix = [...bytes].map((byte) => BOOKING_CODE_ALPHABET[byte & 31]).join('');
+  return `SPB-${date}-${suffix}`;
+}
+
+async function createBookingWithUniqueCode(repository, connection, bookingInput, {
+  now,
+  generateCode = generateBookingCode
+}) {
+  for (let attempt = 0; attempt < MAX_BOOKING_CODE_ATTEMPTS; attempt += 1) {
+    const bookingCode = generateCode(now());
+    try {
+      const bookingId = await repository.createBooking(connection, {
+        ...bookingInput,
+        bookingCode
+      });
+      return { bookingId, bookingCode };
+    } catch (error) {
+      if (attempt === MAX_BOOKING_CODE_ATTEMPTS - 1
+          || !repository.isBookingCodeConflict(error)) {
+        throw error;
+      }
+    }
+  }
+  throw new Error('Đã hết số lần thử tạo mã đơn đặt sân.');
+}
 
 function createInvalidQueryError(message) {
   return createBookingError(400, 'INVALID_BOOKING_QUERY', message);
@@ -127,26 +174,26 @@ function parsePageValue(value, fallback, field, maximum = Number.MAX_SAFE_INTEGE
     return fallback;
   }
   if (typeof value !== 'string' || !/^[1-9]\d*$/.test(value)) {
-    throw createInvalidQueryError(`${field} must be a positive integer.`);
+    throw createInvalidQueryError(`${field} phải là số nguyên dương.`);
   }
   const parsed = Number(value);
   if (!Number.isSafeInteger(parsed) || parsed > maximum) {
-    throw createInvalidQueryError(`${field} is outside the allowed range.`);
+    throw createInvalidQueryError(`${field} nằm ngoài phạm vi cho phép.`);
   }
   return parsed;
 }
 
 function parseLocalTimestamp(value) {
   if (typeof value !== 'string') {
-    throw new TypeError('The database returned an invalid booking slot timestamp.');
+    throw new TypeError('Cơ sở dữ liệu trả về thời gian khung giờ không hợp lệ.');
   }
   const match = value.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})$/);
   if (!match) {
-    throw new TypeError('The database returned an invalid booking slot timestamp.');
+    throw new TypeError('Cơ sở dữ liệu trả về thời gian khung giờ không hợp lệ.');
   }
   const timestamp = Date.parse(`${match[1]}T${match[2]}+07:00`);
   if (!Number.isFinite(timestamp)) {
-    throw new TypeError('The database returned an invalid booking slot timestamp.');
+    throw new TypeError('Cơ sở dữ liệu trả về thời gian khung giờ không hợp lệ.');
   }
   return timestamp;
 }
@@ -154,7 +201,7 @@ function parseLocalTimestamp(value) {
 function getBookingDisplayState(booking, now = new Date()) {
   const nowMs = now instanceof Date ? now.getTime() : Number.NaN;
   if (!Number.isFinite(nowMs)) {
-    throw new TypeError('A valid current time is required.');
+    throw new TypeError('Thời gian hiện tại phải hợp lệ.');
   }
 
   switch (booking.status) {
@@ -171,7 +218,7 @@ function getBookingDisplayState(booking, now = new Date()) {
     case 'CONFIRMED':
       break;
     default:
-      throw new TypeError('The database returned an unsupported booking status.');
+      throw new TypeError('Cơ sở dữ liệu trả về trạng thái đơn đặt sân không được hỗ trợ.');
   }
 
   let startAt;
@@ -181,7 +228,7 @@ function getBookingDisplayState(booking, now = new Date()) {
     endAt = parseLocalTimestamp(booking.last_slot_end);
   } else {
     if (!Array.isArray(booking.slots) || booking.slots.length === 0) {
-      throw new TypeError('A confirmed booking must have at least one slot.');
+      throw new TypeError('Đơn đã xác nhận phải có ít nhất một khung giờ.');
     }
     const orderedSlots = [...booking.slots].sort((left, right) => {
       const startDifference = parseLocalTimestamp(
@@ -195,7 +242,7 @@ function getBookingDisplayState(booking, now = new Date()) {
     endAt = parseLocalTimestamp(`${last.service_date}T${last.ends_at}`);
   }
   if (endAt < startAt) {
-    throw new TypeError('The database returned invalid booking slot boundaries.');
+    throw new TypeError('Cơ sở dữ liệu trả về khoảng thời gian khung giờ không hợp lệ.');
   }
 
   if (nowMs < startAt) {
@@ -237,12 +284,15 @@ function toSlotResponse(slot) {
   };
 }
 
-function createBookingsService(repository, { now = () => new Date() } = {}) {
+function createBookingsService(repository, {
+  now = () => new Date(),
+  generateCode = generateBookingCode
+} = {}) {
   if (!repository || typeof repository.withTransaction !== 'function') {
-    throw new TypeError('A compatible bookings repository is required.');
+    throw new TypeError('Cần repository đặt sân tương thích.');
   }
   if (typeof now !== 'function') {
-    throw new TypeError('A current-time function is required.');
+    throw new TypeError('Cần hàm cung cấp thời gian hiện tại.');
   }
 
   async function createBooking(userId, body) {
@@ -253,7 +303,7 @@ function createBookingsService(repository, { now = () => new Date() } = {}) {
       const result = await repository.withTransaction(async (connection) => {
         const user = await repository.lockUser(connection, userId);
         if (!user) {
-          throw createBookingError(401, 'UNAUTHENTICATED', 'Authentication is required.');
+          throw createBookingError(401, 'UNAUTHENTICATED', 'Vui lòng đăng nhập.');
         }
         const pendingBookings = await repository.lockPendingBookingsForUser(connection, userId);
         const activePending = pendingBookings.find((booking) => Number(booking.lock_expired) !== 1);
@@ -266,7 +316,7 @@ function createBookingsService(repository, { now = () => new Date() } = {}) {
             .sort((left, right) => (BigInt(left) < BigInt(right) ? -1 : 1));
           const staleSlots = await repository.lockTimeSlots(connection, uniqueStaleSlotIds);
           if (staleSlots.length !== uniqueStaleSlotIds.length) {
-            throw createBookingError(409, 'SLOT_CHANGED', 'An expired booking slot changed while it was being released.');
+            throw createBookingError(409, 'SLOT_CHANGED', 'Khung giờ của đơn hết hạn đã thay đổi khi được giải phóng.');
           }
           for (const expiredBookingId of expiredPendingIds) {
             await repository.expireStaleBooking(connection, expiredBookingId);
@@ -278,7 +328,7 @@ function createBookingsService(repository, { now = () => new Date() } = {}) {
 
         const initialSlots = await repository.findRequestedSlotStates(connection, slotIds);
         if (initialSlots.length !== slotIds.length) {
-          throw createBookingError(404, 'SLOT_NOT_FOUND', 'One or more time slots were not found.');
+          throw createBookingError(404, 'SLOT_NOT_FOUND', 'Không tìm thấy một hoặc nhiều khung giờ.');
         }
 
         const expiredBookingIds = initialSlots
@@ -298,18 +348,18 @@ function createBookingsService(repository, { now = () => new Date() } = {}) {
           .sort((left, right) => (BigInt(left) < BigInt(right) ? -1 : 1));
         const lockedSlots = await repository.lockTimeSlots(connection, allSlotIds);
         if (lockedSlots.length !== allSlotIds.length) {
-          throw createBookingError(409, 'SLOT_CHANGED', 'A time slot changed while booking.');
+          throw createBookingError(409, 'SLOT_CHANGED', 'Khung giờ đã thay đổi trong khi đặt sân.');
         }
         const lockedById = new Map(lockedSlots.map((slot) => [String(slot.id), slot]));
         const requestedSlots = slotIds.map((id) => lockedById.get(id));
         if (requestedSlots.some((slot) => !slot)) {
-          throw createBookingError(404, 'SLOT_NOT_FOUND', 'One or more time slots were not found.');
+          throw createBookingError(404, 'SLOT_NOT_FOUND', 'Không tìm thấy một hoặc nhiều khung giờ.');
         }
 
         for (const oldBookingId of uniqueExpiredBookingIds) {
           const booking = oldBookingById.get(oldBookingId);
           if (!booking || (booking.status === 'PENDING' && Number(booking.lock_expired) !== 1)) {
-            throw createBookingError(409, 'SLOT_CHANGED', 'An expired slot is still held by a booking.');
+            throw createBookingError(409, 'SLOT_CHANGED', 'Khung giờ hết hạn vẫn đang được một đơn đặt giữ.');
           }
           await repository.expireStaleBooking(connection, oldBookingId);
         }
@@ -317,24 +367,24 @@ function createBookingsService(repository, { now = () => new Date() } = {}) {
         for (const slot of requestedSlots) {
           if ((slot.court_is_active !== 1 && slot.court_is_active !== true)
               || (slot.facility_is_active !== 1 && slot.facility_is_active !== true)) {
-            throw createBookingError(409, 'SLOT_UNAVAILABLE', 'The court is not available.');
+            throw createBookingError(409, 'SLOT_UNAVAILABLE', 'Sân hiện không khả dụng.');
           }
           const expiredLock = slot.status === 'LOCKED' && Number(slot.lock_expired) === 1;
           if (slot.status !== 'AVAILABLE' && !expiredLock) {
-            throw createBookingError(409, 'SLOT_UNAVAILABLE', 'One or more time slots are unavailable.');
+            throw createBookingError(409, 'SLOT_UNAVAILABLE', 'Một hoặc nhiều khung giờ không khả dụng.');
           }
           if (slot.status === 'LOCKED' && slot.current_booking_id !== null
               && !uniqueExpiredBookingIds.includes(String(slot.current_booking_id))) {
-            throw createBookingError(409, 'SLOT_CHANGED', 'A time slot changed while booking.');
+            throw createBookingError(409, 'SLOT_CHANGED', 'Khung giờ đã thay đổi trong khi đặt sân.');
           }
           if (Number(slot.starts_in_time) !== 1) {
-            throw createBookingError(400, 'SLOT_TOO_SOON', 'Slots must start at least 15 minutes from now.');
+            throw createBookingError(400, 'SLOT_TOO_SOON', 'Khung giờ phải bắt đầu sau thời điểm hiện tại ít nhất 15 phút.');
           }
           if (matchPreference && Number(slot.starts_in_match_time) !== 1) {
             throw createBookingError(
               400,
               'MATCH_PREFERENCE_TOO_LATE',
-              'Match search requires the first selected slot to start at least 30 minutes from now.'
+              'Tìm đối yêu cầu khung giờ đầu tiên bắt đầu sau thời điểm hiện tại ít nhất 30 phút.'
             );
           }
         }
@@ -349,7 +399,7 @@ function createBookingsService(repository, { now = () => new Date() } = {}) {
           throw createBookingError(
             400,
             'MATCH_FORMAT_NOT_SUPPORTED',
-            'Singles/doubles format is available only for badminton and pickleball.'
+            'Chỉ hỗ trợ hình thức đơn/đôi với cầu lông và pickleball.'
           );
         }
         for (let index = 1; index < chronologicalSlots.length; index += 1) {
@@ -358,7 +408,7 @@ function createBookingsService(repository, { now = () => new Date() } = {}) {
           if (String(current.court_id) !== String(firstSlot.court_id)
               || String(previous.service_date) !== String(current.service_date)
               || previous.ends_at !== current.starts_at) {
-            throw createBookingError(400, 'SLOTS_NOT_CONTIGUOUS', 'Slots must be consecutive on one court and date.');
+            throw createBookingError(400, 'SLOTS_NOT_CONTIGUOUS', 'Các khung giờ phải liên tiếp, cùng sân và cùng ngày.');
           }
         }
 
@@ -372,15 +422,14 @@ function createBookingsService(repository, { now = () => new Date() } = {}) {
         const amountDueAtVenue = paymentOption === 'DEPOSIT_50'
           ? (totalAmountInteger - BigInt(depositAmount)).toString()
           : '0';
-        const bookingCode = `SPB-${crypto.randomBytes(16).toString('hex').toUpperCase()}`;
         const lockExpiresAt = await repository.createHoldDeadline(connection);
-        const bookingId = await repository.createBooking(connection, {
-          bookingCode,
+        const createdBooking = await createBookingWithUniqueCode(repository, connection, {
           userId,
           totalAmount,
           matchPreference: matchPreference === null ? null : JSON.stringify(matchPreference),
           expiresAt: lockExpiresAt
-        });
+        }, { now, generateCode });
+        const { bookingId, bookingCode } = createdBooking;
         await repository.createPayment(connection, {
           bookingId,
           amountDue,
@@ -394,7 +443,7 @@ function createBookingsService(repository, { now = () => new Date() } = {}) {
           lockExpiresAt
         );
         if (affectedRows !== slotIds.length) {
-          throw createBookingError(409, 'SLOT_UNAVAILABLE', 'One or more time slots are unavailable.');
+          throw createBookingError(409, 'SLOT_UNAVAILABLE', 'Một hoặc nhiều khung giờ không khả dụng.');
         }
 
         return {
@@ -419,7 +468,7 @@ function createBookingsService(repository, { now = () => new Date() } = {}) {
         throw createBookingError(
           409,
           'PENDING_BOOKING_EXISTS',
-          'You already have an active booking.',
+          'Bạn đang có một đơn đặt sân còn hiệu lực.',
           {
             pending_booking_id: String(result.pendingConflict.id),
             remaining_seconds: Number(result.pendingConflict.remaining_seconds)
@@ -429,7 +478,7 @@ function createBookingsService(repository, { now = () => new Date() } = {}) {
       return result;
     } catch (error) {
       if (error.code === 'ER_LOCK_DEADLOCK' || error.code === 'ER_LOCK_WAIT_TIMEOUT') {
-        throw createBookingError(409, 'BOOKING_CONFLICT', 'The booking conflicted with another request.');
+        throw createBookingError(409, 'BOOKING_CONFLICT', 'Đơn đặt sân bị xung đột với một yêu cầu khác.');
       }
       throw error;
     }
@@ -437,11 +486,20 @@ function createBookingsService(repository, { now = () => new Date() } = {}) {
 
   async function listBookings(user, query) {
     if (query.mine !== 'true') {
-      throw createInvalidQueryError('mine must be true.');
+      throw createInvalidQueryError('mine phải là true.');
     }
     const status = query.status;
     if (status !== undefined && !BOOKING_STATUSES.has(status)) {
-      throw createInvalidQueryError('status is not supported.');
+      throw createInvalidQueryError('Trạng thái không được hỗ trợ.');
+    }
+    const search = query.q === undefined ? '' : query.q;
+    if (typeof search !== 'string' || search.length > 100) {
+      throw createInvalidQueryError('q phải là chuỗi không quá 100 ký tự.');
+    }
+    const q = search.trim();
+    const sport = query.sport === undefined ? null : query.sport;
+    if (sport !== null && !['FOOTBALL_MINI', 'BADMINTON', 'PICKLEBALL'].includes(sport)) {
+      throw createInvalidQueryError('Môn thể thao không được hỗ trợ.');
     }
     const pageSize = parsePageValue(query.page_size, 10, 'page_size', MAX_PAGE_SIZE);
     const maxPage = Math.floor(Number.MAX_SAFE_INTEGER / pageSize) + 1;
@@ -449,6 +507,8 @@ function createBookingsService(repository, { now = () => new Date() } = {}) {
     const result = await repository.listBookingsForUser({
       userId: user.id,
       status: status || null,
+      q: q || null,
+      sport,
       page,
       pageSize
     });
@@ -472,7 +532,11 @@ function createBookingsService(repository, { now = () => new Date() } = {}) {
         status: booking.status,
         display_status_code: displayState.code,
         display_status: displayState.label,
+        created_at: booking.created_at,
         total_amount: String(booking.total_amount),
+        facility_id: slots[0] ? slots[0].facility_id : null,
+        court_id: slots[0] ? slots[0].court_id : null,
+        sport_type: slots[0] ? slots[0].sport_type : null,
         payment_status: booking.payment_status,
         paid_amount: booking.paid_amount === null ? null : String(booking.paid_amount),
         refunded_amount: booking.refunded_amount === null ? null : String(booking.refunded_amount),
@@ -493,11 +557,57 @@ function createBookingsService(repository, { now = () => new Date() } = {}) {
     };
   }
 
+  async function getBookingSummary(user) {
+    const bookingRows = await repository.findBookingSummaryRows(user.id);
+    const spent = await repository.getTotalSpentForUser(user.id);
+    const summary = {
+      upcoming_count: 0,
+      completed_count: 0,
+      total_spent: String(spent),
+      counts_by_status: {
+        [SUMMARY_STATUS_LABELS.pending]: 0,
+        [SUMMARY_STATUS_LABELS.active]: 0,
+        [SUMMARY_STATUS_LABELS.completed]: 0,
+        [SUMMARY_STATUS_LABELS.cancelled]: 0,
+        [SUMMARY_STATUS_LABELS.expired]: 0
+      }
+    };
+    const currentTime = now();
+
+    for (const booking of bookingRows) {
+      const displayState = getBookingDisplayState({
+        status: booking.status,
+        lock_expired: booking.lock_expired,
+        first_slot_start: booking.first_slot_start,
+        last_slot_end: booking.last_slot_end
+      }, currentTime);
+
+      if (booking.status === 'CONFIRMED') {
+        if (displayState.code === 'COMPLETED') summary.completed_count += 1;
+        else summary.upcoming_count += 1;
+      } else if (booking.status === 'COMPLETED') {
+        summary.completed_count += 1;
+      }
+
+      const label = displayState.code === 'PENDING'
+        ? SUMMARY_STATUS_LABELS.pending
+        : displayState.code === 'UPCOMING' || displayState.code === 'IN_PROGRESS'
+          ? SUMMARY_STATUS_LABELS.active
+          : displayState.code === 'COMPLETED'
+            ? SUMMARY_STATUS_LABELS.completed
+            : displayState.code === 'CANCELLED'
+              ? SUMMARY_STATUS_LABELS.cancelled
+              : SUMMARY_STATUS_LABELS.expired;
+      summary.counts_by_status[label] += 1;
+    }
+    return summary;
+  }
+
   async function getBooking(user, rawBookingId) {
     const bookingId = normalizeBookingId(rawBookingId);
     const booking = await repository.findOwnedBookingById(bookingId, user.id);
     if (!booking) {
-      throw createBookingError(404, 'BOOKING_NOT_FOUND', 'The booking was not found.');
+      throw createBookingError(404, 'BOOKING_NOT_FOUND', 'Không tìm thấy đơn đặt sân.');
     }
     const slots = (await repository.findOwnedBookingSlotsById(bookingId, user.id))
       .map(toHistorySlot);
@@ -512,7 +622,11 @@ function createBookingsService(repository, { now = () => new Date() } = {}) {
       status: booking.status,
       display_status_code: displayState.code,
       display_status: displayState.label,
+      created_at: booking.created_at,
       total_amount: String(booking.total_amount),
+      facility_id: slots[0] ? slots[0].facility_id : null,
+      court_id: slots[0] ? slots[0].court_id : null,
+      sport_type: slots[0] ? slots[0].sport_type : null,
       payment: booking.payment_status === null ? null : {
         status: booking.payment_status,
         payment_option: booking.payment_option,
@@ -553,10 +667,10 @@ function createBookingsService(repository, { now = () => new Date() } = {}) {
     const result = await repository.withTransaction(async (connection) => {
       const booking = await repository.lockBooking(connection, bookingId);
       if (!booking || String(booking.user_id) !== String(userId)) {
-        throw createBookingError(404, 'BOOKING_NOT_FOUND', 'The booking was not found.');
+        throw createBookingError(404, 'BOOKING_NOT_FOUND', 'Không tìm thấy đơn đặt sân.');
       }
       if (booking.status !== 'PENDING') {
-        throw createBookingError(409, 'BOOKING_NOT_PENDING', 'Only a pending booking can be cancelled.');
+        throw createBookingError(409, 'BOOKING_NOT_PENDING', 'Chỉ có thể hủy đơn đang chờ thanh toán.');
       }
 
       const slotIds = await repository.lockSlotsForBooking(connection, bookingId);
@@ -570,7 +684,7 @@ function createBookingsService(repository, { now = () => new Date() } = {}) {
         : { booking_id: String(booking.id), status };
     });
     if (result.expired) {
-      throw createBookingError(410, 'BOOKING_EXPIRED', 'The booking hold has expired.');
+      throw createBookingError(410, 'BOOKING_EXPIRED', 'Thời gian giữ chỗ của đơn đã hết hạn.');
     }
     return result;
   }
@@ -583,27 +697,27 @@ function createBookingsService(repository, { now = () => new Date() } = {}) {
       const result = await repository.withTransaction(async (connection) => {
         const booking = await repository.lockBooking(connection, bookingId);
         if (!booking || (String(booking.user_id) !== String(user.id) && user.role !== 'ADMIN')) {
-          throw createBookingError(404, 'BOOKING_NOT_FOUND', 'The booking was not found.');
+          throw createBookingError(404, 'BOOKING_NOT_FOUND', 'Không tìm thấy đơn đặt sân.');
         }
         if (String(booking.user_id) !== String(user.id)) {
-          throw createBookingError(403, 'BOOKING_NOT_OWNED', 'Only the booking owner can pay.');
+          throw createBookingError(403, 'BOOKING_NOT_OWNED', 'Chỉ chủ đơn mới có thể thanh toán.');
         }
         if (booking.status === 'EXPIRED') {
           expired = true;
           return null;
         }
         if (booking.status !== 'PENDING') {
-          throw createBookingError(409, 'BOOKING_NOT_PENDING', 'Only a pending booking can be paid.');
+          throw createBookingError(409, 'BOOKING_NOT_PENDING', 'Chỉ có thể thanh toán đơn đang chờ thanh toán.');
         }
 
         const payment = await repository.lockPaymentForBooking(connection, bookingId);
         if (!payment) {
-          throw createBookingError(409, 'PAYMENT_NOT_FOUND', 'The booking payment was not found.');
+          throw createBookingError(409, 'PAYMENT_NOT_FOUND', 'Không tìm thấy thông tin thanh toán của đơn.');
         }
         const slotIds = await repository.lockSlotsForBooking(connection, bookingId);
         const slots = await repository.lockTimeSlots(connection, slotIds);
         if (slots.length !== slotIds.length) {
-          throw createBookingError(409, 'BOOKING_SLOTS_CHANGED', 'The booking slots changed.');
+          throw createBookingError(409, 'BOOKING_SLOTS_CHANGED', 'Các khung giờ của đơn đã thay đổi.');
         }
         if (Number(booking.lock_expired) === 1 || !booking.lock_expires_at) {
           await repository.updateBookingStatus(connection, bookingId, 'EXPIRED');
@@ -612,7 +726,7 @@ function createBookingsService(repository, { now = () => new Date() } = {}) {
           return null;
         }
         if (payment.status !== 'PENDING') {
-          throw createBookingError(409, 'PAYMENT_NOT_PENDING', 'The payment is no longer pending.');
+          throw createBookingError(409, 'PAYMENT_NOT_PENDING', 'Khoản thanh toán không còn ở trạng thái chờ.');
         }
 
         const attempt = await repository.createPaymentAttempt(connection, {
@@ -628,7 +742,7 @@ function createBookingsService(repository, { now = () => new Date() } = {}) {
           await repository.confirmBooking(connection, bookingId);
           const bookedSlots = await repository.bookSlotsForBooking(connection, bookingId);
           if (bookedSlots !== slotIds.length) {
-            throw createBookingError(409, 'BOOKING_SLOTS_CHANGED', 'Not all booking slots could be confirmed.');
+            throw createBookingError(409, 'BOOKING_SLOTS_CHANGED', 'Không thể xác nhận tất cả khung giờ của đơn.');
           }
           ticket = await repository.createBookingTicket(connection, bookingId);
         }
@@ -650,12 +764,12 @@ function createBookingsService(repository, { now = () => new Date() } = {}) {
         };
       });
       if (expired) {
-        throw createBookingError(410, 'BOOKING_EXPIRED', 'The booking hold has expired.');
+        throw createBookingError(410, 'BOOKING_EXPIRED', 'Thời gian giữ chỗ của đơn đã hết hạn.');
       }
       return result;
     } catch (error) {
       if (error.code === 'ER_LOCK_DEADLOCK' || error.code === 'ER_LOCK_WAIT_TIMEOUT') {
-        throw createBookingError(409, 'BOOKING_CONFLICT', 'The payment conflicted with another request.');
+        throw createBookingError(409, 'BOOKING_CONFLICT', 'Thanh toán bị xung đột với một yêu cầu khác.');
       }
       throw error;
     }
@@ -665,7 +779,7 @@ function createBookingsService(repository, { now = () => new Date() } = {}) {
     const bookingId = normalizeBookingId(rawBookingId);
     const booking = await repository.findBookingById(bookingId);
     if (!booking || (String(booking.user_id) !== String(user.id) && user.role !== 'ADMIN')) {
-      throw createBookingError(404, 'BOOKING_NOT_FOUND', 'The booking was not found.');
+      throw createBookingError(404, 'BOOKING_NOT_FOUND', 'Không tìm thấy đơn đặt sân.');
     }
     return repository.findPaymentsByBookingId(bookingId);
   }
@@ -704,6 +818,7 @@ function createBookingsService(repository, { now = () => new Date() } = {}) {
   return {
     createBooking,
     listBookings,
+    getBookingSummary,
     getBooking,
     getPendingBooking,
     cancelBooking,
@@ -714,4 +829,9 @@ function createBookingsService(repository, { now = () => new Date() } = {}) {
   };
 }
 
-module.exports = { createBookingsService, getBookingDisplayState };
+module.exports = {
+  createBookingsService,
+  createBookingWithUniqueCode,
+  generateBookingCode,
+  getBookingDisplayState
+};

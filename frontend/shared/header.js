@@ -129,7 +129,12 @@
   }
 
   async function refreshPendingHoldBanner() {
-    if (window.location.pathname === '/thanh-toan.html' || pendingHoldRequestActive) return;
+    if ([
+      '/thanh-toan.html',
+      '/dat-san.html',
+      '/lich-su-dat-san.html',
+      '/chi-tiet-don-dat-san.html'
+    ].includes(window.location.pathname) || pendingHoldRequestActive) return;
     pendingHoldRequestActive = true;
     try {
       const response = await fetch('/api/v1/bookings/pending', { credentials: 'same-origin', cache: 'no-store' });
@@ -177,7 +182,14 @@
       if (item.paths.includes(window.location.pathname)) link.setAttribute('aria-current', 'page');
       nav.append(link);
     }
-    for (const label of ['Lịch sử đặt sân', 'Tin tức thể thao']) {
+    const history = element('a', 'sb-shared-header__link', 'Lịch sử đặt sân');
+    history.href = '/lich-su-dat-san.html';
+    if (['/lich-su-dat-san.html', '/chi-tiet-don-dat-san.html'].includes(window.location.pathname)) {
+      history.setAttribute('aria-current', 'page');
+    }
+    nav.append(history);
+
+    for (const label of ['Tin tức thể thao']) {
       const item = element('span', 'sb-shared-header__disabled');
       item.setAttribute('aria-disabled', 'true');
       item.append(document.createTextNode(label), element('span', 'sb-shared-header__soon', 'Sắp có'));
@@ -261,7 +273,12 @@
     inner.append(brandGroup, controls);
     header.append(inner);
     mount.replaceChildren(header);
-    if (!['/dat-san.html', '/thanh-toan.html'].includes(window.location.pathname)) {
+    if (![
+      '/dat-san.html',
+      '/thanh-toan.html',
+      '/lich-su-dat-san.html',
+      '/chi-tiet-don-dat-san.html'
+    ].includes(window.location.pathname)) {
       refreshPendingHoldBanner();
       pendingHoldPollTimer = window.setInterval(refreshPendingHoldBanner, 5000);
     }

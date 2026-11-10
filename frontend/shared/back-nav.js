@@ -1,0 +1,63 @@
+'use strict';
+
+(function exposeBackNav(root, factory) {
+  const api = factory();
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  if (root) root.SportBookingBackNav = api;
+}(typeof window === 'undefined' ? null : window, () => {
+  const fallbackTarget = '/lich-su-dat-san.html';
+  const allowedPaths = new Set([
+    '/lich-su-dat-san.html',
+    '/dat-san-thanh-cong.html',
+    '/trangchu-user.html',
+    '/thanh-toan.html',
+    '/tim-san.html'
+  ]);
+  const labels = Object.freeze({
+    '/lich-su-dat-san.html': 'Quay lại lịch sử đặt sân',
+    '/dat-san-thanh-cong.html': 'Quay lại vé đặt sân',
+    '/trangchu-user.html': 'Quay lại trang chủ',
+    '/thanh-toan.html': 'Quay lại thanh toán',
+    '/tim-san.html': 'Quay lại tìm sân'
+  });
+
+  function getAllowedPath(value) {
+    if (typeof value !== 'string' || !value.startsWith('/') || value.startsWith('//')
+        || value.includes('\\')) {
+      return null;
+    }
+    const path = value.split(/[?#]/, 1)[0];
+    return allowedPaths.has(path) ? path : null;
+  }
+
+  function buildDetailUrl(bookingId, fromPath) {
+    return `/chi-tiet-don-dat-san.html?booking_id=${encodeURIComponent(String(bookingId))}`
+      + `&from=${encodeURIComponent(String(fromPath))}`;
+  }
+
+  function resolveBackTarget(search, referrer, currentOrigin) {
+    const from = new URLSearchParams(search).get('from');
+    if (getAllowedPath(from)) return from;
+
+    if (typeof currentOrigin === 'string' && currentOrigin) {
+      try {
+        const origin = new URL(currentOrigin).origin;
+        const referrerUrl = new URL(referrer);
+        const path = getAllowedPath(`${referrerUrl.pathname}${referrerUrl.search}${referrerUrl.hash}`);
+        if (referrerUrl.origin === origin && path) {
+          return `${referrerUrl.pathname}${referrerUrl.search}${referrerUrl.hash}`;
+        }
+      } catch {
+        // Invalid or absent referrers use the safe fallback.
+      }
+    }
+    return fallbackTarget;
+  }
+
+  function backLabel(target) {
+    const path = typeof target === 'string' ? target.split(/[?#]/, 1)[0] : '';
+    return labels[path] || labels[fallbackTarget];
+  }
+
+  return { buildDetailUrl, resolveBackTarget, backLabel };
+}));

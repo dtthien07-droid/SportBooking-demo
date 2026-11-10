@@ -104,6 +104,22 @@
     return requestJson(`/api/v1/bookings/${encodeURIComponent(bookingId)}`, { cache: 'no-store' });
   }
 
+  function listBookings({ status, page = 1, pageSize = 10, q, sport } = {}) {
+    const query = new URLSearchParams({
+      mine: 'true',
+      page: String(page),
+      page_size: String(pageSize)
+    });
+    if (status) query.set('status', status);
+    if (q) query.set('q', q);
+    if (sport) query.set('sport', sport);
+    return requestJson(`/api/v1/bookings?${query}`, { cache: 'no-store' });
+  }
+
+  function getBookingSummary() {
+    return requestJson('/api/v1/bookings/summary', { cache: 'no-store' });
+  }
+
   function getPendingBooking() {
     return requestJson('/api/v1/bookings/pending', { cache: 'no-store' });
   }
@@ -124,7 +140,9 @@
     createPaymentAttempt,
     createBooking,
     getBooking,
+    getBookingSummary,
     getPendingBooking,
+    listBookings,
     getCourtSlots,
     getCurrentUser,
     getFacility,

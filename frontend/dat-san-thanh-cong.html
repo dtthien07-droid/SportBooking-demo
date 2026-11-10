@@ -211,14 +211,18 @@
                             <span class="material-symbols-outlined text-xl">group_add</span>
                             <span>Tìm đối — Sắp có</span>
                         </button>
-                        <button class="h-12 px-space-lg rounded-xl bg-primary text-white font-bold text-sm flex items-center justify-center gap-1.5 opacity-60 cursor-not-allowed" type="button" disabled aria-disabled="true">
+                        <a class="h-12 px-space-lg rounded-xl bg-primary text-white font-bold text-sm flex items-center justify-center gap-1.5" href="/lich-su-dat-san.html">
                             <span class="material-symbols-outlined text-xl">calendar_month</span>
-                            <span>Xem lịch sử đặt sân — Sắp có</span>
-                        </button>
+                            <span>Lịch sử đặt sân</span>
+                        </a>
                         <button class="h-12 px-space-md rounded-xl bg-surface-container-lowest text-on-surface font-semibold text-xs flex items-center justify-center gap-1 border cursor-not-allowed opacity-60" id="downloadPdfBtn" type="button" disabled aria-disabled="true">
                             <span class="material-symbols-outlined text-lg text-gray-500">download</span>
                             <span>Tải vé PDF — Sắp có</span>
                         </button>
+                        <a class="h-12 px-space-md rounded-xl bg-surface-container-lowest text-on-surface font-semibold text-xs flex items-center justify-center gap-1 border cursor-not-allowed opacity-60" id="bookingDetailLink" aria-disabled="true">
+                            <span class="material-symbols-outlined text-lg">receipt_long</span>
+                            <span>Xem chi tiết đơn này</span>
+                        </a>
                     </div>
                 </div>
 
@@ -231,7 +235,7 @@
                                 </div>
                                 <h3 class="text-base font-bold text-on-surface">Vị trí &amp; Đường đi</h3>
                             </div>
-                            <a class="text-xs text-primary font-bold hover:underline flex items-center gap-0.5" id="ticketMapLink" href="#" rel="noopener noreferrer" target="_blank">
+                            <a class="text-xs text-primary font-bold hover:underline flex items-center gap-0.5" id="ticketMapLink" rel="noopener noreferrer" target="_blank">
                                 <span>Mở Maps</span>
                                 <span class="material-symbols-outlined text-xs">open_in_new</span>
                             </a>
@@ -265,6 +269,7 @@
     <script src="/assets/qr-code.js"></script>
     <script src="/shared/format.js"></script>
     <script src="/booking/ticket-data.js"></script>
+    <script src="/shared/back-nav.js"></script>
     <script src="/booking/ticket-page.js"></script>
 </body>
 </html>

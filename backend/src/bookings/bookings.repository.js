@@ -4,12 +4,12 @@ const crypto = require('node:crypto');
 
 function createBookingRepository(pool) {
   if (!pool || typeof pool.execute !== 'function') {
-    throw new TypeError('A MySQL-compatible pool is required.');
+    throw new TypeError('Cần một kết nối pool tương thích với MySQL.');
   }
 
   async function withTransaction(callback) {
     if (typeof pool.getConnection !== 'function') {
-      throw new TypeError('The database pool must support transactions.');
+      throw new TypeError('Pool cơ sở dữ liệu phải hỗ trợ giao dịch.');
     }
     const connection = await pool.getConnection();
     let committed = false;
@@ -26,7 +26,7 @@ function createBookingRepository(pool) {
         } catch (rollbackError) {
           throw new AggregateError(
             [error, rollbackError],
-            'The booking transaction and its rollback both failed.'
+            'Giao dịch đặt sân và thao tác hoàn tác đều thất bại.'
           );
         }
       }
@@ -38,6 +38,11 @@ function createBookingRepository(pool) {
 
   return {
     withTransaction,
+
+    isBookingCodeConflict(error) {
+      return error?.code === 'ER_DUP_ENTRY'
+        && /uq_bookings_booking_code|bookings\.booking_code/i.test(String(error.message));
+    },
 
     async lockUser(connection, userId) {
       const [rows] = await connection.execute(
@@ -337,7 +342,7 @@ function createBookingRepository(pool) {
         ['PAID', amount, paymentId, 'PENDING']
       );
       if (result.affectedRows !== 1) {
-        throw new Error('Payment changed before it could be marked paid.');
+        throw new Error('Khoản thanh toán đã thay đổi trước khi được đánh dấu đã thanh toán.');
       }
     },
 
@@ -350,7 +355,7 @@ function createBookingRepository(pool) {
         ['CONFIRMED', bookingId, 'PENDING']
       );
       if (result.affectedRows !== 1) {
-        throw new Error('Booking changed before it could be confirmed.');
+        throw new Error('Đơn đặt sân đã thay đổi trước khi được xác nhận.');
       }
     },
 
@@ -363,7 +368,7 @@ function createBookingRepository(pool) {
         ['BOOKED', bookingId, 'LOCKED']
       );
       if (result.affectedRows === 0) {
-        throw new Error('No locked booking slots could be confirmed.');
+        throw new Error('Không có khung giờ đã khóa nào có thể được xác nhận.');
       }
       return result.affectedRows;
     },
@@ -477,7 +482,7 @@ function createBookingRepository(pool) {
 
     async findOwnedBookingById(bookingId, userId) {
       const [rows] = await pool.execute(
-        `SELECT b.id, b.booking_code, b.user_id, b.status, b.total_amount,
+        `SELECT b.id, b.booking_code, b.user_id, b.status, b.total_amount, b.created_at,
                 b.match_preference, b.lock_expires_at,
                 p.status AS payment_status, p.amount_due, p.paid_amount,
                 p.refunded_amount, p.payment_option,
@@ -503,12 +508,72 @@ function createBookingRepository(pool) {
       return rows[0] || null;
     },
 
-    async listBookingsForUser({ userId, status, page, pageSize }) {
+    async findBookingSummaryRows(userId) {
+      const [rows] = await pool.execute(
+        `SELECT b.id, b.status,
+                CASE
+                  WHEN b.status = 'PENDING'
+                       AND (b.lock_expires_at IS NULL
+                            OR b.lock_expires_at <= UTC_TIMESTAMP(3))
+                  THEN 1 ELSE 0
+                END AS lock_expired,
+                MIN(CONCAT(DATE_FORMAT(ts.service_date, '%Y-%m-%d'), 'T',
+                           TIME_FORMAT(ts.starts_at, '%H:%i:%s'))) AS first_slot_start,
+                MAX(CONCAT(DATE_FORMAT(ts.service_date, '%Y-%m-%d'), 'T',
+                           TIME_FORMAT(ts.ends_at, '%H:%i:%s'))) AS last_slot_end
+         FROM bookings AS b
+         LEFT JOIN booking_slots AS bs ON bs.booking_id = b.id
+         LEFT JOIN time_slots AS ts ON ts.id = bs.time_slot_id
+         WHERE b.user_id = ?
+         GROUP BY b.id, b.status, b.lock_expires_at
+         ORDER BY b.id ASC`,
+        [userId]
+      );
+      return rows;
+    },
+
+    async getTotalSpentForUser(userId) {
+      const [rows] = await pool.execute(
+        `SELECT COALESCE(SUM(p.paid_amount - p.refunded_amount), 0) AS total_spent
+         FROM payments AS p
+         INNER JOIN bookings AS b ON b.id = p.booking_id
+         WHERE b.user_id = ?
+           AND p.status IN (?, ?)`,
+        [userId, 'PAID', 'REFUNDED']
+      );
+      return String(rows[0].total_spent);
+    },
+
+    async listBookingsForUser({ userId, status, q, sport, page, pageSize }) {
       const conditions = ['b.user_id = ?'];
       const parameters = [userId];
       if (status) {
         conditions.push('b.status = ?');
         parameters.push(status);
+      }
+      if (q) {
+        const escapedQuery = q.replace(/[!%_]/g, '!$&');
+        conditions.push(`(
+          b.booking_code LIKE ? ESCAPE '!'
+          OR EXISTS (
+            SELECT 1
+            FROM booking_slots AS search_bs
+            INNER JOIN courts AS search_c ON search_c.id = search_bs.court_id
+            INNER JOIN facilities AS search_f ON search_f.id = search_c.facility_id
+            WHERE search_bs.booking_id = b.id
+              AND search_f.name LIKE ? ESCAPE '!'
+          )
+        )`);
+        parameters.push(`%${escapedQuery}%`, `%${escapedQuery}%`);
+      }
+      if (sport) {
+        conditions.push(`EXISTS (
+          SELECT 1
+          FROM booking_slots AS sport_bs
+          INNER JOIN courts AS sport_c ON sport_c.id = sport_bs.court_id
+          WHERE sport_bs.booking_id = b.id AND sport_c.sport_type = ?
+        )`);
+        parameters.push(sport);
       }
       const whereClause = conditions.join(' AND ');
       const [countRows] = await pool.execute(
@@ -519,10 +584,10 @@ function createBookingRepository(pool) {
       );
       const total = Number(countRows[0].total);
       if (!Number.isSafeInteger(total)) {
-        throw new RangeError('The booking count exceeds the supported range.');
+        throw new RangeError('Số lượng đơn đặt sân vượt quá phạm vi cho phép.');
       }
       const [rows] = await pool.execute(
-        `SELECT b.id, b.booking_code, b.user_id, b.status, b.total_amount,
+        `SELECT b.id, b.booking_code, b.user_id, b.status, b.total_amount, b.created_at,
                 b.lock_expires_at, p.status AS payment_status,
                 p.paid_amount, p.refunded_amount,
                 CASE

@@ -6,6 +6,7 @@ const path = require('node:path');
 const test = require('node:test');
 const vm = require('node:vm');
 const SportBookingFormat = require('../shared/format.js');
+const SportBookingBackNav = require('../shared/back-nav.js');
 const {
   buildTicketViewModel,
   decideTicketAction,
@@ -74,6 +75,10 @@ class FakeElement {
     this.href = '';
     this.attributes = {};
     this.listeners = new Map();
+    this.removedClasses = [];
+    this.classList = {
+      remove: (...names) => this.removedClasses.push(...names)
+    };
   }
 
   addEventListener(type, handler) {
@@ -133,6 +138,7 @@ function createPageHarness({ bookingResult = booking, bookingError = null, searc
       decideTicketAction,
       formatMoney
     },
+    SportBookingBackNav,
     SportBookingStepper: { render(mount, step) { mount.step = step; } },
     SportBookingFormat,
     SportBookingQRCode: { toSvg(payload) { return `<svg>${payload}</svg>`; } }
@@ -213,11 +219,13 @@ test('draws the complete ticket payload in a local QR SVG', () => {
   );
 });
 
-test('uses inline SVG icons and disables links to unfinished booking pages', () => {
-  assert.doesNotMatch(pageHtml, /Material\+Symbols|lich-su-dat-san\.html|chi-tiet-don-dat-san\.html/);
+test('uses inline SVG icons and enables implemented booking links', () => {
+  assert.doesNotMatch(pageHtml, /Material\+Symbols/);
   assert.match(headerSource, /createElementNS\('http:\/\/www\.w3\.org\/2000\/svg', 'svg'\)/);
   assert.doesNotMatch(headerCss, /Material Symbols Outlined/);
-  assert.match(pageHtml, /Xem lịch sử đặt sân — Sắp có/);
+  assert.match(pageHtml, /href="\/lich-su-dat-san\.html"/);
+  assert.match(pageHtml, /id="bookingDetailLink"/);
+  assert.match(pageHtml, /Xem chi tiết đơn này/);
   assert.match(pageHtml, /disabled aria-disabled="true"/);
 });
 
@@ -258,6 +266,11 @@ test('renders all confirmed fields without a ReferenceError', async () => {
   assert.equal(page.elements.get('displayMatchSlot').textContent, '17:00 - 18:00, 18:00 - 19:00');
   assert.equal(page.elements.get('ticketPaidAmount').textContent, '150.000 đ');
   assert.equal(page.elements.get('ticketVenueAmount').textContent, '150.000 đ');
+  assert.equal(
+    page.elements.get('bookingDetailLink').href,
+    '/chi-tiet-don-dat-san.html?booking_id=42&from=%2Fdat-san-thanh-cong.html%3Fbooking_id%3D42'
+  );
+  assert.equal(page.elements.get('bookingDetailLink').attributes['aria-disabled'], undefined);
   assert.match(page.elements.get('bookingQr').innerHTML, /02412345678/);
   assert.equal(page.elements.get('ticketMapLink').href, 'https://maps.google.com/?q=12');
 });

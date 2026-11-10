@@ -170,3 +170,9 @@ Sau khi test đạt, tạo commit riêng cho Module 6, ví dụ `feat(bookings):
 3. **Đã chốt:** dùng khoảng nửa mở `bắt đầu <= now < kết thúc` cho **Đang trong trận** và `now >= kết thúc` cho **Hoàn thành**; nhãn và job dùng cùng hàm điều kiện.
 4. **Đã chốt:** URL `/lich-su-dat-san.html` và `/chi-tiet-don-dat-san.html?booking_id=...`.
 5. **Đã chốt cho Phần B:** POST tính lại tiền hoàn, trả `409` kèm số mới nếu popup cũ; transaction khóa booking, payment, rồi slot theo ID tăng dần.
+
+## Bổ sung Module 7 — Số liệu tóm tắt và lọc lịch sử
+
+Phạm vi bổ sung đã được duyệt: API chỉ đọc `GET /api/v1/bookings/summary` trả số liệu theo user hiện tại, tổng thanh toán ròng và số đơn theo nhãn hiển thị; danh sách lịch sử hỗ trợ tìm theo mã/cơ sở và lọc môn. API danh sách/chi tiết trả thêm các trường chỉ đọc cần cho UI; mã đơn mới dùng định dạng `SPB-YYYYMMDD-xxxxxx` theo UTC+7, giữ nguyên mã hiện có. Frontend nối các thẻ/tabs, tìm kiếm debounce, bộ lọc môn và thông tin đặt/chi tiết sân. Không thay đổi luồng giữ chỗ, đặt sân hay thanh toán.
+
+Kiểm thử hoàn tất: frontend 67/67, backend trên `sportbooking_test` 43/43; syntax check đạt. Kiểm tra giao diện bằng trình duyệt: **Chờ người dùng xác nhận**.
