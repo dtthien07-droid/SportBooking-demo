@@ -559,6 +559,10 @@
       const booking = await window.SportBookingApi.getBooking(bookingId);
       if (sequence !== state.bookingLoadSequence || bookingId !== state.bookingId) return;
       if (!booking) return;
+      if (booking.status === 'CONFIRMED') {
+        window.location.replace(`/dat-san-thanh-cong.html?booking_id=${encodeURIComponent(bookingId)}`);
+        return;
+      }
       state.slotIds = booking.slots.map((slot) => String(slot.time_slot_id));
       if (!state.facility) {
         const facilityData = await window.SportBookingApi.getFacility(booking.slots[0].facility_id);

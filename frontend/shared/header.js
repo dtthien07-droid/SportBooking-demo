@@ -11,8 +11,29 @@
     return node;
   };
 
+  const iconPaths = {
+    menu: 'M4 6h16M4 12h16M4 18h16',
+    close: 'M6 6l12 12M18 6 6 18',
+    notifications: 'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9m-8 12a2 2 0 0 0 4 0',
+    logout: 'M10 17l5-5-5-5m5 5H3m9-9h8a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-8'
+  };
+
   function icon(name) {
-    return element('span', 'sb-shared-header__icon', name);
+    const pathData = iconPaths[name];
+    if (!pathData) throw new Error(`Unknown shared-header icon: ${name}`);
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    svg.classList.add('sb-shared-header__icon');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor');
+    svg.setAttribute('stroke-width', '1.8');
+    svg.setAttribute('stroke-linecap', 'round');
+    svg.setAttribute('stroke-linejoin', 'round');
+    svg.setAttribute('aria-hidden', 'true');
+    path.setAttribute('d', pathData);
+    svg.append(path);
+    return svg;
   }
 
   function loginRedirect() {

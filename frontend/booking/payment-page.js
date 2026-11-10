@@ -191,7 +191,7 @@
   }
 
   function redirectToTicket() {
-    window.location.assign(`/dat-san-thanh-cong.html?booking_id=${encodeURIComponent(bookingId)}`);
+    window.location.replace(`/dat-san-thanh-cong.html?booking_id=${encodeURIComponent(bookingId)}`);
   }
 
   async function submitPayment(result) {

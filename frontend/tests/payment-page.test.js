@@ -105,7 +105,7 @@ const pendingBooking = {
   ]
 };
 
-function createHarness({ attemptError = null, attemptResult = {} } = {}) {
+function createHarness({ attemptError = null, attemptResult = {}, initialBooking = pendingBooking } = {}) {
   const elements = new Map();
   const stepperMount = new FakeElement('stepper');
   for (const [tag] of pageHtml.matchAll(/<[^>]*\bid="[^"]+"[^>]*>/g)) {
@@ -123,6 +123,8 @@ function createHarness({ attemptError = null, attemptResult = {} } = {}) {
   });
   const calls = [];
   const redirects = [];
+  const replacements = [];
+  const assignments = [];
   let bookingReads = 0;
   const api = {
     async getBooking() {
@@ -130,7 +132,7 @@ function createHarness({ attemptError = null, attemptResult = {} } = {}) {
       if (bookingReads > 1 && attemptError?.status === 409) {
         return { ...pendingBooking, status: 'CONFIRMED', payment: { ...pendingBooking.payment, status: 'PAID' } };
       }
-      return pendingBooking;
+      return initialBooking;
     },
     async getPayments() {
       return { payment: { amount_due: '150000' } };
@@ -159,7 +161,8 @@ function createHarness({ attemptError = null, attemptResult = {} } = {}) {
       search: '?booking_id=42',
       origin: 'https://sportbooking.test',
       pathname: '/thanh-toan.html',
-      assign(url) { redirects.push(url); }
+      assign(url) { assignments.push(url); redirects.push(url); },
+      replace(url) { replacements.push(url); redirects.push(url); }
     },
     SportBookingApi: api,
     SportBookingFormat,
@@ -201,13 +204,14 @@ function createHarness({ attemptError = null, attemptResult = {} } = {}) {
   async function waitForLoad() {
     for (let attempt = 0; attempt < 20; attempt += 1) {
       if (elements.get('paymentLoading').hidden
-          || elements.get('paymentError').hidden === false) return;
+          || elements.get('paymentError').hidden === false
+          || replacements.length > 0) return;
       await new Promise((resolve) => setImmediate(resolve));
     }
     assert.fail('Payment page did not finish loading.');
   }
 
-  return { elements, methods, calls, redirects, waitForLoad, stepperMount };
+  return { elements, methods, calls, redirects, replacements, assignments, waitForLoad, stepperMount };
 }
 
 test('loads flat PENDING booking data and renders every real booking field', async () => {
@@ -238,6 +242,7 @@ test('selects each payment method and submits SUCCESS', async (t) => {
       await page.elements.get('btn-submit-payment').dispatch('click');
       assert.deepEqual(page.calls, [{ id: '42', method, result: 'SUCCESS' }]);
       assert.deepEqual(page.redirects, ['/dat-san-thanh-cong.html?booking_id=42']);
+      assert.deepEqual(page.replacements, ['/dat-san-thanh-cong.html?booking_id=42']);
     });
   }
 });
@@ -247,6 +252,16 @@ test('409 reads current booking and redirects only when it is confirmed', async 
   await page.waitForLoad();
   await page.elements.get('btn-submit-payment').dispatch('click');
   assert.deepEqual(page.redirects, ['/dat-san-thanh-cong.html?booking_id=42']);
+  assert.deepEqual(page.replacements, ['/dat-san-thanh-cong.html?booking_id=42']);
+});
+
+test('replaces payment history with the ticket when the booking is already confirmed', async () => {
+  const page = createHarness({
+    initialBooking: { ...pendingBooking, status: 'CONFIRMED' }
+  });
+  await page.waitForLoad();
+  assert.deepEqual(page.redirects, ['/dat-san-thanh-cong.html?booking_id=42']);
+  assert.deepEqual(page.replacements, ['/dat-san-thanh-cong.html?booking_id=42']);
 });
 
 test('410 marks the hold expired and disables another payment attempt', async () => {

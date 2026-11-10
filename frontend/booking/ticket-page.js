@@ -4,128 +4,195 @@
   const query = new URLSearchParams(window.location.search);
   const bookingId = query.get('booking_id') || query.get('id');
   const main = document.querySelector('main');
-  const outsideMessage = document.createElement('p');
-  outsideMessage.className = 'max-w-[1280px] mx-auto mt-24 px-margin text-sm';
-  outsideMessage.setAttribute('role', 'status');
-  document.querySelector('[data-shared-header]')?.after(outsideMessage);
-  const money = (value) => `${Number(value || 0).toLocaleString('vi-VN')}đ`;
-  const setText = (selector, value) => { const node = document.querySelector(selector); if (node) node.textContent = value || '—'; };
-  const dateText = (value) => {
-    const date = new Date(`${String(value).slice(0, 10)}T00:00:00`);
-    return Number.isNaN(date.valueOf()) ? String(value || '') : date.toLocaleDateString('vi-VN');
-  };
-  const timeText = (value) => {
-    if (!value) return '';
-    const date = new Date(String(value).includes('T') ? value : `1970-01-01T${value}`);
-    return Number.isNaN(date.valueOf()) ? String(value).slice(0, 5) : date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+  const loading = document.getElementById('ticketLoading');
+  const errorPanel = document.getElementById('ticketError');
+  const errorMessage = document.getElementById('ticketErrorMessage');
+  const retryButton = document.getElementById('ticketRetry');
+  const stepper = document.querySelector('[data-booking-stepper]');
+  const ticketData = window.SportBookingTicketData;
+
+  const iconPaths = {
+    arrow_back: 'M19 12H5m7 7-7-7 7-7',
+    content_copy: 'M8 8V4h12v12h-4M4 8h12v12H4z',
+    calendar_month: 'M8 3v4m8-4v4M4 9h16M5 5h14a1 1 0 0 1 1 1v13H4V6a1 1 0 0 1 1-1Zm3 8h2m4 0h2m-8 4h2m4 0h2',
+    download: 'M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4',
+    home: 'm3 11 9-8 9 8M5 10v11h14V10m-9 11v-7h4v7',
+    share: 'M12 16V4m-5 5 5-5 5 5M5 14v6h14v-6',
+    forum: 'M4 5h16v11H9l-5 4V5Zm4 4h8m-8 4h5',
+    chat: 'M4 5h16v12H9l-5 4V5Z',
+    link: 'M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2m3 6a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2',
+    navigation: 'm3 3 18 9-8 2-2 7-8-18Z',
+    open_in_new: 'M14 4h6v6m0-6-9 9M18 13v6H4V5h6',
+    directions_walk: 'M13 5a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm-2 18 1-7-3-3 2-5 4 3 4 1m-9 3-3 6m6-5 4 5',
+    call: 'M6 3h4l2 5-3 2a15 15 0 0 0 5 5l2-3 5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 4 5a2 2 0 0 1 2-2Z',
+    local_parking: 'M6 21V3h7a6 6 0 0 1 0 12h-7',
+    shield: 'M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11Zm-4-11 3 3 5-6',
+    check_circle: 'M22 11.1V12a10 10 0 1 1-5.9-9.2M22 4 12 14l-3-3',
+    verified: 'm12 2 3 2 4-.1.9 3.9 2.8 2.8-2 3.4.3 4-4 .9-3 2.8-3-2.8-4-.9.3-4-2-3.4 2.8-2.8L9 3.9 12 2Z',
+    sports_tennis: 'M4 20 20 4M7 3a6 6 0 0 1 8 8l-4 4a6 6 0 0 1-8-8l4-4Zm10 10a6 6 0 0 1 4 10l-7-7a6 6 0 0 1 3-3Z',
+    location_on: 'M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Zm-5 0a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z',
+    stadium: 'M3 8 12 3l9 5v13H3V8Zm0 4h18M7 12v5m5-5v5m5-5v5',
+    schedule: 'M12 8v5l3 2m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
+    calendar_today: 'M5 4h14v17H5V4Zm3-2v4m8-4v4M5 9h14',
+    person: 'M20 21a8 8 0 0 0-16 0m8-10a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z',
+    qr_code_2: 'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h3v3h-3zm4 4h3v3h-3zm0-4h3',
+    info: 'M12 17v-5m0-4h.01M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z',
+    group_add: 'M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2m6-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8-7v6m-3-3h6'
   };
 
-  function renderQr(bookingCode) {
-    const icon = [...document.querySelectorAll('main .material-symbols-outlined')].find((node) => node.textContent.trim() === 'qr_code_2');
-    const container = document.getElementById('bookingQr') || icon?.closest('div');
-    if (!container || !bookingCode) return;
-    container.innerHTML = window.SportBookingQRCode.toSvg(bookingCode);
-    const svg = container.querySelector('svg');
-    if (svg) { svg.style.width = '100%'; svg.style.height = '100%'; }
+  function showLoading() {
+    loading.hidden = false;
+    errorPanel.hidden = true;
+    main.hidden = true;
   }
-  function ensureTicketDetails() {
-    if (document.getElementById('bookingIdText') && document.getElementById('displayBookerPhone')) return;
-    const mount = document.querySelector('main h2')
-      || document.querySelector('[data-booking-stepper]');
 
-    const details = document.createElement('div');
-    details.className = 'mt-2 flex flex-col gap-1 text-xs text-on-surface-variant';
-    const codeLine = document.createElement('p');
-    codeLine.append('Mã đơn: ');
-    const code = document.createElement('span');
-    code.id = 'bookingIdText';
-    codeLine.append(code);
-    const phoneLine = document.createElement('p');
-    phoneLine.append('Số điện thoại: ');
-    const phone = document.createElement('span');
-    phone.id = 'displayBookerPhone';
-    phoneLine.append(phone);
-    details.append(codeLine, phoneLine);
-    if (mount) mount.after(details);
-    else main.append(details);
+  function showError(message) {
+    loading.hidden = true;
+    main.hidden = true;
+    errorMessage.textContent = message;
+    errorPanel.hidden = false;
   }
-  function renderBooking(booking, payments) {
-    if (booking.status !== 'CONFIRMED') {
-      outsideMessage.textContent = 'Đơn chưa được xác nhận; vé sẽ hiển thị sau khi thanh toán thành công.';
-      return;
+
+  function replaceIcons() {
+    document.querySelectorAll('.material-symbols-outlined').forEach((icon) => {
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      const name = icon.textContent.trim();
+      svg.setAttribute('viewBox', '0 0 24 24');
+      svg.setAttribute('width', '1em');
+      svg.setAttribute('height', '1em');
+      svg.setAttribute('fill', 'none');
+      svg.setAttribute('stroke', 'currentColor');
+      svg.setAttribute('stroke-width', '1.8');
+      svg.setAttribute('stroke-linecap', 'round');
+      svg.setAttribute('stroke-linejoin', 'round');
+      svg.setAttribute('aria-hidden', 'true');
+      svg.classList.add(...icon.classList);
+      path.setAttribute('d', iconPaths[name] || iconPaths.info);
+      svg.append(path);
+      icon.replaceWith(svg);
+    });
+  }
+
+  function setText(id, value) {
+    const element = document.getElementById(id);
+    if (element) element.textContent = value || '—';
+  }
+
+  function resolveMapUrl(model) {
+    if (model.mapUrl) {
+      try {
+        const url = new URL(model.mapUrl, window.location.origin);
+        if (url.protocol === 'https:' || url.protocol === 'http:') return url.href;
+      } catch {
+        // Fall back to the facility address below.
+      }
     }
-    window.SportBookingStepper.render(
-      document.querySelector('[data-booking-stepper]'),
-      3
-    );
-    main.hidden = false;
-    ensureTicketDetails();
-    outsideMessage.hidden = true;
-    const slots = booking.slots || [];
-    document.querySelectorAll('main p').forEach((paragraph) => {
-      if (/12\s*tiếng|100%/i.test(paragraph.textContent)) {
-        paragraph.textContent = 'Thông tin hủy và hoàn tiền được áp dụng theo chính sách của đơn đặt sân.';
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(model.address || model.facilityName)}`;
+  }
+
+  function renderTicket(model, user) {
+    window.SportBookingStepper.render(stepper, 3);
+    setText('bookingIdText', window.SportBookingFormat.formatBookingCode(model.bookingCode));
+    setText('ticketFacilityName', model.facilityName);
+    setText('ticketCourtName', model.courtName);
+    setText('ticketAddress', model.address);
+    setText('ticketAddressMap', model.address);
+    setText('ticketStatus', 'Đã xác nhận');
+    setText('displayMatchSlot', model.slotLabels.join(', '));
+    setText('displayMatchDayOfWeek', model.date.weekday);
+    setText('displayMatchDate', model.date.label);
+    setText('displayBookerName', user.fullName || user.full_name || user.name);
+    setText('displayBookerPhone', window.SportBookingFormat.maskPhone(user.phone));
+    setText('displayNotificationEmail', user.email);
+    setText('ticketTotalAmount', ticketData.formatMoney(model.totalAmount));
+    setText('ticketPaidAmount', ticketData.formatMoney(model.paidAmount));
+    setText('ticketVenueAmount', ticketData.formatMoney(model.venueAmount));
+
+    const qr = document.getElementById('bookingQr');
+    qr.innerHTML = window.SportBookingQRCode.toSvg(model.qrPayload);
+    const map = document.getElementById('ticketMapLink');
+    map.href = resolveMapUrl(model);
+    map.target = '_blank';
+    map.rel = 'noopener noreferrer';
+    const hotline = document.getElementById('ticketHotline');
+    if (model.hotline) {
+      hotline.href = `tel:${model.hotline}`;
+      hotline.textContent = model.hotline;
+    } else {
+      hotline.removeAttribute('href');
+      hotline.textContent = 'Chưa có thông tin';
+    }
+
+    const copyButton = document.getElementById('copyBtn');
+    copyButton.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(model.bookingCode);
+        setText('copyFeedback', 'Đã chép!');
+      } catch {
+        setText('copyFeedback', 'Không thể sao chép.');
       }
     });
-    const first = slots[0] || {};
-    const code = booking.booking_code || '';
-    setText('#bookingIdText', window.SportBookingFormat.formatBookingCode(code));
-    setText('#ticketFacilityName', first.facility_name);
-    setText('main h2', first.facility_name);
-    setText('#ticketCourtName', [...new Set(slots.map((item) => item.court_name).filter(Boolean))].join(', '));
-    const courtLine = document.querySelector('main p.text-sm.font-bold.text-on-surface.mt-1');
-    if (courtLine) courtLine.textContent = [...new Set(slots.map((item) => item.court_name).filter(Boolean))].join(', ') || '—';
-    setText('#displayMatchSlot', slots.map((item) => `${timeText(item.starts_at)} - ${timeText(item.ends_at)}`).join(', '));
-    setText('#displayMatchDate', dateText(first.service_date));
-    const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
-    const day = new Date(`${String(first.service_date).slice(0, 10)}T00:00:00`).getDay();
-    setText('#displayMatchDayOfWeek', days[day] || '');
-    setText('#displayBookerName', '');
-    const paid = booking.payment?.paid_amount || '0';
-    const due = booking.amount_due_at_venue || '0';
-    const amountColumn = [...document.querySelectorAll('main div')].find((node) => node.classList.contains('md:col-span-8') && node.parentElement?.classList.contains('md:grid-cols-12'));
-    const totals = amountColumn ? [...amountColumn.children].map((row) => row.querySelector('span:last-child')).filter(Boolean) : [];
-    [booking.total_amount, paid, due].forEach((value, index) => { if (totals[index]) totals[index].textContent = money(value); });
-    renderQr(code);
-    const map = document.getElementById('ticketMapLink');
-    const phone = document.getElementById('ticketHotline');
-    const parkingIcon = [...document.querySelectorAll('main .material-symbols-outlined')].find((node) => node.textContent.trim() === 'local_parking');
-    if (parkingIcon?.parentElement?.parentElement) parkingIcon.parentElement.parentElement.hidden = true;
-    window.SportBookingApi.getFacility(first.facility_id).then((result) => {
-      const facility = result?.facility || result;
-      setText('#ticketFacilityName', facility?.name || first.facility_name);
-      setText('main h2', facility?.name || first.facility_name);
-      const address = facility?.address || '';
-      const addressLabel = [...document.querySelectorAll('main span')].find((node) => node.textContent.includes('35 Ph'));
-      if (addressLabel) addressLabel.textContent = address;
-      if (map) map.href = facility?.map_url || `https://maps.google.com/?q=${encodeURIComponent(address || facility?.name || '')}`;
-      if (phone && facility?.hotline) { phone.href = `tel:${facility.hotline}`; phone.textContent = facility.hotline; }
-    }).catch(() => {});
-    const matchLink = [...document.querySelectorAll('main a')].find((link) => link.getAttribute('href') === 'tim-doi-choi.html');
-    if (matchLink) { matchLink.removeAttribute('href'); matchLink.setAttribute('aria-disabled', 'true'); matchLink.querySelector('span:last-child').textContent = 'Tìm đối — Sắp có'; }
-    const historyLink = [...document.querySelectorAll('main a')].find((link) => link.getAttribute('href') === 'lich-su-dat-san.html');
-    const actions = historyLink?.parentElement;
-    if (actions && !document.getElementById('ticketCancelDisabled')) {
-      const cancel = document.createElement('button');
-      cancel.id = 'ticketCancelDisabled'; cancel.type = 'button'; cancel.disabled = true; cancel.textContent = 'Hủy đơn (Sắp có)';
-      cancel.className = 'h-12 px-space-md rounded-xl bg-surface-container text-on-surface-variant font-semibold text-xs border cursor-not-allowed opacity-60';
-      actions.append(cancel);
-    }
-    const copy = document.getElementById('copyBtn');
-    if (copy) copy.addEventListener('click', async () => { await navigator.clipboard?.writeText(code); setText('#copyFeedback', 'Đã chép!'); });
-    if (payments?.ticket?.qr_code) document.body.dataset.ticketCode = payments.ticket.qr_code;
-    window.SportBookingApi.getCurrentUser().then((result) => {
-      const user = result?.user || result;
-      setText('#displayBookerName', user?.fullName || user?.full_name || user?.name);
-      setText('#displayBookerPhone', window.SportBookingFormat.maskPhone(user?.phone));
-      setText('#displayNotificationEmail', user?.email);
-    }).catch(() => {});
+
+    replaceIcons();
+    errorPanel.hidden = true;
+    loading.hidden = true;
+    main.hidden = false;
   }
 
-  if (!bookingId) { outsideMessage.textContent = 'Thiếu mã đơn đặt sân.'; return; }
-  window.SportBookingApi.getBooking(bookingId).then(async (booking) => {
-    if (!booking) return;
-    const payments = await window.SportBookingApi.getPayments(bookingId);
-    renderBooking(booking, payments);
-  }).catch((error) => { if (error.status !== 401) outsideMessage.textContent = error.status === 404 ? 'Không tìm thấy đơn đặt sân.' : 'Không thể tải vé đặt sân.'; });
+  async function loadTicket() {
+    showLoading();
+    if (!bookingId) {
+      showError('Thiếu mã đơn đặt sân.');
+      return;
+    }
+
+    try {
+      const booking = await window.SportBookingApi.getBooking(bookingId);
+      if (!booking) {
+        showError('Không thể tải đơn đặt sân. Vui lòng thử lại.');
+        return;
+      }
+
+      const action = ticketData.decideTicketAction({ bookingId, booking });
+      if (action.action === 'payment') {
+        window.location.replace(`/thanh-toan.html?booking_id=${encodeURIComponent(action.bookingId)}`);
+        return;
+      }
+      if (action.action !== 'render') {
+        showError(action.message || 'Không thể tải vé đặt sân.');
+        return;
+      }
+
+      const firstSlot = booking.slots?.[0];
+      if (!firstSlot?.facility_id) throw new Error('Thiếu mã cơ sở trong đơn đặt sân.');
+      const [payments, facilityData, userData] = await Promise.all([
+        window.SportBookingApi.getPayments(bookingId),
+        window.SportBookingApi.getFacility(firstSlot.facility_id),
+        window.SportBookingApi.getCurrentUser()
+      ]);
+      if (!payments || !facilityData || !userData) {
+        throw new Error('Không thể tải đầy đủ thông tin vé. Vui lòng thử lại.');
+      }
+
+      const model = ticketData.buildTicketViewModel(booking, payments, facilityData);
+      const user = userData.user || userData;
+      renderTicket(model, user);
+    } catch (error) {
+      const action = ticketData.decideTicketAction({ bookingId, error });
+      if (action.action === 'login') {
+        const returnTo = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+        window.location.replace(`/dang-nhap.html?returnTo=${encodeURIComponent(returnTo)}`);
+      } else if (action.action === 'not-found') {
+        showError('Không tìm thấy đơn đặt sân.');
+      } else {
+        showError(action.message || 'Không thể tải vé đặt sân.');
+      }
+    }
+  }
+
+  retryButton.addEventListener('click', () => {
+    loadTicket().catch((error) => showError(error.message || 'Không thể tải vé đặt sân.'));
+  });
+  loadTicket().catch((error) => showError(error.message || 'Không thể tải vé đặt sân.'));
 })();
