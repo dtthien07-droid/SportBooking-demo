@@ -1,0 +1,51 @@
+.booking-stepper__control {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    padding: 0;
+    font: inherit;
+    text-align: left;
+    text-decoration: none;
+}
+
+.booking-stepper__control:focus-visible {
+    outline: 2px solid #006b2c;
+    outline-offset: 3px;
+    border-radius: 0.75rem;
+}
+
+@media (max-width: 640px) {
+    .booking-stepper .grid {
+        min-height: 2.5rem;
+    }
+
+    .booking-stepper__item {
+        justify-content: center;
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .booking-stepper__label {
+        display: none;
+    }
+
+    .booking-stepper__item[aria-current="step"] .booking-stepper__label {
+        display: flex;
+        position: absolute;
+        left: 50%;
+        top: calc(100% + 0.75rem);
+        width: max-content;
+        max-width: 100%;
+        transform: translateX(-50%);
+        text-align: center;
+    }
+
+    .booking-stepper__item[aria-current="step"] .booking-stepper__label span:last-child {
+        white-space: normal;
+    }
+
+    .booking-stepper {
+        margin-bottom: 3rem;
+    }
+}

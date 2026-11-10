@@ -50,8 +50,13 @@
     matchMessage: document.getElementById('matchMessage'),
     matchMessageCount: document.getElementById('matchMessageCount'),
     continueOld: document.getElementById('continueOldBooking'),
+    continuePending: document.getElementById('continueOldPayment'),
+    cancelPending: document.getElementById('cancelOldBooking'),
+    pendingTimer: document.getElementById('oldPendingTimer'),
     matchValidationError: document.getElementById('matchValidationError')
   };
+  const pendingState = window.SportBookingPendingState;
+  let pendingNoticeTimer = null;
   const state = {
     facilityId: query.get('facility_id'),
     courtId: query.get('court_id'),
@@ -67,7 +72,14 @@
     busy: false,
     retryAction: null,
     bookingLoadSequence: 0,
-    loadingBooking: false
+    loadingBooking: false,
+    pendingNoticeAllowed: false
+  };
+  const requestedSelection = {
+    facilityId: state.facilityId,
+    courtId: state.courtId,
+    serviceDate: state.serviceDate,
+    slotIds: [...state.slotIds]
   };
 
   function parseSlotIds(value) {
@@ -136,7 +148,7 @@
 
   function setBusy(busy) {
     state.busy = busy;
-    elements.confirm.disabled = busy || Boolean(state.bookingId);
+    elements.confirm.disabled = busy || (Boolean(state.bookingId) && state.timerRemaining <= 0);
     elements.cancel.disabled = busy || !state.bookingId || state.timerRemaining <= 0;
     elements.paymentOptions.querySelectorAll('input').forEach((control) => {
       control.disabled = busy || Boolean(state.bookingId);
@@ -145,6 +157,8 @@
     elements.matchOptions.querySelectorAll('button, input, textarea').forEach((control) => {
       control.disabled = busy || Boolean(state.bookingId);
     });
+    if (elements.continuePending) elements.continuePending.setAttribute('aria-disabled', String(busy || state.timerRemaining <= 0));
+    if (elements.cancelPending) elements.cancelPending.disabled = busy || state.timerRemaining <= 0;
   }
 
   function resolveMapUrl(facility) {
@@ -283,11 +297,11 @@
     const criteria = elements.modeCriteria.getAttribute('aria-pressed') === 'true';
     const preference = { mode: criteria ? 'CRITERIA' : 'RANDOM', message: elements.matchMessage.value.trim() || null };
     if (criteria) {
-      preference.gender = document.querySelector('.gender-btn.active')?.dataset.gender || 'ANY';
-      preference.skill = document.querySelector('.skill-card.active')?.dataset.skill || 'INTERMEDIATE';
+      preference.gender = document.querySelector('input[name="match_gender"]:checked')?.value || 'ANY';
+      preference.skill = document.querySelector('input[name="match_skill"]:checked')?.value || 'INTERMEDIATE';
     }
     if (['BADMINTON', 'PICKLEBALL'].includes(String(state.court?.sport_type).toUpperCase())) {
-      preference.format = document.querySelector('.format-card.active')?.dataset.format || 'DOUBLES';
+      preference.format = document.querySelector('input[name="match_format"]:checked')?.value || 'SINGLES';
     }
     return preference;
   }
@@ -298,12 +312,12 @@
     if (!preference) return;
     elements.modeCriteria.setAttribute('aria-pressed', String(preference.mode === 'CRITERIA'));
     updateMatchMode();
-    const gender = document.querySelector(`.gender-btn[data-gender="${preference.gender || 'ANY'}"]`);
-    if (gender) markSelectedCard('.gender-btn', gender, 'span', '');
-    const skill = document.querySelector(`.skill-card[data-skill="${preference.skill || 'INTERMEDIATE'}"]`);
-    if (skill) markSelectedCard('.skill-card', skill, '.skill-radio', '✓');
-    const format = document.querySelector(`.format-card[data-format="${preference.format || 'DOUBLES'}"]`);
-    if (format) markSelectedCard('.format-card', format, '.format-radio', '●');
+    const gender = document.querySelector(`input[name="match_gender"][value="${preference.gender || 'ANY'}"]`);
+    const skill = document.querySelector(`input[name="match_skill"][value="${preference.skill || 'INTERMEDIATE'}"]`);
+    const format = document.querySelector(`input[name="match_format"][value="${preference.format || 'SINGLES'}"]`);
+    if (gender) gender.checked = true;
+    if (skill) skill.checked = true;
+    if (format) format.checked = true;
     elements.matchMessage.value = preference.message || '';
     elements.matchMessageCount.textContent = `${elements.matchMessage.value.length}/1000 ký tự`;
   }
@@ -331,6 +345,7 @@
     const minutes = Math.floor(safeSeconds / 60);
     const remainder = safeSeconds % 60;
     elements.timer.textContent = `${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`;
+    if (elements.pendingTimer) elements.pendingTimer.textContent = `${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`;
     elements.timerPanel.dataset.urgent = String(safeSeconds > 0 && safeSeconds < 120);
     if (safeSeconds === 0) {
       clearInterval(state.timerId);
@@ -341,16 +356,64 @@
     }
   }
 
+  function renderPendingNotice(pending) {
+    const decision = pendingState.decidePendingNotice({ pending });
+    if (decision.action !== 'render') {
+      if (pendingNoticeTimer) window.clearInterval(pendingNoticeTimer);
+      pendingNoticeTimer = null;
+      state.pendingNoticeAllowed = false;
+      elements.continueOld.hidden = true;
+      return;
+    }
+
+    const booking = decision.pending;
+    const bookingId = String(booking.booking_id || booking.id);
+    const slot = booking.slots?.[0] || {};
+    const formattedCode = window.SportBookingFormat.formatBookingCode(booking.booking_code);
+    const summary = document.createElement('p');
+    summary.className = 'text-sm font-semibold mb-2';
+    summary.textContent = `Bạn đang có đơn chờ thanh toán: ${slot.facility_name || 'Cơ sở'} / ${slot.court_name || 'Sân'} (${formatDate(slot.service_date)} ${booking.slots.map((item) => `${formatTime(item.starts_at)}–${formatTime(item.ends_at)}`).join(', ')})${formattedCode ? ` — ${formattedCode}` : ''} — còn `;
+    const timer = document.createElement('span');
+    timer.id = 'oldPendingTimer';
+    timer.className = 'font-mono font-bold';
+    summary.append(timer, '.');
+
+    const actions = document.createElement('div');
+    actions.className = 'flex flex-col sm:flex-row gap-2';
+    const continueLink = document.createElement('a');
+    continueLink.id = 'continueOldPayment';
+    continueLink.className = 'flex-1 h-11 rounded-xl bg-secondary-container hover:bg-secondary text-white text-xs font-bold flex items-center justify-center';
+    continueLink.href = `/thanh-toan.html?booking_id=${encodeURIComponent(bookingId)}`;
+    continueLink.textContent = 'Tiếp tục thanh toán';
+    const cancelButton = document.createElement('button');
+    cancelButton.id = 'cancelOldBooking';
+    cancelButton.type = 'button';
+    cancelButton.className = 'flex-1 h-11 rounded-xl bg-surface-container-high text-on-surface text-xs font-bold';
+    cancelButton.textContent = 'Hủy đơn cũ';
+    cancelButton.addEventListener('click', cancelOldPendingBooking);
+    actions.append(continueLink, cancelButton);
+    elements.continueOld.replaceChildren(summary, actions);
+    elements.continueOld.hidden = !state.pendingNoticeAllowed;
+    elements.continuePending = continueLink;
+    elements.cancelPending = cancelButton;
+    elements.pendingTimer = timer;
+    startTimer(booking.remaining_seconds);
+    if (pendingNoticeTimer) window.clearInterval(pendingNoticeTimer);
+    pendingNoticeTimer = window.setInterval(() => {
+      if (state.timerRemaining <= 0) renderPendingNotice(null);
+    }, 1000);
+  }
+
   function showExpiredBooking() {
     clearInterval(state.timerId);
     state.timerId = null;
     state.timerRemaining = 0;
+    renderPendingNotice(null);
+    elements.timerPanel.hidden = true;
     if (elements.summary.hidden) {
       showError('Hết thời gian giữ chỗ', false);
       return;
     }
-    elements.timerPanel.hidden = false;
-    renderTimer(0);
     elements.confirm.disabled = true;
     elements.cancel.disabled = true;
     setMessage('Hết thời gian giữ chỗ', 'error');
@@ -407,16 +470,19 @@
       formatGrid.parentElement.hidden = !['BADMINTON', 'PICKLEBALL'].includes(String(state.court.sport_type).toUpperCase());
     }
     restoreMatchPreference(booking.match_preference);
-    elements.bookingCode.textContent = booking.booking_code || '';
+    elements.bookingCode.textContent = window.SportBookingFormat.formatBookingCode(booking.booking_code);
     elements.bookingCode.hidden = !booking.booking_code;
     elements.actions.hidden = false;
     elements.confirm.hidden = false;
     elements.paymentComingSoon.hidden = booking.status !== 'PENDING';
     elements.cancel.hidden = booking.status !== 'PENDING';
     if (booking.status === 'PENDING') {
-      startTimer(booking.remaining_seconds);
+      if (state.pendingNoticeAllowed) renderPendingNotice(booking);
+      else renderPendingNotice(null);
+      elements.actions.hidden = true;
       setMessage('Sân đang được giữ cho bạn. Hoàn tất bước tiếp theo trước khi đồng hồ về 00:00.', 'success');
     } else {
+      renderPendingNotice(null);
       elements.timerPanel.hidden = true;
       setMessage(
         booking.status === 'CANCELLED' ? 'Bạn đã hủy giữ chỗ.' : `Trạng thái đơn: ${booking.status}.`,
@@ -515,8 +581,42 @@
     }
   }
 
+  async function loadPendingBooking(pendingId, isPendingConflict = false) {
+    let booking;
+    const resolution = pendingState.decidePendingNotice({
+      errorStatus: isPendingConflict ? 409 : null,
+      pendingBookingId: pendingId
+    });
+    try {
+      booking = resolution.action === 'fetch-booking'
+        ? await window.SportBookingApi.getBooking(pendingId)
+        : await window.SportBookingApi.getPendingBooking();
+    } catch (error) {
+      if (error.status === 410) {
+        renderPendingNotice(null);
+        return false;
+      }
+      throw error;
+    }
+    if (pendingState.decidePendingNotice({ pending: booking }).action !== 'render') {
+      renderPendingNotice(null);
+      return false;
+    }
+    state.pendingNoticeAllowed = true;
+    state.bookingId = String(booking.booking_id || booking.id);
+    await loadExistingBooking();
+    return true;
+  }
+
   async function confirmBooking() {
-    if (state.busy || state.bookingId || state.slots.length === 0) return;
+    if (state.busy) return;
+    if (state.bookingId) {
+      if (state.timerRemaining > 0) {
+        window.location.assign(`/thanh-toan.html?booking_id=${encodeURIComponent(state.bookingId)}`);
+      }
+      return;
+    }
+    if (state.slots.length === 0) return;
     document.getElementById('retryBookingAction').hidden = true;
     elements.matchValidationError.hidden = true;
     setBusy(true);
@@ -529,17 +629,15 @@
         buildMatchPreference()
       );
       if (!booking) return;
-      showActiveBooking(booking);
+      const bookingId = booking.booking_id || booking.id;
+      if (!bookingId) throw new Error('Máy chủ không trả về mã đơn đặt sân.');
+      window.location.assign(`/thanh-toan.html?booking_id=${encodeURIComponent(bookingId)}`);
     } catch (error) {
       if (error.status === 401) return;
       if (error.status === 409) {
         if (error.code === 'PENDING_BOOKING_EXISTS') {
-          setMessage('Bạn đang có đơn chờ thanh toán. Hãy tiếp tục đơn cũ hoặc hủy đơn đó trước.', 'error');
-          const existingId = error.details?.booking_id || error.details?.bookingId;
-          if (existingId) {
-            elements.continueOld.href = `/dat-san.html?booking_id=${encodeURIComponent(existingId)}`;
-            elements.continueOld.hidden = false;
-          }
+          renderPendingNotice(null);
+          await loadPendingBooking(error.body?.error?.details?.pending_booking_id || error.details?.pending_booking_id, true);
         } else {
           setMessage('Khung giờ vừa được người khác chọn hoặc không còn khả dụng. Vui lòng quay lại chọn giờ khác.', 'error');
         }
@@ -576,6 +674,8 @@
       clearInterval(state.timerId);
       state.timerId = null;
       state.bookingId = null;
+      state.pendingNoticeAllowed = false;
+      renderPendingNotice(null);
       elements.timerPanel.hidden = true;
       elements.cancel.hidden = true;
       elements.paymentComingSoon.hidden = true;
@@ -602,32 +702,52 @@
     }
   }
 
+  async function cancelOldPendingBooking() {
+    if (state.busy || !state.bookingId || state.timerRemaining <= 0) return;
+    setBusy(true);
+    setMessage('Đang hủy đơn cũ…', 'info');
+    try {
+      const cancelled = await window.SportBookingApi.cancelBooking(state.bookingId);
+      if (!cancelled) return;
+    } catch (error) {
+      if (error.status === 401) return;
+      if (error.status !== 410) {
+        setMessage(error.message || 'Không thể hủy đơn cũ.', 'error');
+        setBusy(false);
+        return;
+      }
+    }
+
+    clearInterval(state.timerId);
+    state.timerId = null;
+    state.bookingId = null;
+    state.timerRemaining = 0;
+    state.pendingNoticeAllowed = false;
+    state.loadingBooking = false;
+    state.facilityId = requestedSelection.facilityId;
+    state.courtId = requestedSelection.courtId;
+    state.serviceDate = requestedSelection.serviceDate;
+    state.slotIds = [...requestedSelection.slotIds];
+    state.slots = [];
+    state.facility = null;
+    state.court = null;
+    renderPendingNotice(null);
+    elements.timerPanel.hidden = true;
+    elements.actions.hidden = false;
+    elements.paymentComingSoon.hidden = true;
+    setBusy(false);
+
+    if (state.facilityId && state.courtId && state.serviceDate && state.slotIds.length > 0) {
+      await loadSelection();
+      if (state.slots.length > 0) await confirmBooking();
+      return;
+    }
+    setMessage('Đã hủy đơn cũ. Hãy chọn khung giờ mới để đặt sân.', 'success');
+  }
+
   async function syncActiveBooking() {
     if (!state.bookingId || document.hidden) return;
     await loadExistingBooking();
-  }
-
-  function markSelectedCard(selector, selected, markerSelector, markerText) {
-    document.querySelectorAll(selector).forEach((card) => {
-      const active = card === selected;
-      card.classList.toggle('active', active);
-      card.classList.toggle('border-2', active);
-      card.classList.toggle('border-primary', active);
-      card.classList.toggle('bg-emerald-50/40', active);
-      card.classList.toggle('border', !active);
-      card.classList.toggle('border-gray-200', !active);
-      const marker = card.querySelector(markerSelector);
-      if (marker) marker.textContent = active ? markerText : '';
-      if (card.matches('.gender-btn')) {
-        card.classList.toggle('bg-primary', active);
-        card.classList.toggle('text-white', active);
-        card.classList.toggle('font-bold', active);
-        card.classList.toggle('shadow-sm', active);
-        card.classList.toggle('bg-surface-container-low', !active);
-        card.classList.toggle('text-on-surface', !active);
-        card.classList.toggle('font-semibold', !active);
-      }
-    });
   }
 
   function goBackToSlots() {
@@ -659,28 +779,6 @@
   document.querySelectorAll('input[name="paymentOption"]').forEach((radio) => {
     radio.addEventListener('change', () => renderPaymentAmounts());
   });
-  document.querySelectorAll('.gender-btn').forEach((button, index) => {
-    button.dataset.gender = ['MALE', 'FEMALE', 'ANY'][index];
-    button.addEventListener('click', () => markSelectedCard('.gender-btn', button, 'span', ''));
-  });
-  document.querySelectorAll('.skill-card').forEach((card) => {
-    card.addEventListener('click', () => markSelectedCard('.skill-card', card, '.skill-radio', '✓'));
-    card.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        markSelectedCard('.skill-card', card, '.skill-radio', '✓');
-      }
-    });
-  });
-  document.querySelectorAll('.format-card').forEach((card) => {
-    card.addEventListener('click', () => markSelectedCard('.format-card', card, '.format-radio', '●'));
-    card.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        markSelectedCard('.format-card', card, '.format-radio', '●');
-      }
-    });
-  });
   elements.bookingBack.addEventListener('click', goBackToSlots);
   elements.bottomBack.addEventListener('click', goBackToSlots);
   document.getElementById('retryBookingAction').addEventListener('click', () => {
@@ -690,11 +788,22 @@
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) syncActiveBooking();
   });
+  window.addEventListener('pageshow', (event) => {
+    if (event.persisted) loadPendingBooking().catch(() => renderPendingNotice(null));
+  });
   window.setInterval(() => {
     if (state.bookingId && !document.hidden) syncActiveBooking();
   }, 5000);
 
   loadCurrentUser();
-  if (state.bookingId) loadExistingBooking();
-  else loadSelection();
+  loadPendingBooking().then((found) => {
+    if (found) return;
+    if (state.bookingId) loadExistingBooking();
+    else loadSelection();
+  }).catch((error) => {
+    if (error.status !== 401) {
+      if (state.bookingId) loadExistingBooking();
+      else loadSelection();
+    }
+  });
 })();

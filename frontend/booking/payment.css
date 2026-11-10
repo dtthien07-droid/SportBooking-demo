@@ -1,0 +1,12 @@
+#payment-options-container input:checked { accent-color: #006b2c; }
+#payment-options-container label:has(input:checked) { border-color: #006b2c; box-shadow: 0 0 0 2px rgb(0 107 44 / 14%); }
+#payment-options-container label > div:first-child > div:last-child { min-width: 0; }
+#transferQr svg { width: 100%; height: 100%; }
+#paymentMessage[data-kind="error"] { color: #ba1a1a; }
+#paymentMessage[data-kind="success"] { color: #006b2c; }
+#demoFailureLink[aria-disabled="true"] { pointer-events: none; opacity: .55; }
+#sidebarVenueImg[hidden] { display: none; }
+@media (max-width: 640px) {
+  #step-panel-2 .grid { grid-template-columns: minmax(0, 1fr); }
+  #step-panel-2 aside { position: static; }
+}

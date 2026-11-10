@@ -20,6 +20,117 @@
     window.location.assign(`/dang-nhap.html?returnTo=${encodeURIComponent(returnTo)}`);
   }
 
+  let pendingHoldPollTimer = null;
+  let pendingHoldCountdownTimer = null;
+  let pendingHoldRequestActive = false;
+
+  function clearPendingHoldBanner() {
+    document.querySelector('[data-pending-hold-banner]')?.remove();
+    document.body.classList.remove('sb-has-pending-hold');
+    window.clearInterval(pendingHoldCountdownTimer);
+    pendingHoldCountdownTimer = null;
+  }
+
+  function formatPendingHoldTime(seconds) {
+    const safe = Math.max(0, Math.floor(Number(seconds) || 0));
+    return `${String(Math.floor(safe / 60)).padStart(2, '0')}:${String(safe % 60).padStart(2, '0')}`;
+  }
+
+  function formatPendingHoldDate(value) {
+    const date = new Date(`${String(value).slice(0, 10)}T12:00:00`);
+    return Number.isNaN(date.valueOf())
+      ? String(value || '')
+      : new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
+  }
+
+  function renderPendingHoldBanner(booking) {
+    clearPendingHoldBanner();
+    const slots = Array.isArray(booking.slots) ? booking.slots : [];
+    if (slots.length === 0 || Number(booking.remaining_seconds) <= 0) return;
+    const first = slots[0];
+    const ranges = slots.map((slot) => `${String(slot.starts_at).slice(0, 5)}–${String(slot.ends_at).slice(0, 5)}`).join(', ');
+    const venue = [first.facility_name, first.court_name].filter(Boolean).join(' — ');
+    const countdown = element('span', 'sb-pending-hold__countdown', formatPendingHoldTime(booking.remaining_seconds));
+    const bar = element('div', 'sb-pending-hold');
+    bar.dataset.pendingHoldBanner = '';
+    bar.setAttribute('role', 'region');
+    bar.setAttribute('aria-label', 'Đơn đặt sân đang chờ thanh toán');
+    const summary = element('p', 'sb-pending-hold__summary');
+    summary.append(
+      document.createTextNode(`Bạn đang giữ chỗ ${venue} (${formatPendingHoldDate(first.service_date)}, ${ranges}) - còn `),
+      countdown
+    );
+    const actions = element('div', 'sb-pending-hold__actions');
+    const continueLink = element('a', 'sb-pending-hold__continue', 'Tiếp tục thanh toán');
+    continueLink.href = `/thanh-toan.html?booking_id=${encodeURIComponent(booking.booking_id || booking.id)}`;
+    const cancelButton = element('button', 'sb-pending-hold__cancel', 'Hủy giữ chỗ');
+    cancelButton.type = 'button';
+    cancelButton.addEventListener('click', async () => {
+      cancelButton.disabled = true;
+      try {
+        const response = await fetch(`/api/v1/bookings/${encodeURIComponent(booking.booking_id || booking.id)}/cancel`, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        if (response.status === 401) { loginRedirect(); return; }
+        if (response.ok || response.status === 410) { clearPendingHoldBanner(); return; }
+        const result = await response.json().catch(() => null);
+        throw new Error(result?.error?.message || 'Không thể hủy giữ chỗ. Hãy thử lại.');
+      } catch (error) {
+        cancelButton.disabled = false;
+        let feedback = bar.querySelector('.sb-pending-hold__error');
+        if (!feedback) {
+          feedback = element('p', 'sb-pending-hold__error');
+          feedback.setAttribute('role', 'alert');
+          bar.append(feedback);
+        }
+        feedback.textContent = error.message;
+      }
+    });
+    actions.append(continueLink, cancelButton);
+    bar.append(summary, actions);
+    mount.after(bar);
+    document.body.classList.add('sb-has-pending-hold');
+
+    let remaining = Math.max(0, Number(booking.remaining_seconds) || 0);
+    let lastTick = Date.now();
+    pendingHoldCountdownTimer = window.setInterval(() => {
+      const now = Date.now();
+      const elapsed = Math.floor((now - lastTick) / 1000);
+      if (elapsed < 1) return;
+      lastTick = now;
+      remaining = Math.max(0, remaining - elapsed);
+      countdown.textContent = formatPendingHoldTime(remaining);
+      if (remaining === 0) clearPendingHoldBanner();
+    }, 250);
+  }
+
+  async function refreshPendingHoldBanner() {
+    if (window.location.pathname === '/thanh-toan.html' || pendingHoldRequestActive) return;
+    pendingHoldRequestActive = true;
+    try {
+      const response = await fetch('/api/v1/bookings/pending', { credentials: 'same-origin', cache: 'no-store' });
+      if (response.status === 401) { loginRedirect(); return; }
+      if (!response.ok) return;
+      const booking = await response.json();
+      if (!booking || booking.status !== 'PENDING' || Number(booking.remaining_seconds) <= 0) {
+        clearPendingHoldBanner();
+        return;
+      }
+      renderPendingHoldBanner(booking);
+    } catch {
+      // Keep the current banner if a background refresh briefly fails.
+    } finally {
+      pendingHoldRequestActive = false;
+    }
+  }
+
+  window.addEventListener('pageshow', (event) => {
+    if (event.persisted) refreshPendingHoldBanner();
+  });
+
   function render(user) {
     const header = element('header', 'sb-shared-header');
     const inner = element('div', 'sb-shared-header__inner');
@@ -129,6 +240,10 @@
     inner.append(brandGroup, controls);
     header.append(inner);
     mount.replaceChildren(header);
+    if (!['/dat-san.html', '/thanh-toan.html'].includes(window.location.pathname)) {
+      refreshPendingHoldBanner();
+      pendingHoldPollTimer = window.setInterval(refreshPendingHoldBanner, 5000);
+    }
   }
 
   window.SportBookingHeaderReady = fetch('/api/v1/auth/me', { credentials: 'same-origin' })

@@ -48,6 +48,7 @@
     if (!response.ok) {
       const requestError = new Error(data?.error?.message || 'Yêu cầu không thể hoàn tất.');
       requestError.status = response.status;
+      requestError.body = data;
       requestError.code = data?.error?.code;
       requestError.details = data?.error?.details || {};
       throw requestError;
@@ -100,16 +101,34 @@
   }
 
   function getBooking(bookingId) {
-    return requestJson(`/api/v1/bookings/${encodeURIComponent(bookingId)}`);
+    return requestJson(`/api/v1/bookings/${encodeURIComponent(bookingId)}`, { cache: 'no-store' });
+  }
+
+  function getPendingBooking() {
+    return requestJson('/api/v1/bookings/pending', { cache: 'no-store' });
+  }
+
+  function createPaymentAttempt(bookingId, method, simulationResult) {
+    return requestJson(`/api/v1/bookings/${encodeURIComponent(bookingId)}/payment-attempts`, {
+      method: 'POST',
+      body: JSON.stringify({ method, simulation_result: simulationResult })
+    });
+  }
+
+  function getPayments(bookingId) {
+    return requestJson(`/api/v1/bookings/${encodeURIComponent(bookingId)}/payments`);
   }
 
   window.SportBookingApi = {
     cancelBooking,
+    createPaymentAttempt,
     createBooking,
     getBooking,
+    getPendingBooking,
     getCourtSlots,
     getCurrentUser,
     getFacility,
+    getPayments,
     logout
   };
 })();

@@ -1,43 +1,10 @@
-<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="X&#225;c nh&#7853;n th&#244;ng tin v&#224; gi&#7919; s&#226;n tr&#234;n SportBooking."><title>X&#225;c nh&#7853;n &#273;&#7863;t s&#226;n - SportBooking</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Inter:wght@500;600&display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet"><script src="https://cdn.tailwindcss.com"></script><script>tailwind.config={darkMode:"class",theme:{extend:{colors:{primary:"#006b2c","on-primary":"#ffffff","primary-container":"#00873a","on-primary-container":"#f7fff2",secondary:"#9d4300","secondary-container":"#fd761a","on-secondary":"#ffffff","secondary-fixed":"#ffdbca","on-secondary-fixed":"#341100","on-secondary-fixed-variant":"#783200",tertiary:"#0051d5","tertiary-fixed":"#dbe1ff","on-tertiary-fixed-variant":"#003ea8",surface:"#f9f9ff","on-surface":"#141b2b","on-surface-variant":"#3e4a3d","surface-container":"#e9edff","surface-container-low":"#f1f3ff","surface-container-high":"#e1e8fd","surface-container-highest":"#dce2f7","surface-container-lowest":"#ffffff",outline:"#6e7b6c","outline-variant":"#bdcaba",error:"#ba1a1a","error-container":"#ffdad6","on-error":"#ffffff","on-error-container":"#93000a"},spacing:{"space-xs":"0.25rem","space-sm":"0.5rem","space-md":"1rem","space-lg":"1.5rem","space-xl":"2rem",margin:"1.25rem"}}}};</script><link rel="stylesheet" href="/booking/booking.css"><link rel="stylesheet" href="/shared/header.css"></head><body class="bg-surface font-['Be_Vietnam_Pro'] text-on-surface antialiased selection:bg-primary/20"><div data-shared-header></div><main class="w-full pt-20 min-h-screen bg-surface"><div class="flex flex-col w-full"><div class="w-full max-w-[1280px] mx-auto px-margin py-space-xl"><div class="flex items-center justify-between mb-space-md" id="topNavArea">
+<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="X&#225;c nh&#7853;n th&#244;ng tin v&#224; gi&#7919; s&#226;n tr&#234;n SportBooking."><title>X&#225;c nh&#7853;n &#273;&#7863;t s&#226;n - SportBooking</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Inter:wght@500;600&display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet"><script src="https://cdn.tailwindcss.com"></script><script>tailwind.config={darkMode:"class",theme:{extend:{colors:{primary:"#006b2c","on-primary":"#ffffff","primary-container":"#00873a","on-primary-container":"#f7fff2",secondary:"#9d4300","secondary-container":"#fd761a","on-secondary":"#ffffff","secondary-fixed":"#ffdbca","on-secondary-fixed":"#341100","on-secondary-fixed-variant":"#783200",tertiary:"#0051d5","tertiary-fixed":"#dbe1ff","on-tertiary-fixed-variant":"#003ea8",surface:"#f9f9ff","on-surface":"#141b2b","on-surface-variant":"#3e4a3d","surface-container":"#e9edff","surface-container-low":"#f1f3ff","surface-container-high":"#e1e8fd","surface-container-highest":"#dce2f7","surface-container-lowest":"#ffffff",outline:"#6e7b6c","outline-variant":"#bdcaba",error:"#ba1a1a","error-container":"#ffdad6","on-error":"#ffffff","on-error-container":"#93000a"},spacing:{"space-xs":"0.25rem","space-sm":"0.5rem","space-md":"1rem","space-lg":"1.5rem","space-xl":"2rem",margin:"1.25rem"}}}};</script><link rel="stylesheet" href="/booking/booking.css"><link rel="stylesheet" href="/shared/header.css"><link rel="stylesheet" href="/shared/stepper.css"></head><body class="bg-surface font-['Be_Vietnam_Pro'] text-on-surface antialiased selection:bg-primary/20"><div data-shared-header></div><main class="w-full pt-20 min-h-screen bg-surface"><div class="flex flex-col w-full"><div class="w-full max-w-[1280px] mx-auto px-margin py-space-xl"><div class="flex items-center justify-between mb-space-md" id="topNavArea">
                     <button type="button" id="bookingBack" class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-surface-container-lowest hover:bg-surface-container text-on-surface text-sm font-bold border border-gray-200 shadow-xs transition-all cursor-pointer group hover:border-primary/50">
                         <span class="material-symbols-outlined text-[19px] text-primary group-hover:-translate-x-1 transition-transform">arrow_back</span>
                         <span id="btnBackText">Quay lại chọn khung giờ</span>
                     </button>
                     <span class="text-xs text-on-surface-variant hidden sm:inline" id="breadcrumbVenueName">Sân bóng mini Đông Đô</span>
-                </div><div id="bookingLoading" class="rounded-2xl bg-white p-space-lg shadow-sm border border-gray-100" role="status">Loading booking details...</div><div id="bookingError" class="rounded-2xl bg-white p-space-lg shadow-sm border border-red-200 text-error" role="alert" hidden><p id="bookingErrorMessage"></p><button id="retryBookingLoad" type="button" class="mt-3 px-4 py-2 rounded-xl bg-surface-container-high text-on-surface font-bold">Retry</button></div><div class="mb-space-lg bg-surface-container-lowest p-space-md rounded-2xl shadow-sm border border-gray-100">
-                    <div class="grid grid-cols-3 items-center relative">
-                        <div class="absolute left-[16.6%] right-[16.6%] top-1/2 -translate-y-1/2 h-1 bg-surface-container-high rounded-full -z-0">
-                            <div id="stepperProgressBar" class="h-full w-0 bg-primary rounded-full transition-all duration-300"></div>
-                        </div>
-
-                        <!-- Bước 1 -->
-                        <div class="flex items-center gap-space-sm z-10 pl-space-xs cursor-pointer">
-                            <div id="step-icon-1" class="w-10 h-10 rounded-xl bg-primary text-on-primary flex items-center justify-center font-bold text-base shadow-sm transition-all">1</div>
-                            <div class="flex flex-col min-w-0">
-                                <span id="step-tag-1" class="text-[11px] text-primary uppercase font-bold tracking-wider">Bước 1</span>
-                                <span id="step-title-1" class="text-sm font-bold text-on-surface truncate">Xác nhận thông tin</span>
-                            </div>
-                        </div>
-
-                        <!-- Bước 2 -->
-                        <div class="flex items-center justify-center gap-space-sm z-10 cursor-pointer">
-                            <div id="step-icon-2" class="w-10 h-10 rounded-xl bg-surface-container-high text-on-surface-variant flex items-center justify-center font-bold text-base transition-all">2</div>
-                            <div class="flex flex-col min-w-0">
-                                <span id="step-tag-2" class="text-[11px] text-on-surface-variant uppercase font-bold tracking-wider">Bước 2</span>
-                                <span id="step-title-2" class="text-sm font-medium text-on-surface-variant truncate">Thanh toán &amp; Giữ chỗ</span>
-                            </div>
-                        </div>
-
-                        <!-- Bước 3 -->
-                        <div class="flex items-center justify-end gap-space-sm z-10 pr-space-xs">
-                            <div id="step-icon-3" class="w-10 h-10 rounded-xl bg-surface-container-high text-on-surface-variant flex items-center justify-center font-bold text-base transition-all">3</div>
-                            <div class="flex flex-col min-w-0 text-right">
-                                <span id="step-tag-3" class="text-[11px] text-on-surface-variant uppercase font-bold tracking-wider">Bước 3</span>
-                                <span id="step-title-3" class="text-sm font-medium text-on-surface-variant truncate">Hoàn tất đặt lịch</span>
-                            </div>
-                        </div>
-                    </div>
-                </div><div id="bookingTimerPanel" hidden class="mb-space-lg p-space-md rounded-2xl bg-secondary-fixed/40 text-on-secondary-fixed flex flex-col sm:flex-row items-start sm:items-center justify-between gap-space-md shadow-sm border border-secondary-fixed">
+                </div><div data-booking-stepper></div><div id="bookingLoading" class="rounded-2xl bg-white p-space-lg shadow-sm border border-gray-100" role="status">Loading booking details...</div><div id="bookingError" class="rounded-2xl bg-white p-space-lg shadow-sm border border-red-200 text-error" role="alert" hidden><p id="bookingErrorMessage"></p><button id="retryBookingLoad" type="button" class="mt-3 px-4 py-2 rounded-xl bg-surface-container-high text-on-surface font-bold">Retry</button></div><div id="bookingTimerPanel" hidden class="mb-space-lg p-space-md rounded-2xl bg-secondary-fixed/40 text-on-secondary-fixed flex flex-col sm:flex-row items-start sm:items-center justify-between gap-space-md shadow-sm border border-secondary-fixed">
                     <div class="flex items-center gap-space-md">
                         <div class="w-10 h-10 rounded-xl bg-secondary-container text-white flex items-center justify-center shrink-0 shadow-sm animate-pulse">
                             <span class="material-symbols-outlined text-[22px]" style="font-variation-settings: 'FILL' 1;">hourglass_top</span>
@@ -85,8 +52,8 @@
                                         <span class="text-xs text-on-surface-variant flex items-center gap-1">
                                             <span class="material-symbols-outlined text-[15px]">grid_view</span> Sân thi đấu
                                         </span>
-                                        <span class="text-sm font-bold text-on-surface mt-1" id="courtName">Sân 5A (Cỏ nhân tạo)</span>
-                                        <span class="text-[11px] text-gray-500">Mặt cỏ nhân tạo tiêu chuẩn</span>
+                                        <span class="text-sm font-bold text-on-surface mt-1" id="courtName"></span>
+                                        <span class="text-[11px] text-gray-500"></span>
                                     </div>
                                     <div class="flex flex-col">
                                         <span class="text-xs text-on-surface-variant flex items-center gap-1">
@@ -99,7 +66,7 @@
                                         <span class="text-xs text-on-surface-variant flex items-center gap-1">
                                             <span class="material-symbols-outlined text-[15px]">schedule</span> Khung giờ
                                         </span>
-                                        <span class="text-sm font-bold text-on-surface mt-1" id="selectedSlotSummary">17:00 - 18:00</span>
+                                        <span class="text-sm font-bold text-on-surface mt-1" id="selectedSlotSummary">—</span>
                                         <span class="text-[11px] text-secondary font-bold" id="selectedDuration">1 giờ thi đấu</span>
                                     </div>
                                 </div>
@@ -135,7 +102,7 @@
                                     </div>
 
                                     <div class="sm:col-span-2">
-                                        <label class="block text-xs font-bold text-on-surface-variant mb-1.5" for="bookerEmail">Email nhận hóa đơn &amp; mã QR </label>
+                                        <label class="block text-xs font-bold text-on-surface-variant mb-1.5" for="bookerEmail">Email liên hệ</label>
                                         <div class="relative">
                                             <input class="w-full px-4 py-2.5 rounded-xl bg-surface-container-low text-on-surface text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all border border-gray-200" id="bookerEmail" type="email" readonly placeholder="Nhập địa chỉ email...">
                                             <span class="material-symbols-outlined absolute right-3 top-2.5 text-gray-400 text-[18px]">mail</span>
@@ -209,15 +176,9 @@
                                                 <span class="text-[11px] text-gray-400">Ưu tiên người nhận lời mời</span>
                                             </div>
                                             <div class="grid grid-cols-3 gap-2 text-xs" id="genderSelectionGroup">
-                                                <button type="button" class="gender-btn py-2.5 px-3 rounded-xl bg-surface-container-low text-on-surface font-semibold border border-gray-200 hover:border-primary/50 transition-all text-center">
-                                                    Nam
-                                                </button>
-                                                <button type="button" class="gender-btn active py-2.5 px-3 rounded-xl bg-primary text-white font-bold shadow-sm transition-all text-center">
-                                                    ♀ Nữ (Đang chọn)
-                                                </button>
-                                                <button type="button" class="gender-btn py-2.5 px-3 rounded-xl bg-surface-container-low text-on-surface font-semibold border border-gray-200 hover:border-primary/50 transition-all text-center">
-                                                    Bất kỳ (Nam/Nữ)
-                                                </button>
+                                                <label class="gender-btn choice-card"><input class="choice-input" type="radio" name="match_gender" value="MALE"><span class="choice-title">Nam</span><span class="choice-indicator"></span></label>
+                                                <label class="gender-btn choice-card"><input class="choice-input" type="radio" name="match_gender" value="FEMALE"><span class="choice-title">Nữ</span><span class="choice-indicator"></span></label>
+                                                <label class="gender-btn choice-card"><input class="choice-input" type="radio" name="match_gender" value="ANY" checked><span class="choice-title">Bất kỳ</span><span class="choice-indicator"></span></label>
                                             </div>
                                         </div>
 
@@ -228,38 +189,41 @@
                                                 <span class="text-[11px] text-primary font-semibold">Khớp kỹ năng để trận đấu hấp dẫn</span>
                                             </div>
                                             <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                                <div class="skill-card p-3.5 rounded-xl border border-gray-200 bg-surface-container-lowest hover:border-primary/50 cursor-pointer transition-all flex flex-col justify-between" data-skill="BEGINNER" role="radio" tabindex="0">
+                                                <label class="skill-card choice-card p-3.5 rounded-xl flex flex-col justify-between">
+                                                    <input class="choice-input" type="radio" name="match_skill" value="BEGINNER">
                                                     <div>
                                                         <div class="flex items-center justify-between mb-1">
-                                                            <span class="text-xs font-bold text-on-surface">Mới chơi</span>
-                                                            <span class="skill-radio w-4 h-4 rounded-full border border-gray-300 flex items-center justify-center text-[10px]"></span>
+                                                            <span class="choice-title text-xs font-bold">Mới chơi</span>
+                                                            <span class="choice-indicator skill-radio"></span>
                                                         </div>
                                                         <div class="text-amber-500 text-xs mb-1.5">★ ☆ ☆</div>
                                                         <p class="text-[11px] text-gray-500 leading-relaxed">Dưới 6 tháng kinh nghiệm, rèn luyện sức bền.</p>
                                                     </div>
-                                                </div>
+                                                </label>
 
-                                                <div class="skill-card active p-3.5 rounded-xl border-2 border-primary bg-emerald-50/40 cursor-pointer transition-all flex flex-col justify-between" data-skill="INTERMEDIATE" role="radio" tabindex="0">
+                                                <label class="skill-card choice-card p-3.5 rounded-xl flex flex-col justify-between">
+                                                    <input class="choice-input" type="radio" name="match_skill" value="INTERMEDIATE" checked>
                                                     <div>
                                                         <div class="flex items-center justify-between mb-1">
-                                                            <span class="text-xs font-bold text-primary">Trung bình</span>
-                                                            <span class="skill-radio w-4 h-4 rounded-full bg-primary text-white flex items-center justify-center text-[10px]">✓</span>
+                                                            <span class="choice-title text-xs font-bold">Trung bình</span>
+                                                            <span class="choice-indicator skill-radio"></span>
                                                         </div>
                                                         <div class="text-amber-500 text-xs mb-1.5">★ ★ ☆</div>
                                                         <p class="text-[11px] text-on-surface-variant leading-relaxed">1 - 3 năm, nắm chắc kỹ thuật, phối hợp nhịp nhàng.</p>
                                                     </div>
-                                                </div>
+                                                </label>
 
-                                                <div class="skill-card p-3.5 rounded-xl border border-gray-200 bg-surface-container-lowest hover:border-primary/50 cursor-pointer transition-all flex flex-col justify-between" data-skill="GOOD" role="radio" tabindex="0">
+                                                <label class="skill-card choice-card p-3.5 rounded-xl flex flex-col justify-between">
+                                                    <input class="choice-input" type="radio" name="match_skill" value="GOOD">
                                                     <div>
                                                         <div class="flex items-center justify-between mb-1">
-                                                            <span class="text-xs font-bold text-on-surface">Khá / Chuyên</span>
-                                                            <span class="skill-radio w-4 h-4 rounded-full border border-gray-300 flex items-center justify-center text-[10px]"></span>
+                                                            <span class="choice-title text-xs font-bold">Khá</span>
+                                                            <span class="choice-indicator skill-radio"></span>
                                                         </div>
                                                         <div class="text-amber-500 text-xs mb-1.5">★ ★ ★</div>
                                                         <p class="text-[11px] text-gray-500 leading-relaxed">Trên 3 năm, chiến thuật linh hoạt, phong trào tốt.</p>
                                                     </div>
-                                                </div>
+                                                </label>
                                             </div>
                                         </div>
 
@@ -267,21 +231,23 @@
                                         <div>
                                             <span class="block text-xs font-bold text-on-surface mb-2">3. Thể thức thi đấu</span>
                                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                <div class="format-card p-3 rounded-xl border border-gray-200 bg-surface-container-lowest hover:border-primary/50 cursor-pointer transition-all flex items-center gap-3" data-format="SINGLES" role="radio" tabindex="0">
-                                                    <span class="format-radio w-4 h-4 rounded-full border border-gray-300 flex items-center justify-center text-[10px]"></span>
+                                                <label class="format-card choice-card p-3 rounded-xl flex items-center gap-3">
+                                                    <input class="choice-input" type="radio" name="match_format" value="SINGLES" checked>
+                                                    <span class="choice-indicator format-radio"></span>
                                                     <div>
-                                                        <span class="text-xs font-bold text-on-surface block">Đánh đơn (1 vs 1)</span>
+                                                        <span class="choice-title text-xs font-bold block">Đánh đơn (1 vs 1)</span>
                                                         <span class="text-[11px] text-gray-500">Tìm 01 người so tài đối kháng</span>
                                                     </div>
-                                                </div>
+                                                </label>
 
-                                                <div class="format-card active p-3 rounded-xl border-2 border-primary bg-emerald-50/40 cursor-pointer transition-all flex items-center gap-3" data-format="DOUBLES" role="radio" tabindex="0">
-                                                    <span class="format-radio w-4 h-4 rounded-full bg-primary text-white flex items-center justify-center text-[10px]">●</span>
+                                                <label class="format-card choice-card p-3 rounded-xl flex items-center gap-3">
+                                                    <input class="choice-input" type="radio" name="match_format" value="DOUBLES">
+                                                    <span class="choice-indicator format-radio"></span>
                                                     <div>
-                                                        <span class="text-xs font-bold text-primary block">Đánh đôi / Ghép đội</span>
+                                                        <span class="choice-title text-xs font-bold block">Đánh đôi / Ghép đội</span>
                                                         <span class="text-[11px] text-on-surface-variant">Tìm thêm đồng đội ghép trận giao hữu</span>
                                                     </div>
-                                                </div>
+                                                </label>
                                             </div>
                                         </div>
 
@@ -306,7 +272,7 @@
                             <div class="bg-surface-container-lowest rounded-2xl p-space-lg shadow-sm border border-gray-100">
                                 <div class="flex items-center justify-between pb-3 border-b">
                                     <h3 class="text-base font-bold text-on-surface">Tóm tắt chi phí</h3>
-                                    <span class="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full font-bold" id="bookingCode" hidden>Mã: SB-89201</span>
+                                    <span class="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full font-bold" id="bookingCode" hidden></span>
                                 </div>
 
                                 <div class="flex flex-col gap-2.5 pt-3 text-sm">
@@ -315,7 +281,7 @@
                                             <span class="material-symbols-outlined text-[16px]">sports</span>
                                             <span>Tiền thuê sân</span>
                                         </span>
-                                        <span class="font-bold" id="basePrice">360.000đ</span>
+                                        <span class="font-bold" id="basePrice">—</span>
                                     </div>
 
 
@@ -336,10 +302,10 @@
                                                 <input checked class="text-secondary focus:ring-secondary w-4 h-4 accent-secondary-container" name="paymentOption" type="radio" value="DEPOSIT_50">
                                                 <div>
                                                     <span class="text-xs font-bold text-on-surface">Đặt cọc giữ sân (50%)</span>
-                                                    <p class="text-[11px] text-gray-500" id="depositRemainingText">Thanh toán nốt 171.000đ tại quầy</p>
+                                                    <p class="text-[11px] text-gray-500" id="depositRemainingText">Tạm tính</p>
                                                 </div>
                                             </div>
-                                            <span class="text-xs font-bold text-secondary" id="depositPriceBadge">171.000đ</span>
+                                            <span class="text-xs font-bold text-secondary" id="depositPriceBadge">—</span>
                                         </label>
                                         <label class="flex items-center justify-between p-2.5 rounded-lg bg-white cursor-pointer shadow-sm border border-gray-200">
                                             <div class="flex items-center gap-2">
@@ -355,13 +321,13 @@
 
                                     <div class="mt-3 pt-2 border-t border-gray-200 flex items-center justify-between text-on-surface">
                                         <span class="text-xs text-on-surface-variant font-medium">Số tiền cần thanh toán ngay:</span>
-                                        <span class="text-lg text-secondary font-bold" id="amount-payable">171.000đ</span>
+                                        <span class="text-lg text-secondary font-bold" id="amount-payable">—</span>
                                     </div>
                                 </div>
 
-                                <div id="bookingMessage" class="sb-booking-message" role="status" hidden></div><p id="matchValidationError" class="text-xs text-error mt-2" role="alert" hidden></p><a id="continueOldBooking" class="sb-booking-return" href="#" hidden>Ti&#7871;p t&#7909;c &#273;&#417;n c&#361;</a><button id="retryBookingAction" type="button" class="w-full h-11 rounded-xl bg-surface-container-high text-on-surface text-xs font-bold hidden">Th&#7917; l&#7841;i</button><div id="bookingActions" class="mt-4 flex flex-col gap-2">
+                                <div id="bookingMessage" class="sb-booking-message" role="status" hidden></div><p id="matchValidationError" class="text-xs text-error mt-2" role="alert" hidden></p><div id="continueOldBooking" class="sb-booking-return mt-3 rounded-xl bg-surface-container-low p-3" hidden><p class="text-sm font-semibold mb-2">Bạn đang có đơn chờ thanh toán. Hãy tiếp tục đơn cũ hoặc hủy đơn đó trước. Còn lại <span id="oldPendingTimer" class="font-mono font-bold">--:--</span>.</p><div class="flex flex-col sm:flex-row gap-2"><a id="continueOldPayment" class="flex-1 h-11 rounded-xl bg-secondary-container hover:bg-secondary text-white text-xs font-bold flex items-center justify-center" href="/thanh-toan.html">Tiếp tục thanh toán</a><button id="cancelOldBooking" class="flex-1 h-11 rounded-xl bg-surface-container-high text-on-surface text-xs font-bold" type="button">Hủy đơn cũ</button></div></div><button id="retryBookingAction" type="button" class="w-full h-11 rounded-xl bg-surface-container-high text-on-surface text-xs font-bold hidden">Thử lại</button><div id="bookingActions" class="mt-4 flex flex-col gap-2">
                                     <button class="w-full h-12 rounded-xl bg-secondary-container hover:bg-secondary text-white text-sm font-bold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer active:scale-95" id="confirmBooking" type="button">
-                                        <span id="ctaText">TIẾP TỤC ĐẾN THANH TOÁN (171.000đ)</span>
+                                        <span id="ctaText">TIẾP TỤC ĐẾN THANH TOÁN</span>
                                         <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
                                     </button>
                                     <span id="paymentComingSoon" class="text-[11px] text-on-surface-variant text-center" hidden>Sắp có</span>
@@ -385,4 +351,4 @@
                             <div class="p-4 rounded-2xl bg-surface-container-lowest shadow-sm flex items-start gap-3 border border-gray-100"><span class="material-symbols-outlined text-primary text-[20px] shrink-0 mt-0.5">info</span><div class="text-xs text-on-surface-variant leading-relaxed"><p class="font-bold text-on-surface mb-1">Chính sách hoàn tiền khi hủy sân</p><p>Hoàn 100% khi hủy từ 24 giờ trước giờ bắt đầu khung đầu tiên.</p><p>Hoàn 50% khi hủy từ 6 giờ đến dưới 24 giờ trước giờ bắt đầu.</p><p>Không hoàn tiền khi hủy dưới 6 giờ trước giờ bắt đầu.</p></div></div>
                         </aside>
                     </div>
-                </div></div></div></div></main><script src="/shared/header.js" defer></script><script src="/booking/bookings-api.js" defer></script><script src="/booking/booking-page.js" defer></script></body></html>
+                </div></div></div></div></main><script src="/shared/stepper.js"></script><script>window.SportBookingStepper.render(document.querySelector('[data-booking-stepper]'), 1);</script><script src="/shared/header.js" defer></script><script src="/shared/format.js" defer></script><script src="/booking/pending-state.js" defer></script><script src="/booking/bookings-api.js" defer></script><script src="/booking/booking-page.js" defer></script></body></html>
