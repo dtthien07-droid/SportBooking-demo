@@ -14,6 +14,9 @@ const createRequireAuth = require('./auth/middleware/require-auth');
 const createBookingRepository = require('./bookings/bookings.repository');
 const { createBookingsService } = require('./bookings/bookings.service');
 const createBookingsRouter = require('./bookings/bookings.routes');
+const { createNotificationsRepository } = require('./notifications/notifications.repository');
+const { createNotificationsService } = require('./notifications/notifications.service');
+const createNotificationsRouter = require('./notifications/notifications.routes');
 const { getCookieName, getSecureCookieSetting } = require('./auth/session.cookie');
 const { createSessionService } = require('./auth/session.service');
 const createSessionRepository = require('./auth/repositories/session.repository');
@@ -37,6 +40,8 @@ function createApp({ pool, env = process.env } = {}) {
   const facilitiesService = createFacilitiesService(facilitiesRepository);
   const bookingsRepository = createBookingRepository(pool);
   const bookingsService = createBookingsService(bookingsRepository);
+  const notificationsRepository = createNotificationsRepository(pool);
+  const notificationsService = createNotificationsService(notificationsRepository);
   const sessionService = createSessionService({ sessionRepository });
   const cookieName = getCookieName(env);
   const secureCookie = getSecureCookieSetting(env);
@@ -58,6 +63,7 @@ function createApp({ pool, env = process.env } = {}) {
     cookieName
   }));
   app.use('/api/v1/users', createProfileRouter({ profileService, requireAuth }));
+  app.use('/api/v1/notifications', createNotificationsRouter({ notificationsService, requireAuth }));
   app.use('/api/v1/bookings', createBookingsRouter({ bookingsService, requireAuth }));
   app.use('/api/v1', createFacilitiesRouter({ facilitiesService, requireAuth }));
   app.get('/', (request, response) => {

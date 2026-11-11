@@ -1,6 +1,7 @@
 'use strict';
 
 const crypto = require('node:crypto');
+const { insertNotification } = require('../notifications/notifications.repository');
 
 function createBookingRepository(pool) {
   if (!pool || typeof pool.execute !== 'function') {
@@ -54,7 +55,7 @@ function createBookingRepository(pool) {
 
     async lockPendingBookingsForUser(connection, userId) {
       const [rows] = await connection.execute(
-        `SELECT id, lock_expires_at,
+        `SELECT id, booking_code, user_id, lock_expires_at,
                 CASE
                   WHEN lock_expires_at IS NULL
                        OR lock_expires_at <= UTC_TIMESTAMP(3)
@@ -114,7 +115,7 @@ function createBookingRepository(pool) {
       }
       const placeholders = bookingIds.map(() => '?').join(', ');
       const [rows] = await connection.execute(
-        `SELECT id, status, lock_expires_at,
+        `SELECT id, booking_code, user_id, status, lock_expires_at,
                 CASE
                   WHEN lock_expires_at IS NOT NULL
                        AND lock_expires_at <= UTC_TIMESTAMP(3)
@@ -478,6 +479,8 @@ function createBookingRepository(pool) {
       );
     },
 
+    insertNotification,
+
     async releaseBookingSlots(connection, bookingId) {
       await connection.execute(
         `UPDATE time_slots
@@ -777,6 +780,14 @@ function createBookingRepository(pool) {
         await this.lockTimeSlots(connection, slotIds);
         await this.updateBookingStatus(connection, bookingId, 'EXPIRED');
         await this.releaseBookingSlots(connection, bookingId);
+        await this.insertNotification(connection, {
+          userId: booking.user_id,
+          category: 'BOOKING_HOLD',
+          title: 'Giữ chỗ đã hết hạn',
+          body: `Đơn ${booking.booking_code} đã hết thời hạn giữ chỗ.`,
+          resourceType: 'BOOKING',
+          resourceId: booking.id
+        });
         return true;
       });
     }

@@ -1,3 +1,9 @@
+## 2026-11-11 — Module 8: Thông báo trong app
+- Thêm migration 007 và API danh sách, unread-count, đánh dấu đọc/đọc tất cả; truy vấn giới hạn theo user, trả `Cache-Control: no-store`.
+- Ghi thông báo thanh toán thành công, hết hạn giữ chỗ, hủy đơn có/không hoàn và hủy giữ chỗ trong transaction nghiệp vụ; tác vụ hết hạn chạy lặp không tạo trùng.
+- Nối chuông dùng SVG cục bộ, huy hiệu `9+`, popup 5 thông báo và polling 10 giây khi tab hiển thị; thêm trang thông báo theo API, bộ lọc, trạng thái và phân trang.
+- Migration đã áp dụng/xác minh trên `sportbooking_test`; frontend tests 111/111; `npm test` trên `sportbooking_test`: 59/59 hai lượt; `node --check`: đạt. Kiểm tra trình duyệt: **Chờ người dùng xác nhận**.
+
 ## 2026-11-12 — Sửa cập nhật thẻ sau khi hủy
 - Sau POST hủy, lấy lại chi tiết đơn từ server, dựng lại và thay riêng thẻ bằng renderer lịch sử hiện có; tải summary mới cho ba số liệu và số đếm các tab.
 - Bỏ lời nhắn khỏi nội dung thẻ; thông báo hủy hiển thị trong banner `role="status"` độc lập, có nút đóng và tự ẩn sau 6 giây. Thẻ đã hủy chỉ hiển thị chi tiết và số tiền hoàn nếu có.

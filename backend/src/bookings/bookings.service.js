@@ -361,7 +361,18 @@ function createBookingsService(repository, {
             throw createBookingError(409, 'SLOT_CHANGED', 'Khung giờ của đơn hết hạn đã thay đổi khi được giải phóng.');
           }
           for (const expiredBookingId of expiredPendingIds) {
+            const expiredBooking = pendingBookings.find(
+              (booking) => String(booking.id) === expiredBookingId
+            );
             await repository.expireStaleBooking(connection, expiredBookingId);
+            await repository.insertNotification(connection, {
+              userId: expiredBooking.user_id,
+              category: 'BOOKING_HOLD',
+              title: 'Giữ chỗ đã hết hạn',
+              body: `Đơn ${expiredBooking.booking_code} đã hết thời hạn giữ chỗ.`,
+              resourceType: 'BOOKING',
+              resourceId: expiredBooking.id
+            });
           }
         }
         if (activePending) {
@@ -404,6 +415,14 @@ function createBookingsService(repository, {
             throw createBookingError(409, 'SLOT_CHANGED', 'Khung giờ hết hạn vẫn đang được một đơn đặt giữ.');
           }
           await repository.expireStaleBooking(connection, oldBookingId);
+          await repository.insertNotification(connection, {
+            userId: booking.user_id,
+            category: 'BOOKING_HOLD',
+            title: 'Giữ chỗ đã hết hạn',
+            body: `Đơn ${booking.booking_code} đã hết thời hạn giữ chỗ.`,
+            resourceType: 'BOOKING',
+            resourceId: booking.id
+          });
         }
 
         for (const slot of requestedSlots) {
@@ -778,6 +797,14 @@ function createBookingsService(repository, {
       if (booking.status === 'PENDING' && Number(booking.lock_expired) === 1) {
         await repository.updateBookingStatus(connection, bookingId, 'EXPIRED');
         await repository.releaseBookingSlots(connection, bookingId);
+        await repository.insertNotification(connection, {
+          userId: booking.user_id,
+          category: 'BOOKING_HOLD',
+          title: 'Giữ chỗ đã hết hạn',
+          body: `Đơn ${booking.booking_code} đã hết thời hạn giữ chỗ.`,
+          resourceType: 'BOOKING',
+          resourceId: booking.id
+        });
         return { expired: true };
       }
       const requiredSlotStatus = booking.status === 'PENDING' ? 'LOCKED' : 'BOOKED';
@@ -835,6 +862,15 @@ function createBookingsService(repository, {
         throw createBookingError(409, 'BOOKING_NOT_CANCELLABLE', 'Đơn đặt sân đã thay đổi, vui lòng tải lại.');
       }
       await repository.releaseBookingSlots(connection, bookingId);
+      const category = booking.status === 'PENDING' ? 'BOOKING_HOLD' : 'PAYMENT';
+      await repository.insertNotification(connection, {
+        userId: booking.user_id,
+        category,
+        title: booking.status === 'PENDING' ? 'Đã hủy giữ chỗ' : 'Đơn đặt sân đã hủy',
+        body: `Đơn ${booking.booking_code} đã hủy. Số tiền hoàn thực tế: ${refund.refund_amount}đ.`,
+        resourceType: 'BOOKING',
+        resourceId: booking.id
+      });
       return {
         booking_id: String(booking.id),
         status: 'CANCELLED',
@@ -882,6 +918,14 @@ function createBookingsService(repository, {
         if (Number(booking.lock_expired) === 1 || !booking.lock_expires_at) {
           await repository.updateBookingStatus(connection, bookingId, 'EXPIRED');
           await repository.releaseBookingSlots(connection, bookingId);
+          await repository.insertNotification(connection, {
+            userId: booking.user_id,
+            category: 'BOOKING_HOLD',
+            title: 'Giữ chỗ đã hết hạn',
+            body: `Đơn ${booking.booking_code} đã hết thời hạn giữ chỗ.`,
+            resourceType: 'BOOKING',
+            resourceId: booking.id
+          });
           expired = true;
           return null;
         }
@@ -904,6 +948,14 @@ function createBookingsService(repository, {
           if (bookedSlots !== slotIds.length) {
             throw createBookingError(409, 'BOOKING_SLOTS_CHANGED', 'Không thể xác nhận tất cả khung giờ của đơn.');
           }
+          await repository.insertNotification(connection, {
+            userId: booking.user_id,
+            category: 'PAYMENT',
+            title: 'Thanh toán thành công',
+            body: `Đơn ${booking.booking_code} đã được xác nhận.`,
+            resourceType: 'BOOKING',
+            resourceId: booking.id
+          });
           ticket = await repository.createBookingTicket(connection, bookingId);
         }
 
