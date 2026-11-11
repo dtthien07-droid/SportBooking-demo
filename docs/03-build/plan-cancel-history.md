@@ -66,7 +66,7 @@
 ### 3.1 API và chính sách
 
 1. Mở rộng đúng route `POST /api/v1/bookings/{id}/cancel` hiện có; không tạo route hủy booking khác.
-2. Thêm `GET /api/v1/bookings/{id}/refund-preview` để trả thông tin sân/khung giờ, tiền đã trả và số tiền hoàn dự kiến cho popup; route chỉ đọc, không đổi trạng thái hay ghi khoản hoàn.
+2. Route preview thực tế là `GET /api/v1/bookings/{id}/refund-preview` (`/:id/refund-preview` trong router được mount tại `/api/v1/bookings`). Route trả JSON trực tiếp, không bọc trong `data`; các trường số tiền (`refund_amount`, `paid_amount`) là chuỗi số nguyên, `refund_percent`/`hours_until_start`/`seconds_until_start` là số, `server_time` và `message` là chuỗi. Thông tin sân/khung giờ lấy từ `GET /api/v1/bookings/{id}`; preview chỉ đọc, không đổi trạng thái hay ghi khoản hoàn.
 3. Mốc chính sách là thời điểm xác nhận hủy trừ giờ bắt đầu khung đầu tiên, quy đổi UTC+7:
 
    | Thời gian còn tới khung đầu | Hoàn trên `paid_amount` | Ranh giới |
