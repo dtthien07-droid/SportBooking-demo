@@ -73,10 +73,8 @@ function createPageHarness({
   elements.get('ticketError').hidden = true;
   elements.get('ticketNotice').hidden = true;
   elements.get('ticketMain').hidden = true;
-  const backButtons = [new FakeElement(), new FakeElement()];
-  for (const button of backButtons) {
-    button.label = new FakeElement('back-label');
-  }
+  const backButtons = [new FakeElement()];
+  backButtons[0].label = new FakeElement('back-label');
   const redirects = [];
   const calls = [];
   const qrPayloads = [];
@@ -160,11 +158,18 @@ test('loads API data and renders one local QR plus all ticket fields', async () 
   assert.equal(page.elements.get('ticketTimeRange').textContent, '17:00 - 18:00');
   assert.equal(page.elements.get('ticketMapLink').href, 'https://www.google.com/maps/search/?api=1&query=%C4%90%E1%BB%8Ba%20ch%E1%BB%89%20th%E1%BA%ADt');
   assert.equal(page.qrPayloads.length, 1);
-  assert.deepEqual(JSON.parse(page.qrPayloads[0]), {
-    booking_code: booking.booking_code,
-    facility_name: 'Cơ sở thật',
-    address: 'Địa chỉ thật'
+  const expectedQrPayload = TicketData.buildQrPayload({
+    ...booking,
+    facility_name: 'Cơ sở thật'
   });
+  assert.equal(page.qrPayloads[0], expectedQrPayload);
+  assert.equal(expectedQrPayload, [
+    'SPORTBOOKING',
+    'Mã đơn: SPB-20261120-ABCDE2',
+    'Cơ sở: Cơ sở thật',
+    'Ngày: 20/11/2026',
+    'Giờ: 17:00-18:00'
+  ].join('\n'));
   assert.equal(page.backButtons[0].label.textContent, 'Quay lại lịch sử đặt sân');
 });
 
@@ -230,6 +235,6 @@ test('401 redirects to login; 403 and 404 show not-found with retry', async () =
 test('the back button assigns the same validated dynamic target', async () => {
   const page = createPageHarness();
   await page.waitForPage();
-  page.backButtons[1].listeners.get('click')();
+  page.backButtons[0].listeners.get('click')();
   assert.deepEqual(page.redirects, ['/lich-su-dat-san.html']);
 });

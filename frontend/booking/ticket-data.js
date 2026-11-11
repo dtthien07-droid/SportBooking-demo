@@ -40,6 +40,52 @@
     return hours * 60 + minutes;
   }
 
+  function truncateQrName(value) {
+    const characters = Array.from(String(value || '').trim());
+    if (characters.length <= 40) return characters.join('') || '—';
+    return `${characters.slice(0, 39).join('')}…`;
+  }
+
+  function buildQrPayload(booking) {
+    if (!booking || typeof booking.booking_code !== 'string' || !booking.booking_code.trim()) {
+      throw new TypeError('Không tìm thấy mã đơn đặt sân.');
+    }
+    if (!Array.isArray(booking.slots) || booking.slots.length === 0) {
+      throw new TypeError('Đơn đặt sân không có khung giờ.');
+    }
+    const slots = booking.slots.map((slot) => ({
+      startsAt: displayTime(slot.starts_at),
+      endsAt: displayTime(slot.ends_at),
+      startMinutes: timeInMinutes(slot.starts_at),
+      endMinutes: timeInMinutes(slot.ends_at)
+    })).sort((left, right) => left.startMinutes - right.startMinutes);
+    const ranges = [];
+    for (const slot of slots) {
+      const previous = ranges[ranges.length - 1];
+      if (previous && previous.endMinutes === slot.startMinutes) {
+        previous.endsAt = slot.endsAt;
+        previous.endMinutes = slot.endMinutes;
+      } else {
+        ranges.push({ ...slot });
+      }
+    }
+    const firstSlot = booking.slots[0];
+    const facilityName = booking.facility_name
+      || booking.facility?.name
+      || firstSlot.facility_name
+      || '';
+    const [year, month, day] = displayDate(firstSlot.service_date).iso.split('-');
+    const date = `${day}/${month}/${year}`;
+    const time = ranges.map((range) => `${range.startsAt}-${range.endsAt}`).join(', ');
+    return [
+      'SPORTBOOKING',
+      `Mã đơn: ${booking.booking_code.trim()}`,
+      `Cơ sở: ${truncateQrName(facilityName)}`,
+      `Ngày: ${date}`,
+      `Giờ: ${time}`
+    ].join('\n');
+  }
+
   function buildTicketViewModel(booking, userData, facilityData) {
     if (!booking || !['CONFIRMED', 'COMPLETED'].includes(booking.status)) {
       throw new TypeError('Đơn đặt sân không có vé hợp lệ.');
@@ -116,11 +162,7 @@
     if (!statusLabels[statusCode]) {
       throw new TypeError('Trạng thái hiển thị của vé không hợp lệ.');
     }
-    const qrPayload = JSON.stringify({
-      booking_code: booking.booking_code,
-      facility_name: facilityName,
-      address
-    });
+    const qrPayload = buildQrPayload({ ...booking, facility_name: facilityName });
 
     return {
       bookingCode: booking.booking_code,
@@ -159,5 +201,5 @@
     return `${new Intl.NumberFormat('vi-VN').format(BigInt(value))} đ`;
   }
 
-  return { buildTicketViewModel, decideTicketAction, formatMoney };
+  return { buildQrPayload, buildTicketViewModel, decideTicketAction, formatMoney };
 }));

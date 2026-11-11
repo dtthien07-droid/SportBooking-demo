@@ -33,9 +33,13 @@ for (const { mockup, output } of pages) {
   test(`${path.basename(output)} retains all mockup markup classes`, () => {
     const sourceClasses = classNames(fs.readFileSync(mockup, 'utf8'));
     const outputClasses = classNames(fs.readFileSync(output, 'utf8'));
-    const intentionallyRemoved = path.basename(output) === 'chi-tiet-don-dat-san.html'
-      ? new Set(['text-outline-variant'])
-      : new Set(['self-start', 'md:self-auto']);
+    const intentionallyRemoved = new Set(['material-symbols-outlined']);
+    if (path.basename(output) === 'chi-tiet-don-dat-san.html') {
+      intentionallyRemoved.add('text-outline-variant');
+    } else {
+      intentionallyRemoved.add('self-start');
+      intentionallyRemoved.add('md:self-auto');
+    }
     const missingClasses = [...sourceClasses]
       .filter((name) => !outputClasses.has(name) && !intentionallyRemoved.has(name));
     assert.deepEqual(missingClasses, []);

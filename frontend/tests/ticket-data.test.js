@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
 const {
+  buildQrPayload,
   buildTicketViewModel,
   decideTicketAction,
   formatMoney
@@ -88,11 +89,45 @@ test('builds the ticket from real booking fields and merges adjacent slots', () 
   assert.equal(model.statusLabel, 'Sắp tới');
   assert.equal(model.hotline, '02412345678');
   assert.equal(model.mapUrl, 'https://maps.google.com/?q=12');
-  assert.deepEqual(JSON.parse(model.qrPayload), {
-    booking_code: 'SPB-20261120-ABCDE2',
-    facility_name: 'Cơ sở thật',
-    address: '12 Phố Mẫu, Hà Nội'
-  });
+  assert.equal(model.qrPayload, buildQrPayload({
+    ...createBooking(),
+    facility_name: 'Cơ sở thật'
+  }));
+  assert.equal(model.qrPayload, [
+    'SPORTBOOKING',
+    'Mã đơn: SPB-20261120-ABCDE2',
+    'Cơ sở: Cơ sở thật',
+    'Ngày: 20/11/2026',
+    'Giờ: 17:00-19:00'
+  ].join('\n'));
+  assert.equal(model.qrPayload.split('\n')[1], `Mã đơn: ${createBooking().booking_code}`);
+  assert.doesNotMatch(model.qrPayload, /http|geo:|12 Phố Mẫu|Hà Nội|Người đặt thật|0838|user@example/i);
+});
+
+test('QR payload omits private data and truncates facility name to 40 characters', () => {
+  const booking = createBooking();
+  booking.slots = booking.slots.map((slot) => ({ ...slot, court_name: '' }));
+  booking.slots[0].facility_name = 'Cơ sở '.repeat(10);
+  const payload = buildQrPayload(booking);
+  assert.match(payload, /Cơ sở: .{39}…/);
+  assert.doesNotMatch(payload, /Sân:|http|geo:|0838|Người đặt/i);
+});
+
+test('QR payload renders when facility name is missing', () => {
+  const booking = createBooking();
+  booking.facility_name = '';
+  booking.facility = { name: '' };
+  booking.slots = booking.slots.map((slot) => ({ ...slot, facility_name: '' }));
+  assert.equal(buildQrPayload(booking).split('\n')[2], 'Cơ sở: —');
+});
+
+test('QR payload keeps separate ranges for non-adjacent slots', () => {
+  const booking = createBooking();
+  booking.slots = [
+    { ...booking.slots[0], starts_at: '19:00:00', ends_at: '19:30:00' },
+    { ...booking.slots[0], starts_at: '17:00:00', ends_at: '18:00:00' }
+  ];
+  assert.equal(buildQrPayload(booking).split('\n')[4], 'Giờ: 17:00-18:00, 19:00-19:30');
 });
 
 test('sums duration from slots and keeps separate ranges when slots are not adjacent', () => {
@@ -187,14 +222,22 @@ test('uses the mockup ticket card classes without forbidden content or active PD
   }
   assert.doesNotMatch(pageHtml, /Material\+Symbols|material-symbols-outlined/i);
   assert.doesNotMatch(pageHtml, /<img\b/i);
-  assert.doesNotMatch(completionHtml, /bookingQr|assets\/qr-code\.js|QRCode\.toSvg/);
+  assert.match(completionHtml, /id="bookingQr"/);
+  assert.match(completionHtml, /id="bookingQrPanel"[^>]*hidden/);
+  assert.match(completionHtml, /src="\/assets\/qr-code\.js"/);
   assert.match(pageHtml, /src="\/assets\/qr-code\.js"/);
   const completionScript = fs.readFileSync(
     path.join(root, 'booking', 'booking-complete-page.js'),
     'utf8'
   );
-  assert.match(completionHtml, /id="openTicket"[^>]*>Xem vé điện tử/);
+  assert.match(completionHtml, /id="openTicket"[^>]*>\s*<span>Xem vé điện tử<\/span>/);
   assert.match(completionScript, /SportBookingBackNav\.buildTicketUrl\(bookingId,/);
+  assert.match(completionScript, /booking\.status === 'CONFIRMED'/);
+  assert.match(completionScript, /toSvg\(\s*model\.qrPayload/);
+  assert.match(fs.readFileSync(path.join(root, 'booking', 'ticket-page.js'), 'utf8'), /toSvg\(model\.qrPayload\)/);
+  assert.equal((pageHtml.match(/data-back-button/g) || []).length, 1);
+  assert.doesNotMatch(pageHtml.slice(0, pageHtml.indexOf('ticket-page-actions')), /data-back-button/);
+  assert.match(completionHtml, /grid-cols-2 min-\[640px\]:grid-cols-4/);
   const detailHtml = fs.readFileSync(path.join(root, 'chi-tiet-don-dat-san.html'), 'utf8');
   assert.doesNotMatch(detailHtml, /id="openTicket"[^>]*href="\/dat-san-thanh-cong\.html/);
 });

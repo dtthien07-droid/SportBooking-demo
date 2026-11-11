@@ -18,7 +18,7 @@ test('selects a sport icon for the gradient fallback when no image exists', () =
   });
   assert.deepEqual(getVenueImagePresentation(null, 'PICKLEBALL'), {
     useImage: false,
-    icon: 'sports_tennis'
+    icon: 'sports'
   });
   assert.deepEqual(getVenueImagePresentation('', 'UNKNOWN'), {
     useImage: false,

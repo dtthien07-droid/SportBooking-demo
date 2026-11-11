@@ -85,7 +85,7 @@ Menu User và Admin chỉ hiện theo vai trò, nhưng ẩn menu không thay th�
 - **Khung giờ:** lưới dễ đọc và có chữ/icon đi kèm màu: trống viền xanh; đang giữ chỗ nền vàng sọc và không chọn được; đã đặt xám; **Xin ghép** lime; giờ vàng 17:00–21:00 có icon tia chớp; giờ đã qua bị khóa.
 - **Giữ chỗ:** đồng hồ đếm ngược 10 phút; đổi sang cảnh báo khi còn dưới 2 phút. Không dựa vào đồng hồ giao diện để quyết định thời hạn.
 - **Tìm đối:** radar quét kèm đếm ngược chu kỳ hiện tại; nêu trạng thái `SEARCHING`/`WAITING_RELAX` và thời điểm kết thúc, có hành động theo đúng trạng thái.
-- **Vé QR:** trình bày như vé thể thao, có đường răng cưa, mã đơn, QR, hotline và bản đồ. Một đơn có đúng một vé QR dù có nhiều khung giờ. QR chứa mã đơn ở dòng đầu cùng thông tin cơ sở, sân, ngày, giờ dạng văn bản; không có check-in.
+- **Vé QR:** trình bày như vé thể thao, có đường răng cưa, mã đơn, QR, hotline và bản đồ. Một đơn có đúng một vé QR dù có nhiều khung giờ. QR chứa văn bản nhiều dòng gồm SPORTBOOKING, mã đơn, tên cơ sở (tối đa 40 ký tự), ngày và giờ; không có check-in.
 - **Chip trạng thái:** Sắp tới xanh; Đang trong trận cam; Hoàn thành xám xanh; Đã hủy đỏ nhạt. Trạng thái động phải luôn có nhãn chữ, không chỉ dựa vào màu.
 - **Hình khối/chuyển động:** bo góc 16–24px; bóng đổ nhẹ; chuyển trang/hover 150–250ms; responsive mobile; tôn trọng `prefers-reduced-motion`.
 - Thành phần focus, hover, disabled, lỗi và thành công phải có trạng thái nhìn thấy được; không chỉ truyền đạt ý nghĩa bằng màu.
