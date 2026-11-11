@@ -1,6 +1,12 @@
 'use strict';
 
 const crypto = require('node:crypto');
+const {
+  REFUND_MESSAGES,
+  getCancellationRefund,
+  slotEndTimestamp,
+  slotStartTimestamp
+} = require('./cancellation-policy');
 
 function createBookingError(status, code, message, details = {}) {
   const error = new Error(message);
@@ -96,6 +102,42 @@ function normalizeBookingId(id) {
     throw createBookingError(400, 'INVALID_BOOKING_ID', 'Mã đơn đặt sân không hợp lệ.');
   }
   return id;
+}
+
+function normalizeCancellationRequest(body) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)
+      || Object.keys(body).some((key) => ![
+        'cancellation_reason',
+        'expected_refund_amount',
+        'expected_refund_percent'
+      ].includes(key))) {
+    throw createBookingError(400, 'INVALID_CANCELLATION', 'Thông tin hủy đơn không hợp lệ.');
+  }
+  const reason = body.cancellation_reason;
+  if (reason !== undefined && reason !== null && reason !== ''
+      && (typeof reason !== 'string' || reason.length > 500)) {
+    throw createBookingError(400, 'INVALID_CANCELLATION_REASON', 'Lý do hủy không được vượt quá 500 ký tự.');
+  }
+  const expectedAmountProvided = Object.hasOwn(body, 'expected_refund_amount');
+  const expectedPercentProvided = Object.hasOwn(body, 'expected_refund_percent');
+  if (expectedAmountProvided !== expectedPercentProvided) {
+    throw createBookingError(400, 'INVALID_CANCELLATION', 'Thông tin preview hoàn tiền không đầy đủ.');
+  }
+  let expectedRefund = null;
+  if (expectedAmountProvided) {
+    if (!/^(0|[1-9]\d*)$/.test(String(body.expected_refund_amount))
+        || ![0, 50, 100].includes(body.expected_refund_percent)) {
+      throw createBookingError(400, 'INVALID_CANCELLATION', 'Thông tin preview hoàn tiền không hợp lệ.');
+    }
+    expectedRefund = {
+      refund_amount: String(body.expected_refund_amount),
+      refund_percent: body.expected_refund_percent
+    };
+  }
+  return {
+    cancellationReason: typeof reason === 'string' ? reason.trim() || null : null,
+    expectedRefund
+  };
 }
 
 function normalizePaymentAttempt(body) {
@@ -662,29 +704,145 @@ function createBookingsService(repository, {
     }
   }
 
-  async function cancelBooking(userId, rawBookingId) {
+  async function getRefundPreview(userId, rawBookingId) {
     const bookingId = normalizeBookingId(rawBookingId);
+    const booking = await repository.findOwnedBookingById(bookingId, userId);
+    if (!booking) {
+      throw createBookingError(404, 'BOOKING_NOT_FOUND', 'Không tìm thấy đơn đặt sân.');
+    }
+    if (booking.status !== 'CONFIRMED' && booking.status !== 'PENDING') {
+      throw createBookingError(409, 'BOOKING_NOT_CANCELLABLE', 'Đơn đặt sân không còn có thể hủy.');
+    }
+    if (!booking.payment_status) {
+      throw createBookingError(409, 'PAYMENT_NOT_FOUND', 'Không tìm thấy thông tin thanh toán của đơn.');
+    }
+    if ((booking.status === 'CONFIRMED' && booking.payment_status !== 'PAID')
+        || (booking.status === 'PENDING' && booking.payment_status !== 'PENDING')) {
+      throw createBookingError(409, 'PAYMENT_STATE_INVALID', 'Trạng thái thanh toán không phù hợp với đơn đặt sân.');
+    }
+    const slots = await repository.findOwnedBookingSlotsById(bookingId, userId);
+    if (slots.length === 0) {
+      throw createBookingError(409, 'BOOKING_SLOTS_CHANGED', 'Đơn đặt sân không còn khung giờ hợp lệ.');
+    }
+    const firstSlot = slots[0];
+    const currentTime = now();
+    const startAt = slotStartTimestamp(firstSlot);
+    const endAt = slotEndTimestamp(slots[slots.length - 1]);
+    if (booking.status === 'PENDING' && Number(booking.lock_expired) === 1) {
+      throw createBookingError(409, 'BOOKING_EXPIRED', 'Đơn đặt sân đã hết hạn.');
+    }
+    if (booking.status === 'CONFIRMED'
+        && (currentTime.getTime() >= startAt || currentTime.getTime() >= endAt)) {
+      throw createBookingError(409, 'BOOKING_NOT_CANCELLABLE', 'Đơn đang diễn ra hoặc đã hoàn thành, không thể hủy.');
+    }
+    if (booking.status === 'PENDING') {
+      return {
+        refund_percent: 0,
+        refund_amount: '0',
+        paid_amount: String(booking.paid_amount || '0'),
+        hours_until_start: Number(((startAt - currentTime.getTime()) / 3_600_000).toFixed(2)),
+        message: REFUND_MESSAGES.unpaid
+      };
+    }
+    return getCancellationRefund({
+      firstSlot,
+      paidAmount: String(booking.paid_amount),
+      now: currentTime
+    });
+  }
+
+  async function cancelBooking(userId, rawBookingId, body = {}) {
+    const bookingId = normalizeBookingId(rawBookingId);
+    const { cancellationReason, expectedRefund } = normalizeCancellationRequest(body);
     const result = await repository.withTransaction(async (connection) => {
       const booking = await repository.lockBooking(connection, bookingId);
       if (!booking || String(booking.user_id) !== String(userId)) {
         throw createBookingError(404, 'BOOKING_NOT_FOUND', 'Không tìm thấy đơn đặt sân.');
       }
-      if (booking.status !== 'PENDING') {
-        throw createBookingError(409, 'BOOKING_NOT_PENDING', 'Chỉ có thể hủy đơn đang chờ thanh toán.');
+      if (booking.status !== 'PENDING' && booking.status !== 'CONFIRMED') {
+        throw createBookingError(409, 'BOOKING_NOT_CANCELLABLE', 'Đơn đã hủy, hết hạn hoặc hoàn thành nên không thể hủy.');
       }
 
+      const payment = await repository.lockPaymentForBooking(connection, bookingId);
+      if (!payment) {
+        throw createBookingError(409, 'PAYMENT_NOT_FOUND', 'Không tìm thấy thông tin thanh toán của đơn.');
+      }
       const slotIds = await repository.lockSlotsForBooking(connection, bookingId);
-      await repository.lockTimeSlots(connection, slotIds);
-      const expired = Number(booking.lock_expired) === 1;
-      const status = expired ? 'EXPIRED' : 'CANCELLED';
-      await repository.updateBookingStatus(connection, bookingId, status);
+      const slots = await repository.lockTimeSlots(connection, slotIds);
+      if (slots.length === 0 || slots.length !== slotIds.length) {
+        throw createBookingError(409, 'BOOKING_SLOTS_CHANGED', 'Các khung giờ của đơn đã thay đổi.');
+      }
+
+      if (booking.status === 'PENDING' && Number(booking.lock_expired) === 1) {
+        await repository.updateBookingStatus(connection, bookingId, 'EXPIRED');
+        await repository.releaseBookingSlots(connection, bookingId);
+        return { expired: true };
+      }
+      const requiredSlotStatus = booking.status === 'PENDING' ? 'LOCKED' : 'BOOKED';
+      if (slots.some((slot) => slot.status !== requiredSlotStatus
+          || String(slot.current_booking_id) !== String(booking.id))) {
+        throw createBookingError(409, 'BOOKING_SLOTS_CHANGED', 'Các khung giờ của đơn đã thay đổi.');
+      }
+
+      let refund = {
+        refund_percent: 0,
+        refund_amount: '0',
+        paid_amount: String(payment.paid_amount || '0')
+      };
+      if (booking.status === 'CONFIRMED') {
+        const currentTime = now();
+        const firstSlot = [...slots].sort((left, right) => (
+          left.service_date.localeCompare(right.service_date)
+          || left.starts_at.localeCompare(right.starts_at)
+        ))[0];
+        const lastSlot = [...slots].sort((left, right) => (
+          right.service_date.localeCompare(left.service_date)
+          || right.ends_at.localeCompare(left.ends_at)
+        ))[0];
+        if (payment.status !== 'PAID') {
+          throw createBookingError(409, 'PAYMENT_NOT_PAID', 'Đơn đã xác nhận nhưng thanh toán không hợp lệ.');
+        }
+        if (currentTime.getTime() >= slotStartTimestamp(firstSlot)
+            || currentTime.getTime() >= slotEndTimestamp(lastSlot)) {
+          throw createBookingError(409, 'BOOKING_NOT_CANCELLABLE', 'Đơn đang diễn ra hoặc đã hoàn thành, không thể hủy.');
+        }
+        refund = getCancellationRefund({
+          firstSlot,
+          paidAmount: String(payment.paid_amount),
+          now: currentTime
+        });
+        if (expectedRefund && (expectedRefund.refund_amount !== refund.refund_amount
+            || expectedRefund.refund_percent !== refund.refund_percent)) {
+          throw createBookingError(
+            409,
+            'REFUND_PREVIEW_CHANGED',
+            'Khoản hoàn đã thay đổi. Vui lòng kiểm tra và xác nhận lại.',
+            { refund_preview: refund }
+          );
+        }
+        await repository.refundPaymentForBooking(connection, payment.id, refund.refund_amount);
+      }
+      if (booking.status === 'PENDING' && payment.status !== 'PENDING') {
+        throw createBookingError(409, 'PAYMENT_STATE_INVALID', 'Đơn chưa thanh toán có trạng thái thanh toán không hợp lệ.');
+      }
+      const updated = await repository.updateBookingCancellation(connection, {
+        bookingId,
+        cancellationReason
+      });
+      if (!updated) {
+        throw createBookingError(409, 'BOOKING_NOT_CANCELLABLE', 'Đơn đặt sân đã thay đổi, vui lòng tải lại.');
+      }
       await repository.releaseBookingSlots(connection, bookingId);
-      return expired
-        ? { expired: true }
-        : { booking_id: String(booking.id), status };
+      return {
+        booking_id: String(booking.id),
+        status: 'CANCELLED',
+        refund_percent: refund.refund_percent,
+        paid_amount: refund.paid_amount,
+        refunded_amount: refund.refund_amount
+      };
     });
     if (result.expired) {
-      throw createBookingError(410, 'BOOKING_EXPIRED', 'Thời gian giữ chỗ của đơn đã hết hạn.');
+      throw createBookingError(409, 'BOOKING_EXPIRED', 'Đơn đặt sân đã hết hạn.');
     }
     return result;
   }
@@ -821,6 +979,7 @@ function createBookingsService(repository, {
     getBookingSummary,
     getBooking,
     getPendingBooking,
+    getRefundPreview,
     cancelBooking,
     createPaymentAttempt,
     getPayments,

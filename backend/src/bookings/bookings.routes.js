@@ -42,6 +42,22 @@ function createBookingsRouter({ bookingsService, requireAuth }) {
     response.json(summary);
   });
 
+  router.get(
+    '/:id/refund-preview',
+    (request, response, next) => {
+      response.set('Cache-Control', 'no-store');
+      next();
+    },
+    requireAuth,
+    async (request, response) => {
+      const preview = await bookingsService.getRefundPreview(
+        request.auth.user.id,
+        request.params.id
+      );
+      response.json(preview);
+    }
+  );
+
   router.get('/:id', requireAuth, async (request, response) => {
     const booking = await bookingsService.getBooking(request.auth.user, request.params.id);
     response.set('Cache-Control', 'no-store');
@@ -51,7 +67,8 @@ function createBookingsRouter({ bookingsService, requireAuth }) {
   router.post('/:id/cancel', requireAuth, async (request, response) => {
     const booking = await bookingsService.cancelBooking(
       request.auth.user.id,
-      request.params.id
+      request.params.id,
+      request.body
     );
     response.json(booking);
   });

@@ -303,6 +303,44 @@ function createBookingRepository(pool) {
       return rows[0] || null;
     },
 
+    async updateBookingCancellation(connection, {
+      bookingId,
+      cancellationReason
+    }) {
+      const [result] = await connection.execute(
+        `UPDATE bookings
+         SET status = 'CANCELLED',
+             cancelled_by = ?,
+             cancelled_at = UTC_TIMESTAMP(3),
+             cancellation_reason = ?,
+             match_preference = NULL,
+             updated_at = UTC_TIMESTAMP(3)
+         WHERE id = ?
+           AND status IN (?, ?)`,
+        ['USER', cancellationReason, bookingId, 'PENDING', 'CONFIRMED']
+      );
+      return result.affectedRows === 1;
+    },
+
+    async refundPaymentForBooking(connection, paymentId, refundAmount) {
+      if (BigInt(refundAmount) === 0n) {
+        await connection.execute(
+          `UPDATE payments
+           SET refunded_amount = 0, updated_at = UTC_TIMESTAMP(3)
+           WHERE id = ? AND status = ?`,
+          [paymentId, 'PAID']
+        );
+        return;
+      }
+      await connection.execute(
+        `UPDATE payments
+         SET status = ?, refunded_amount = ?, refunded_at = UTC_TIMESTAMP(3),
+             updated_at = UTC_TIMESTAMP(3)
+         WHERE id = ? AND status = ?`,
+        ['REFUNDED', refundAmount, paymentId, 'PAID']
+      );
+    },
+
     async createPaymentAttempt(connection, { paymentId, method, amount, result }) {
       const [numberRows] = await connection.execute(
         `SELECT COALESCE(MAX(attempt_no), 0) + 1 AS attempt_no
@@ -447,8 +485,8 @@ function createBookingRepository(pool) {
              current_booking_id = NULL,
              lock_expires_at = NULL,
              updated_at = UTC_TIMESTAMP(3)
-         WHERE current_booking_id = ? AND status = 'LOCKED'`,
-        [bookingId]
+         WHERE current_booking_id = ? AND status IN (?, ?)`,
+        [bookingId, 'LOCKED', 'BOOKED']
       );
     },
 

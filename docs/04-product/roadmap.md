@@ -1,5 +1,5 @@
 # Roadmap — SportBooking
-- Vé điện tử (FR-07): trang vé QR dữ liệu thật, luồng quay lại an toàn; kiểm tra trình duyệt: **Chờ người dùng xác nhận**.
+- Vé điện tử (FR-07): trang hoàn tất có QR cục bộ và trang vé điện tử dùng chung payload văn bản; icon SVG không phụ thuộc font Material Symbols; kiểm tra trình duyệt: **Chờ người dùng xác nhận**.
 
 Nguồn: [docs/01-plan/business-flow.md](../01-plan/business-flow.md). Cập nhật trạng thái sau mỗi tính năng xong.
 
@@ -12,7 +12,7 @@ Trạng thái: Chưa làm / Đang làm / Xong
 | 3 | Admin quản lý cơ sở, sân, khung giờ, giá | FR-04 | Cốt lõi | Chưa làm | Dữ liệu mẫu; khung giờ đã được tự sinh ở module 2. |
 | 4 | Đặt sân, giữ chỗ 10 phút, chống đặt trùng | FR-06, FR-12 | Cốt lõi | Đang làm | Booking flow backend and integration coverage are implemented. Pending booking conflicts include `pending_booking_id` and `remaining_seconds`; expired PENDING holds are expired and released inside the create transaction; authenticated `GET /bookings/pending` returns only the caller's active hold. The shared header shows the active hold, countdown, continue-payment and cancel actions on signed-in pages; the booking page also offers cancel-and-retry. `npm test` on `sportbooking_test`: 34/34.|
 | 5 | Thanh toán giả lập, vé QR | FR-07 | Cốt lõi | Đang làm | Trang thanh toán lấy Bước 2 từ mockup, hiển thị dữ liệu API; nút xác nhận gửi SUCCESS, FAILURE chỉ hiện với `?demo=1`. QR chuyển khoản được vẽ cục bộ từ `SPORTBOOKING|<booking_code>|<amount_due>`, không phải VietQR; QR vé vẫn encode mã booking. Thanh bước dùng chung trên `dat-san.html`, `thanh-toan.html` và `dat-san-thanh-cong.html`. Frontend tests 26/26, `npm test` trên `sportbooking_test` 34/34; smoke test trình duyệt: Chờ người dùng xác nhận. Thông báo thuộc module 8; hủy/hoàn tiền thuộc module 6. |
-| 6 | Hủy và hoàn tiền | FR-08 | Cốt lõi | Chưa làm | |
+| 6 | Hủy và hoàn tiền | FR-08 | Cốt lõi | Xong | Hủy PENDING/CONFIRMED trong transaction; hoàn 100%/50%/0% trên `paid_amount`, preview chỉ chủ đơn, giải phóng slot và xóa `match_preference`; job chuyển đơn đủ giờ sang COMPLETED mỗi phút. Migration 006 đã áp dụng/xác minh trên `sportbooking_test`; frontend 13 file test đạt, backend `npm test` 52/52 hai lượt; kiểm tra trình duyệt: Chờ người dùng xác nhận. |
 | 7 | Lịch sử đặt sân | FR-09 | Cốt lõi | Xong | Lịch sử/chi tiết, điều hướng quay lại an toàn, API tóm tắt theo user, tìm kiếm mã/cơ sở và lọc môn; frontend 67/67, backend `sportbooking_test` 43/43. Kiểm tra bằng trình duyệt: Chờ người dùng xác nhận. |
 | 8 | Thông báo trong app | FR-17 | Cốt lõi | Chưa làm | Ghi chú: nối API khi làm module thông báo. |
 | 9 | Đánh giá sân | FR-18 | Nâng cao | Chưa làm | |

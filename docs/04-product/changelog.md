@@ -1,3 +1,13 @@
+## 2026-11-12 — SVG và nội dung QR vé
+- Thay icon ligature bằng SVG nội tuyến; trang hoàn tất hiển thị QR vé duy nhất cho đơn `CONFIRMED`, cùng payload văn bản với trang vé điện tử.
+- Điều chỉnh hàng nút trang hoàn tất và bỏ nút quay lại đầu trang vé; kiểm tra trình duyệt: **Chờ người dùng xác nhận**.
+
+## 2026-11-11 — Module 6: Hủy và hoàn tiền
+- Mở rộng hủy PENDING/CONFIRMED trong một transaction, lưu người/lý do hủy, giải phóng slot, xóa `match_preference`; hoàn 100%/50%/0% số đã trả theo giờ UTC+7, làm tròn phần 50% xuống.
+- Thêm API `GET /api/v1/bookings/:id/refund-preview` chỉ cho chủ đơn và `Cache-Control: no-store`; giữ tác vụ COMPLETED idempotent mỗi phút.
+- Bật popup xác nhận theo preview server ở lịch sử/chi tiết; sau hủy tải lại dữ liệu và hiển thị khoản hoàn.
+- Thêm migration 006; đã áp dụng và xác minh chỉ trên `sportbooking_test`. Frontend tests: từng file đạt; `npm test` trên `sportbooking_test`: 52/52 hai lượt; `node --check`: đạt. Kiểm tra giao diện bằng trình duyệt: **Chờ người dùng xác nhận**.
+
 ## 2026-11-11 — Vé điện tử
 - Thêm vé QR dữ liệu thật, điều hướng `buildTicketUrl` và trang hoàn tất không vẽ QR; kiểm tra trình duyệt: **Chờ người dùng xác nhận**.
 # 2026-11-09 — Module 7: Tóm tắt và lọc lịch sử đặt sân

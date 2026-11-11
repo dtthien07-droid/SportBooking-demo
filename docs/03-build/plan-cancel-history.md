@@ -66,7 +66,7 @@
 ### 3.1 API và chính sách
 
 1. Mở rộng đúng route `POST /api/v1/bookings/{id}/cancel` hiện có; không tạo route hủy booking khác.
-2. Thêm `GET /api/v1/bookings/{id}/cancel-preview` để trả thông tin sân/khung giờ, tiền đã trả và số tiền hoàn dự kiến cho popup; route chỉ đọc, không đổi trạng thái hay ghi khoản hoàn.
+2. Thêm `GET /api/v1/bookings/{id}/refund-preview` để trả thông tin sân/khung giờ, tiền đã trả và số tiền hoàn dự kiến cho popup; route chỉ đọc, không đổi trạng thái hay ghi khoản hoàn.
 3. Mốc chính sách là thời điểm xác nhận hủy trừ giờ bắt đầu khung đầu tiên, quy đổi UTC+7:
 
    | Thời gian còn tới khung đầu | Hoàn trên `paid_amount` | Ranh giới |
@@ -183,3 +183,5 @@ Kiểm thử hoàn tất: frontend 67/67, backend trên `sportbooking_test` 43/4
 - Nút quay lại dùng danh sách `from` hợp lệ và nhãn động; các nút xem vé mở route này.
 - Bỏ nhãn check-in/VIP Gold vì không phải dữ liệu nghiệp vụ; PDF vô hiệu hóa vì chưa triển khai.
 - Kiểm tra trình duyệt: **Chờ người dùng xác nhận**.
+
+Module 6 sử dụng migration 006 để bổ sung thông tin người hủy và lý do hủy.

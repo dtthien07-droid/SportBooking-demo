@@ -166,6 +166,56 @@ async function applyPaymentTicketMigration(connection, databaseName) {
   console.log(`${databaseName}: migration 005 applied and verified.`);
 }
 
+async function applyBookingCancellationMigration(connection, databaseName) {
+  const migrationPath = path.join(
+    __dirname,
+    'migrations',
+    '006-add-booking-cancellation-details.sql'
+  );
+  const migration = await fs.readFile(migrationPath, 'utf8');
+  const statements = migration.split(';').map((statement) => statement.trim()).filter(Boolean);
+
+  for (const statement of statements) {
+    const columnMatch = /^ALTER TABLE bookings\s+ADD COLUMN\s+([a-z_]+)\s+(.+)$/is.exec(statement);
+    if (!columnMatch) {
+      throw new Error(`${databaseName}: migration 006 contains an unsupported statement.`);
+    }
+    const [, columnName] = columnMatch;
+    const [existingColumns] = await connection.execute(
+      `SELECT column_name
+       FROM information_schema.columns
+       WHERE table_schema = DATABASE()
+         AND table_name = ?
+         AND column_name = ?`,
+      ['bookings', columnName]
+    );
+    if (existingColumns.length === 0) {
+      await connection.query(statement);
+    }
+  }
+
+  const expectedColumns = ['cancelled_by', 'cancellation_reason', 'cancelled_at'];
+  const [verifiedColumns] = await connection.execute(
+    `SELECT column_name, column_type, is_nullable
+     FROM information_schema.columns
+     WHERE table_schema = DATABASE()
+       AND table_name = ?
+       AND column_name IN (?, ?, ?)`,
+    ['bookings', ...expectedColumns]
+  );
+  const columns = new Map(verifiedColumns.map((row) => [row.column_name, row]));
+  const expectedTypes = new Map([
+    ['cancelled_by', "enum('USER','ADMIN')"],
+    ['cancellation_reason', 'varchar(500)'],
+    ['cancelled_at', 'datetime(3)']
+  ]);
+  if (expectedColumns.some((column) => columns.get(column)?.column_type !== expectedTypes.get(column)
+      || columns.get(column)?.is_nullable !== 'YES')) {
+    throw new Error(`${databaseName}: migration 006 verification failed.`);
+  }
+  console.log(`${databaseName}: migration 006 applied and verified.`);
+}
+
 async function migrateBookings(databaseName) {
   const pool = getAllowedPool(databaseName);
   const connection = await pool.getConnection();
@@ -219,6 +269,7 @@ async function migrateBookings(databaseName) {
     }
     await applyBookingPreferencesMigration(connection, databaseName);
     await applyPaymentTicketMigration(connection, databaseName);
+    await applyBookingCancellationMigration(connection, databaseName);
   } finally {
     connection.release();
     await pool.end();
