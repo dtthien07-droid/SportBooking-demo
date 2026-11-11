@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vé điện tử - SportBooking</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        @layer base {
+            html, body { margin: 0; padding: 0; }
+            body { overscroll-behavior: none; }
+            main > :first-child { margin-top: 0 !important; }
+            main > :last-child { margin-bottom: 0 !important; }
+        }
+        ::-webkit-scrollbar { display: none; }
+        [hidden] { display: none !important; }
+        #bookingQr svg { display: block; width: 176px; height: 176px; }
+        .ticket-state { max-width: 1060px; margin: 7rem auto 2rem; padding: 1.25rem; }
+        @media print {
+            [data-shared-header], [data-shared-footer], .ticket-page-actions { display: none !important; }
+            main { padding-top: 1rem !important; }
+        }
+    </style>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#087443",
+                        "primary-light": "#EAF5EF",
+                        "primary-hover": "#065f37",
+                        accent: "#F97316",
+                        "accent-hover": "#ea580c",
+                        "app-bg": "#F7F9FC",
+                        "app-text": "#1E293B"
+                    },
+                    borderRadius: { "3xl": "1.5rem", "4xl": "2rem" },
+                    fontFamily: {
+                        headline: ["Be Vietnam Pro", "sans-serif"],
+                        body: ["Be Vietnam Pro", "sans-serif"],
+                        label: ["Inter", "sans-serif"]
+                    }
+                }
+            }
+        };
+    </script>
+    <link rel="stylesheet" href="/shared/header.css">
+</head>
+<body class="bg-[#F7F9FC] font-body text-app-text antialiased min-h-screen flex flex-col justify-between">
+    <div data-shared-header></div>
+    <section class="ticket-state bg-white rounded-2xl shadow-sm border border-slate-200 text-center" id="ticketLoading" role="status" aria-live="polite">
+        <span class="inline-block w-8 h-8 rounded-full border-4 border-emerald-100 border-t-emerald-700 animate-spin" aria-hidden="true"></span>
+        <p class="mt-3 text-sm text-slate-600">Đang tải vé điện tử…</p>
+    </section>
+    <section class="ticket-state bg-red-50 rounded-2xl border border-red-200 text-center" id="ticketError" role="alert" aria-live="assertive" hidden>
+        <p class="text-red-800" id="ticketErrorMessage"></p>
+        <button class="mt-4 px-5 py-2 rounded-xl bg-[#087443] text-white font-bold" id="ticketRetry" type="button">Thử lại</button>
+    </section>
+    <section class="ticket-state bg-white rounded-2xl border border-slate-200 text-center" id="ticketNotice" role="status" hidden>
+        <p class="font-headline text-lg font-bold text-slate-800">Đơn không còn hiệu lực</p>
+    </section>
+
+    <main class="w-full pt-28 pb-16 flex-1 flex flex-col justify-center" id="ticketMain" hidden>
+        <div class="max-w-[1060px] mx-auto w-full px-4 sm:px-6 flex flex-col gap-6">
+            <div class="ticket-page-actions flex flex-col gap-3">
+                <div>
+                    <button class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-label text-sm font-medium shadow-sm transition-all" type="button" data-back-button>
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5m7 7-7-7 7-7"/></svg>
+                        <span data-back-label>Quay lại</span>
+                    </button>
+                </div>
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="flex items-center flex-wrap gap-3">
+                        <h1 class="font-headline text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">Vé Điện Tử</h1>
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EAF5EF] text-[#087443] font-label text-xs font-semibold tracking-wide" id="ticketStatusBadge">
+                            <span class="w-2 h-2 rounded-full bg-[#087443]"></span>
+                            <span id="ticketStatusLabel">—</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 self-start md:self-auto">
+                        <button class="px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-500 font-label text-xs sm:text-sm font-medium flex items-center gap-1.5 shadow-sm opacity-60 cursor-not-allowed" type="button" disabled title="Sắp có">
+                            <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 8V3h10v5M7 17H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M7 14h10v7H7z"/></svg>
+                            <span>In vé · Sắp có</span>
+                        </button>
+                        <button class="px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-500 font-label text-xs sm:text-sm font-medium flex items-center gap-1.5 shadow-sm opacity-60 cursor-not-allowed" type="button" disabled title="Sắp có">
+                            <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4"/></svg>
+                            <span>Tải PDF · Sắp có</span>
+                        </button>
+                        <button class="px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-500 font-label text-xs sm:text-sm font-medium flex items-center gap-1.5 shadow-sm opacity-60 cursor-not-allowed" type="button" disabled title="Sắp có">
+                            <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4m-5 5 5-5 5 5M5 14v6h14v-6"/></svg>
+                            <span>Chia sẻ · Sắp có</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="relative w-full bg-white rounded-3xl border border-slate-200/90 shadow-xl overflow-hidden flex flex-col lg:flex-row">
+                <div class="lg:w-[65%] p-6 sm:p-9 flex flex-col justify-between gap-6 relative">
+                    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-5">
+                        <div class="flex items-center gap-3">
+                            <div class="w-11 h-11 rounded-2xl bg-[#EAF5EF] text-[#087443] flex items-center justify-center shrink-0">
+                                <svg class="text-[24px] w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M7 7 17 17M17 7 7 17"/></svg>
+                            </div>
+                            <div>
+                                <div class="font-headline text-lg font-bold text-[#087443] leading-snug">SportBooking Pass</div>
+                                <span class="font-label text-xs text-slate-500 font-medium">Thẻ vào sân kỹ thuật số chuẩn hóa</span>
+                            </div>
+                        </div>
+                        <div class="bg-slate-50 border border-slate-200/80 px-3.5 py-1.5 rounded-xl">
+                            <div class="font-label text-[10px] text-slate-400 uppercase font-semibold tracking-wider">Mã đơn</div>
+                            <div class="font-mono text-base font-bold text-slate-900 tracking-tight" id="ticketBookingCode">—</div>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                        <span class="font-label text-xs font-semibold text-[#087443] uppercase tracking-wider">Địa điểm thi đấu</span>
+                        <h2 class="font-headline text-xl sm:text-2xl font-bold text-slate-900 leading-tight" id="ticketFacilityName">—</h2>
+                        <div class="flex items-center gap-1.5 text-slate-500 font-body text-sm mt-0.5">
+                            <svg class="text-[18px] text-[#087443] shrink-0 w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                            <span id="ticketAddress">—</span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3.5 sm:gap-4">
+                        <div class="p-4 rounded-2xl bg-slate-50/90 border border-slate-100 flex flex-col gap-1">
+                            <div class="flex items-center gap-1.5 text-slate-500 font-label text-xs">
+                                <svg class="text-[16px] text-[#087443] w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8 12 3l9 5v13H3V8Zm0 4h18M7 12v5m5-5v5m5-5v5"/></svg>
+                                <span>Vị trí sân</span>
+                            </div>
+                            <div class="font-headline text-lg sm:text-xl font-bold text-slate-900" id="ticketCourtName">—</div>
+                            <span class="font-body text-xs text-slate-500 font-medium" id="ticketSportName">—</span>
+                        </div>
+                        <div class="p-4 rounded-2xl bg-slate-50/90 border border-slate-100 flex flex-col gap-1">
+                            <div class="flex items-center gap-1.5 text-slate-500 font-label text-xs">
+                                <svg class="text-[16px] text-[#087443] w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h14v17H5V4Zm3-2v4m8-4v4M5 9h14"/></svg>
+                                <span>Ngày chơi</span>
+                            </div>
+                            <div class="font-headline text-lg sm:text-xl font-bold text-slate-900" id="ticketDate">—</div>
+                            <span class="font-body text-xs text-slate-500 font-medium" id="ticketWeekday">—</span>
+                        </div>
+                        <div class="p-4 rounded-2xl bg-slate-50/90 border border-slate-100 flex flex-col gap-1">
+                            <div class="flex items-center gap-1.5 text-slate-500 font-label text-xs">
+                                <svg class="text-[16px] text-accent w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                                <span>Khung giờ</span>
+                            </div>
+                            <div class="font-headline text-lg sm:text-xl font-bold text-slate-900 font-mono" id="ticketTimeRange">—</div>
+                            <span class="font-body text-xs text-slate-500 font-medium" id="ticketDuration">—</span>
+                        </div>
+                        <div class="p-4 rounded-2xl bg-slate-50/90 border border-slate-100 flex flex-col gap-1">
+                            <div class="flex items-center gap-1.5 text-slate-500 font-label text-xs">
+                                <svg class="text-[16px] text-[#087443] w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+                                <span>Người đặt sân</span>
+                            </div>
+                            <div class="font-headline text-lg sm:text-xl font-bold text-slate-900 truncate" id="ticketBookerName">—</div>
+                            <span class="font-body text-xs text-slate-500 font-mono font-medium" id="ticketBookerPhone">—</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="relative flex lg:flex-col items-center justify-between shrink-0">
+                    <div class="w-6 h-6 rounded-full bg-[#F7F9FC] border border-slate-200/90 absolute -left-3 lg:left-1/2 lg:-translate-x-1/2 lg:-top-3 shadow-inner z-20"></div>
+                    <div class="w-full lg:w-0 h-0 lg:h-full border-t-2 lg:border-t-0 lg:border-l-2 border-dashed border-slate-200 my-0 lg:my-3"></div>
+                    <div class="w-6 h-6 rounded-full bg-[#F7F9FC] border border-slate-200/90 absolute -right-3 lg:left-1/2 lg:-translate-x-1/2 lg:-bottom-3 shadow-inner z-20"></div>
+                </div>
+                <div class="lg:w-[35%] bg-slate-50/60 p-6 sm:p-9 flex flex-col items-center justify-center text-center gap-4">
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EAF5EF] text-[#087443] font-label text-xs font-bold tracking-wider">
+                        <svg class="text-[15px] w-[15px] h-[15px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h3v3h-3zm4 4h3v3h-3zm0-4h3"/></svg>
+                        <span>Mã QR vé</span>
+                    </div>
+                    <div class="p-3.5 bg-white rounded-2xl shadow-sm border border-slate-200/90" id="bookingQr" aria-label="Mã QR vé"></div>
+                    <div class="flex flex-col gap-1 max-w-[240px]">
+                        <p class="font-headline text-xs sm:text-sm font-semibold text-slate-800">Xuất trình mã QR cho nhân viên sân để đối chiếu đơn.</p>
+                        <p class="font-body text-xs text-slate-500">Có mặt trước giờ chơi 10 phút.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ticket-page-actions flex flex-col-reverse sm:flex-row items-center justify-between gap-3 pt-2">
+                <button class="w-full sm:w-auto px-5 py-3 rounded-xl bg-white border border-slate-200/90 hover:bg-slate-100 hover:border-slate-300 text-slate-700 font-label text-sm font-semibold flex items-center justify-center gap-2 transition-colors shadow-sm" type="button" data-back-button>
+                    <svg class="text-[18px] w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5m7 7-7-7 7-7"/></svg>
+                    <span data-back-label>Quay lại lịch sử đặt sân</span>
+                </button>
+                <a class="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#087443] hover:bg-[#065f37] text-white font-label text-sm font-semibold flex items-center justify-center gap-2 transition-all shadow-md" id="ticketMapLink" target="_blank" rel="noopener noreferrer">
+                    <svg class="text-[18px] w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 9-8 2-2 7L3 3Z"/></svg>
+                    <span>Chỉ đường đến sân</span>
+                </a>
+            </div>
+        </div>
+    </main>
+    <div data-shared-footer></div>
+
+    <script src="/shared/header.js"></script>
+    <script src="/shared/footer.js"></script>
+    <script src="/booking/bookings-api.js"></script>
+    <script src="/assets/qr-code.js"></script>
+    <script src="/booking/ticket-data.js"></script>
+    <script src="/shared/back-nav.js"></script>
+    <script src="/booking/ticket-page.js"></script>
+</body>
+</html>

@@ -9,13 +9,17 @@
   const allowedPaths = new Set([
     '/lich-su-dat-san.html',
     '/dat-san-thanh-cong.html',
+    '/chi-tiet-don-dat-san.html',
+    '/ve-dien-tu.html',
     '/trangchu-user.html',
     '/thanh-toan.html',
     '/tim-san.html'
   ]);
   const labels = Object.freeze({
     '/lich-su-dat-san.html': 'Quay lại lịch sử đặt sân',
-    '/dat-san-thanh-cong.html': 'Quay lại vé đặt sân',
+    '/dat-san-thanh-cong.html': 'Quay lại hoàn tất đặt lịch',
+    '/chi-tiet-don-dat-san.html': 'Quay lại chi tiết đơn',
+    '/ve-dien-tu.html': 'Quay lại vé điện tử',
     '/trangchu-user.html': 'Quay lại trang chủ',
     '/thanh-toan.html': 'Quay lại thanh toán',
     '/tim-san.html': 'Quay lại tìm sân'
@@ -32,6 +36,11 @@
 
   function buildDetailUrl(bookingId, fromPath) {
     return `/chi-tiet-don-dat-san.html?booking_id=${encodeURIComponent(String(bookingId))}`
+      + `&from=${encodeURIComponent(String(fromPath))}`;
+  }
+
+  function buildTicketUrl(bookingId, fromPath) {
+    return `/ve-dien-tu.html?booking_id=${encodeURIComponent(String(bookingId))}`
       + `&from=${encodeURIComponent(String(fromPath))}`;
   }
 
@@ -59,5 +68,5 @@
     return labels[path] || labels[fallbackTarget];
   }
 
-  return { buildDetailUrl, resolveBackTarget, backLabel };
+  return { buildDetailUrl, buildTicketUrl, resolveBackTarget, backLabel };
 }));

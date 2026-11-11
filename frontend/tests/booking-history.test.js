@@ -34,7 +34,7 @@ test('PENDING còn hạn hiển thị nhãn, đồng hồ và nút tiếp tục 
 test('CONFIRMED hiển thị nút mở vé', () => {
   const view = getBookingPresentation(booking('CONFIRMED', 'UPCOMING'));
   assert.equal(view.action, 'view-ticket');
-  assert.equal(view.href, '/dat-san-thanh-cong.html?booking_id=42');
+  assert.equal(view.href, '/ve-dien-tu.html?booking_id=42&from=%2Flich-su-dat-san.html');
   assert.equal(view.label, 'Sắp tới');
 });
 

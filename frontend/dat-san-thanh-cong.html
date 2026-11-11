@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Vé đặt sân - SportBooking</title>
+    <title>Hoàn tất đặt lịch - SportBooking</title>
     <link href="https://fonts.googleapis.com" rel="preconnect"/>
     <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Inter:wght@500;600&display=swap" rel="stylesheet"/>
@@ -15,7 +15,6 @@
             main > :last-child { margin-bottom: 0 !important; }
         }
         ::-webkit-scrollbar { display: none; }
-        #bookingQr svg { display: block; width: 140px; height: 140px; }
         .ticket-state { max-width: 1280px; margin: 6rem auto 2rem; padding: 1.25rem; }
     </style>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -90,7 +89,7 @@
                         <span>Thành công</span>
                     </span>
                 </div>
-                <h1 class="text-3xl md:text-4xl font-bold text-on-surface tracking-tight mb-2">ĐẶT SÂN THÀNH CÔNG!</h1>
+                <h1 class="text-3xl md:text-4xl font-bold text-on-surface tracking-tight mb-2">HOÀN TẤT ĐẶT LỊCH!</h1>
                 <p class="text-sm text-on-surface-variant max-w-xl mb-space-md">
                     Cảm ơn bạn! Thông tin vé đặt sân đã được xác nhận.
                     <span class="font-bold text-on-surface" id="displayNotificationEmail">—</span>
@@ -123,7 +122,7 @@
                                         <span class="material-symbols-outlined text-3xl">sports_tennis</span>
                                     </div>
                                     <div>
-                                        <span class="text-xs uppercase tracking-wider text-secondary font-bold">Vé điện tử thể thao</span>
+                                        <span class="text-xs uppercase tracking-wider text-secondary font-bold">Thông tin đặt sân</span>
                                         <h2 class="text-xl font-bold text-on-surface mt-0.5" id="ticketFacilityName">—</h2>
                                         <p class="text-xs text-on-surface-variant flex items-center gap-1 mt-1">
                                             <span class="material-symbols-outlined text-base text-primary">location_on</span>
@@ -191,8 +190,7 @@
                                     </div>
                                 </div>
                                 <div class="md:col-span-4 flex flex-col items-center justify-center p-3 bg-white rounded-xl border shadow-sm">
-                                    <div class="p-2 bg-surface-container-lowest rounded-lg" id="bookingQr" aria-label="Mã QR vé đặt sân"></div>
-                                    <span class="text-[10px] text-gray-500 font-medium mt-1">Quét QR tại quầy để nhận sân</span>
+                                    <a class="w-full px-4 py-3 rounded-xl bg-primary hover:bg-primary-container text-white text-sm font-bold text-center shadow-md transition-all" id="openTicket" hidden>Xem vé điện tử</a>
                                 </div>
                             </div>
 
@@ -215,11 +213,7 @@
                             <span class="material-symbols-outlined text-xl">calendar_month</span>
                             <span>Lịch sử đặt sân</span>
                         </a>
-                        <button class="h-12 px-space-md rounded-xl bg-surface-container-lowest text-on-surface font-semibold text-xs flex items-center justify-center gap-1 border cursor-not-allowed opacity-60" id="downloadPdfBtn" type="button" disabled aria-disabled="true">
-                            <span class="material-symbols-outlined text-lg text-gray-500">download</span>
-                            <span>Tải vé PDF — Sắp có</span>
-                        </button>
-                        <a class="h-12 px-space-md rounded-xl bg-surface-container-lowest text-on-surface font-semibold text-xs flex items-center justify-center gap-1 border cursor-not-allowed opacity-60" id="bookingDetailLink" aria-disabled="true">
+                        <a class="h-12 px-space-md rounded-xl bg-surface-container-lowest text-on-surface font-semibold text-xs flex items-center justify-center gap-1 border" id="bookingDetailLink">
                             <span class="material-symbols-outlined text-lg">receipt_long</span>
                             <span>Xem chi tiết đơn này</span>
                         </a>
@@ -266,10 +260,9 @@
     <script src="/shared/header.js"></script>
     <script src="/shared/stepper.js"></script>
     <script src="/booking/bookings-api.js"></script>
-    <script src="/assets/qr-code.js"></script>
     <script src="/shared/format.js"></script>
     <script src="/booking/ticket-data.js"></script>
     <script src="/shared/back-nav.js"></script>
-    <script src="/booking/ticket-page.js"></script>
+    <script src="/booking/booking-complete-page.js"></script>
 </body>
 </html>

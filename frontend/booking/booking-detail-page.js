@@ -262,7 +262,10 @@
   }
 
   function renderBooking(booking, facilityData) {
-    const presentation = state.getBookingPresentation(booking);
+    const presentation = state.getBookingPresentation(
+      booking,
+      `${window.location.pathname}${window.location.search}`
+    );
     if (!Array.isArray(booking.slots) || booking.slots.length === 0) {
       throw new TypeError('Đơn đặt sân không có khung giờ.');
     }

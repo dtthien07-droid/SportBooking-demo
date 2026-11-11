@@ -176,3 +176,10 @@ Sau khi test đạt, tạo commit riêng cho Module 6, ví dụ `feat(bookings):
 Phạm vi bổ sung đã được duyệt: API chỉ đọc `GET /api/v1/bookings/summary` trả số liệu theo user hiện tại, tổng thanh toán ròng và số đơn theo nhãn hiển thị; danh sách lịch sử hỗ trợ tìm theo mã/cơ sở và lọc môn. API danh sách/chi tiết trả thêm các trường chỉ đọc cần cho UI; mã đơn mới dùng định dạng `SPB-YYYYMMDD-xxxxxx` theo UTC+7, giữ nguyên mã hiện có. Frontend nối các thẻ/tabs, tìm kiếm debounce, bộ lọc môn và thông tin đặt/chi tiết sân. Không thay đổi luồng giữ chỗ, đặt sân hay thanh toán.
 
 Kiểm thử hoàn tất: frontend 67/67, backend trên `sportbooking_test` 43/43; syntax check đạt. Kiểm tra giao diện bằng trình duyệt: **Chờ người dùng xác nhận**.
+
+## Bổ sung: trang vé điện tử
+- Nguồn giao diện: `docs/02-design/mockups/ve-dien-tu.html`, chỉ tham chiếu thân thẻ vé.
+- Route `/ve-dien-tu.html?booking_id=...&from=...`; mã QR duy nhất được dựng cục bộ.
+- Nút quay lại dùng danh sách `from` hợp lệ và nhãn động; các nút xem vé mở route này.
+- Bỏ nhãn check-in/VIP Gold vì không phải dữ liệu nghiệp vụ; PDF vô hiệu hóa vì chưa triển khai.
+- Kiểm tra trình duyệt: **Chờ người dùng xác nhận**.

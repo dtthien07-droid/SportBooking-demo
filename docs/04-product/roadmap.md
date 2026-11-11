@@ -1,4 +1,5 @@
 # Roadmap — SportBooking
+- Vé điện tử (FR-07): trang vé QR dữ liệu thật, luồng quay lại an toàn; kiểm tra trình duyệt: **Chờ người dùng xác nhận**.
 
 Nguồn: [docs/01-plan/business-flow.md](../01-plan/business-flow.md). Cập nhật trạng thái sau mỗi tính năng xong.
 

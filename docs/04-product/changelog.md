@@ -1,3 +1,5 @@
+## 2026-11-11 — Vé điện tử
+- Thêm vé QR dữ liệu thật, điều hướng `buildTicketUrl` và trang hoàn tất không vẽ QR; kiểm tra trình duyệt: **Chờ người dùng xác nhận**.
 # 2026-11-09 — Module 7: Tóm tắt và lọc lịch sử đặt sân
 
 - Thêm API chỉ đọc `/api/v1/bookings/summary` với số liệu và tổng thanh toán ròng chỉ thuộc user hiện tại; danh sách hỗ trợ tìm kiếm và lọc môn.

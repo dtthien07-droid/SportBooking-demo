@@ -51,7 +51,7 @@
       href = `/thanh-toan.html?booking_id=${encodeURIComponent(bookingId)}`;
     } else if (booking.status === 'CONFIRMED') {
       action = 'view-ticket';
-      href = `/dat-san-thanh-cong.html?booking_id=${encodeURIComponent(bookingId)}`;
+      href = backNav.buildTicketUrl(bookingId, fromPath);
     } else {
       action = 'view-details';
       href = backNav.buildDetailUrl(bookingId, fromPath);

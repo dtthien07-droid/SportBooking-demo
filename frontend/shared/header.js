@@ -133,7 +133,8 @@
       '/thanh-toan.html',
       '/dat-san.html',
       '/lich-su-dat-san.html',
-      '/chi-tiet-don-dat-san.html'
+      '/chi-tiet-don-dat-san.html',
+      '/ve-dien-tu.html'
     ].includes(window.location.pathname) || pendingHoldRequestActive) return;
     pendingHoldRequestActive = true;
     try {
@@ -184,7 +185,11 @@
     }
     const history = element('a', 'sb-shared-header__link', 'Lịch sử đặt sân');
     history.href = '/lich-su-dat-san.html';
-    if (['/lich-su-dat-san.html', '/chi-tiet-don-dat-san.html'].includes(window.location.pathname)) {
+    if ([
+      '/lich-su-dat-san.html',
+      '/chi-tiet-don-dat-san.html',
+      '/ve-dien-tu.html'
+    ].includes(window.location.pathname)) {
       history.setAttribute('aria-current', 'page');
     }
     nav.append(history);

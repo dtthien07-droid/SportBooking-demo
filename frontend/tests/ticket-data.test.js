@@ -4,58 +4,64 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
-const vm = require('node:vm');
-const SportBookingFormat = require('../shared/format.js');
-const SportBookingBackNav = require('../shared/back-nav.js');
 const {
   buildTicketViewModel,
   decideTicketAction,
   formatMoney
 } = require('../booking/ticket-data.js');
+const {
+  buildTicketUrl,
+  backLabel,
+  resolveBackTarget
+} = require('../shared/back-nav.js');
 
-const frontendRoot = path.resolve(__dirname, '..');
-const pageSource = fs.readFileSync(
-  path.join(frontendRoot, 'booking', 'ticket-page.js'),
+const root = path.resolve(__dirname, '..');
+const pageHtml = fs.readFileSync(path.join(root, 've-dien-tu.html'), 'utf8');
+const completionHtml = fs.readFileSync(path.join(root, 'dat-san-thanh-cong.html'), 'utf8');
+const mockupHtml = fs.readFileSync(
+  path.resolve(root, '..', 'docs', '02-design', 'mockups', 've-dien-tu.html'),
   'utf8'
 );
-const qrSource = fs.readFileSync(path.join(frontendRoot, 'assets', 'qr-code.js'), 'utf8');
-const headerSource = fs.readFileSync(path.join(frontendRoot, 'shared', 'header.js'), 'utf8');
-const headerCss = fs.readFileSync(path.join(frontendRoot, 'shared', 'header.css'), 'utf8');
-const pageHtml = fs.readFileSync(path.join(frontendRoot, 'dat-san-thanh-cong.html'), 'utf8');
 
-const booking = {
-  booking_id: '42',
-  booking_code: 'SPB-0123456789ABCDEF0123456789ABCDEF',
-  status: 'CONFIRMED',
-  total_amount: '300000',
-  slots: [
-    {
-      facility_id: '8',
-      facility_name: 'Cơ sở thật',
-      court_name: 'Sân thật',
-      service_date: '2026-11-20',
-      starts_at: '17:00:00',
-      ends_at: '18:00:00'
-    },
-    {
-      facility_id: '8',
-      facility_name: 'Cơ sở thật',
-      court_name: 'Sân thật',
-      service_date: '2026-11-20',
-      starts_at: '18:00:00',
-      ends_at: '19:00:00'
-    }
-  ]
+function createBooking(overrides = {}) {
+  return {
+    booking_id: '42',
+    booking_code: 'SPB-20261120-ABCDE2',
+    status: 'CONFIRMED',
+    display_status_code: 'UPCOMING',
+    total_amount: '300000',
+    slots: [
+      {
+        facility_id: '8',
+        facility_name: 'Cơ sở thật',
+        court_name: 'Sân số 1',
+        sport_type: 'BADMINTON',
+        service_date: '2026-11-20',
+        starts_at: '17:00:00',
+        ends_at: '18:00:00'
+      },
+      {
+        facility_id: '8',
+        facility_name: 'Cơ sở thật',
+        court_name: 'Sân số 1',
+        sport_type: 'BADMINTON',
+        service_date: '2026-11-20',
+        starts_at: '18:00:00',
+        ends_at: '19:00:00'
+      }
+    ],
+    ...overrides
+  };
+}
+
+const userData = {
+  user: {
+    fullName: 'Người đặt thật',
+    phone: '0838123234',
+    email: 'user@example.test'
+  }
 };
-const payments = {
-  payment: {
-    status: 'PAID',
-    paid_amount: '150000',
-    amount_due: '150000'
-  },
-  attempts: [],
-  ticket: { qr_code: 'opaque-server-code' }
-};
+
 const facilityData = {
   facility: {
     name: 'Cơ sở thật',
@@ -65,242 +71,130 @@ const facilityData = {
   }
 };
 
-class FakeElement {
-  constructor(id = '') {
-    this.id = id;
-    this.hidden = false;
-    this.disabled = false;
-    this.textContent = '';
-    this.innerHTML = '';
-    this.href = '';
-    this.attributes = {};
-    this.listeners = new Map();
-    this.removedClasses = [];
-    this.classList = {
-      remove: (...names) => this.removedClasses.push(...names)
-    };
-  }
+test('builds the ticket from real booking fields and merges adjacent slots', () => {
+  const model = buildTicketViewModel(createBooking(), userData, facilityData);
 
-  addEventListener(type, handler) {
-    this.listeners.set(type, handler);
-  }
-
-  setAttribute(name, value) {
-    this.attributes[name] = value;
-  }
-
-  removeAttribute(name) {
-    delete this.attributes[name];
-  }
-}
-
-function createPageHarness({ bookingResult = booking, bookingError = null, search = '?booking_id=42' } = {}) {
-  const elements = new Map();
-  for (const match of pageHtml.matchAll(/\bid="([^"]+)"/g)) {
-    elements.set(match[1], new FakeElement(match[1]));
-  }
-  elements.get('ticketLoading').hidden = false;
-  elements.get('ticketError').hidden = true;
-  const main = new FakeElement('main');
-  main.hidden = true;
-  const stepperMount = new FakeElement('stepper');
-  const redirects = [];
-  const calls = [];
-  const window = {
-    location: {
-      search,
-      origin: 'https://sportbooking.test',
-      pathname: '/dat-san-thanh-cong.html',
-      hash: '',
-      replace(url) { redirects.push(url); }
-    },
-    SportBookingApi: {
-      async getBooking(id) {
-        calls.push(['booking', id]);
-        if (bookingError) throw bookingError;
-        return bookingResult;
-      },
-      async getPayments(id) {
-        calls.push(['payments', id]);
-        return payments;
-      },
-      async getFacility(id) {
-        calls.push(['facility', id]);
-        return facilityData;
-      },
-      async getCurrentUser() {
-        calls.push(['user']);
-        return { user: { fullName: 'Người đặt thật', phone: '0912345678', email: 'user@example.test' } };
-      }
-    },
-    SportBookingTicketData: {
-      buildTicketViewModel,
-      decideTicketAction,
-      formatMoney
-    },
-    SportBookingBackNav,
-    SportBookingStepper: { render(mount, step) { mount.step = step; } },
-    SportBookingFormat,
-    SportBookingQRCode: { toSvg(payload) { return `<svg>${payload}</svg>`; } }
-  };
-  const document = {
-    querySelector(selector) {
-      if (selector === 'main') return main;
-      if (selector === '[data-booking-stepper]') return stepperMount;
-      return null;
-    },
-    querySelectorAll() { return []; },
-    getElementById(id) { return elements.get(id) || null; },
-    createElementNS() { throw new Error('No icons expected in the test document.'); }
-  };
-  const context = vm.createContext({
-    window,
-    document,
-    navigator: { clipboard: { async writeText() {} } },
-    URL,
-    URLSearchParams,
-    Intl,
-    BigInt,
-    Date,
-    Error,
-    TypeError,
-    encodeURIComponent,
-    console
-  });
-  vm.runInContext(pageSource, context, { filename: 'ticket-page.js' });
-
-  async function waitForPage() {
-    for (let attempt = 0; attempt < 20; attempt += 1) {
-      if (main.hidden === false || elements.get('ticketError').hidden === false
-          || redirects.length > 0) return;
-      await new Promise((resolve) => setImmediate(resolve));
-    }
-    assert.fail('Ticket page did not leave its loading state.');
-  }
-
-  return { elements, main, stepperMount, redirects, calls, window, waitForPage };
-}
-
-test('builds a complete confirmed ticket from booking and payment API fields', () => {
-  const model = buildTicketViewModel(booking, payments, facilityData);
-
-  assert.equal(model.bookingCode, booking.booking_code);
+  assert.equal(model.bookingCode, 'SPB-20261120-ABCDE2');
   assert.equal(model.facilityName, 'Cơ sở thật');
-  assert.equal(model.courtName, 'Sân thật');
-  assert.equal(model.date.iso, '2026-11-20');
-  assert.deepEqual(model.slotLabels, ['17:00 - 18:00', '18:00 - 19:00']);
-  assert.equal(model.totalAmount, '300000');
-  assert.equal(model.paidAmount, '150000');
-  assert.equal(model.venueAmount, '150000');
+  assert.equal(model.address, '12 Phố Mẫu, Hà Nội');
+  assert.equal(model.courtName, 'Sân số 1');
+  assert.equal(model.sportName, 'Cầu lông');
+  assert.equal(model.date.label, '20/11/2026');
+  assert.equal(model.date.weekday, 'Thứ Sáu');
+  assert.equal(model.timeRange, '17:00 - 19:00');
+  assert.equal(model.durationMinutes, 120);
+  assert.equal(model.bookerName, 'Người đặt thật');
+  assert.equal(model.maskedPhone, '0838 *** 234');
+  assert.equal(model.statusLabel, 'Sắp tới');
   assert.equal(model.hotline, '02412345678');
-
-  const qr = JSON.parse(model.qrPayload);
-  assert.equal(qr.booking_code, booking.booking_code);
-  assert.equal(qr.facility, 'Cơ sở thật');
-  assert.equal(qr.court, 'Sân thật');
-  assert.equal(qr.date, '2026-11-20');
-  assert.deepEqual(qr.slots, ['17:00 - 18:00', '18:00 - 19:00']);
-  assert.equal(qr.paid_amount, '150000');
-  assert.equal(qr.amount_due_at_venue, '150000');
-  assert.equal(qr.hotline, '02412345678');
+  assert.equal(model.mapUrl, 'https://maps.google.com/?q=12');
+  assert.deepEqual(JSON.parse(model.qrPayload), {
+    booking_code: 'SPB-20261120-ABCDE2',
+    facility_name: 'Cơ sở thật',
+    address: '12 Phố Mẫu, Hà Nội'
+  });
 });
 
-test('draws the complete ticket payload in a local QR SVG', () => {
-  const model = buildTicketViewModel(booking, payments, facilityData);
-  const context = vm.createContext({ window: {}, TextEncoder });
-  vm.runInContext(qrSource, context, { filename: 'qr-code.js' });
-  const svg = context.window.SportBookingQRCode.toSvg(model.qrPayload);
+test('sums duration from slots and keeps separate ranges when slots are not adjacent', () => {
+  const booking = createBooking();
+  booking.slots = [
+    { ...booking.slots[0], starts_at: '19:00:00', ends_at: '19:30:00' },
+    { ...booking.slots[0], starts_at: '17:00:00', ends_at: '18:00:00' }
+  ];
+  const model = buildTicketViewModel(booking, userData, facilityData);
+  assert.equal(model.timeRange, '17:00 - 18:00, 19:00 - 19:30');
+  assert.equal(model.durationMinutes, 90);
+});
 
-  assert.match(svg, /viewBox="0 0 85 85"/);
-  assert.match(svg, /aria-label="QR vé đặt sân"/);
-  assert.throws(
-    () => context.window.SportBookingQRCode.toSvg('x'.repeat(521)),
-    /capacity/
+test('missing hotline and map URL do not prevent ticket construction', () => {
+  const model = buildTicketViewModel(createBooking(), userData, {
+    facility: { name: 'Cơ sở thật', address: 'Địa chỉ thật' }
+  });
+  assert.equal(model.hotline, '');
+  assert.equal(model.mapUrl, '');
+  assert.equal(model.address, 'Địa chỉ thật');
+  assert.equal(formatMoney('123456'), '123.456 đ');
+});
+
+test('builds a ticket URL with its source and resolves only allowed return targets', () => {
+  const url = buildTicketUrl('42', '/chi-tiet-don-dat-san.html?booking_id=42');
+  assert.equal(
+    url,
+    '/ve-dien-tu.html?booking_id=42&from=%2Fchi-tiet-don-dat-san.html%3Fbooking_id%3D42'
   );
+  assert.equal(
+    resolveBackTarget('?from=%2Fchi-tiet-don-dat-san.html%3Fbooking_id%3D42', '', 'https://sportbooking.test'),
+    '/chi-tiet-don-dat-san.html?booking_id=42'
+  );
+  assert.equal(
+    resolveBackTarget('?from=%2F%2Fevil.test', '', 'https://sportbooking.test'),
+    '/lich-su-dat-san.html'
+  );
+  assert.equal(backLabel('/lich-su-dat-san.html?page=2'), 'Quay lại lịch sử đặt sân');
+  assert.equal(backLabel('/dat-san-thanh-cong.html?booking_id=42'), 'Quay lại hoàn tất đặt lịch');
 });
 
-test('uses inline SVG icons and enables implemented booking links', () => {
-  assert.doesNotMatch(pageHtml, /Material\+Symbols/);
-  assert.match(headerSource, /createElementNS\('http:\/\/www\.w3\.org\/2000\/svg', 'svg'\)/);
-  assert.doesNotMatch(headerCss, /Material Symbols Outlined/);
-  assert.match(pageHtml, /href="\/lich-su-dat-san\.html"/);
-  assert.match(pageHtml, /id="bookingDetailLink"/);
-  assert.match(pageHtml, /Xem chi tiết đơn này/);
-  assert.match(pageHtml, /disabled aria-disabled="true"/);
-});
-
-test('routes 401 to login and treats 403/404 as missing bookings', () => {
+test('decides the correct action for all booking states', () => {
   assert.deepEqual(
-    decideTicketAction({ bookingId: '42', error: { status: 401 } }),
-    { action: 'login' }
+    decideTicketAction({ bookingId: '42', booking: { status: 'PENDING' } }),
+    { action: 'payment', bookingId: '42' }
   );
+  for (const displayStatus of ['UPCOMING', 'IN_PROGRESS', 'COMPLETED']) {
+    assert.deepEqual(
+      decideTicketAction({
+        bookingId: '42',
+        booking: { status: displayStatus === 'COMPLETED' ? 'COMPLETED' : 'CONFIRMED', display_status_code: displayStatus }
+      }),
+      { action: 'render' }
+    );
+  }
+  for (const status of ['CANCELLED', 'EXPIRED']) {
+    assert.deepEqual(
+      decideTicketAction({ bookingId: '42', booking: { status } }),
+      { action: 'inactive' }
+    );
+  }
   for (const status of [403, 404]) {
     assert.deepEqual(
       decideTicketAction({ bookingId: '42', error: { status } }),
       { action: 'not-found' }
     );
   }
+  assert.deepEqual(decideTicketAction({ bookingId: '42', error: { status: 401 } }), { action: 'login' });
 });
 
-test('redirects PENDING bookings to payment and rejects a missing booking ID', () => {
-  assert.deepEqual(
-    decideTicketAction({ bookingId: '42', booking: { status: 'PENDING' } }),
-    { action: 'payment', bookingId: '42' }
-  );
-  assert.deepEqual(
-    decideTicketAction({ booking: { status: 'CONFIRMED' } }),
-    { action: 'error', message: 'Thiếu mã đơn đặt sân.' }
-  );
-});
-
-test('renders all confirmed fields without a ReferenceError', async () => {
-  const page = createPageHarness();
-  await page.waitForPage();
-
-  assert.equal(page.main.hidden, false, page.elements.get('ticketErrorMessage').textContent);
-  assert.equal(page.elements.get('ticketError').hidden, true);
-  assert.equal(page.elements.get('bookingIdText').textContent, `#${booking.booking_code}`);
-  assert.equal(page.elements.get('ticketFacilityName').textContent, 'Cơ sở thật');
-  assert.equal(page.elements.get('ticketCourtName').textContent, 'Sân thật');
-  assert.equal(page.elements.get('ticketAddress').textContent, '12 Phố Mẫu, Hà Nội');
-  assert.equal(page.elements.get('displayMatchSlot').textContent, '17:00 - 18:00, 18:00 - 19:00');
-  assert.equal(page.elements.get('ticketPaidAmount').textContent, '150.000 đ');
-  assert.equal(page.elements.get('ticketVenueAmount').textContent, '150.000 đ');
-  assert.equal(
-    page.elements.get('bookingDetailLink').href,
-    '/chi-tiet-don-dat-san.html?booking_id=42&from=%2Fdat-san-thanh-cong.html%3Fbooking_id%3D42'
-  );
-  assert.equal(page.elements.get('bookingDetailLink').attributes['aria-disabled'], undefined);
-  assert.match(page.elements.get('bookingQr').innerHTML, /02412345678/);
-  assert.equal(page.elements.get('ticketMapLink').href, 'https://maps.google.com/?q=12');
-});
-
-test('shows recoverable error states for 403 and 404 responses', async () => {
-  for (const status of [403, 404]) {
-    const error = new Error('not found');
-    error.status = status;
-    const page = createPageHarness({ bookingError: error });
-    await page.waitForPage();
-    assert.equal(page.elements.get('ticketError').hidden, false);
-    assert.match(page.elements.get('ticketErrorMessage').textContent, /Không tìm thấy/i, `status ${status}`);
+test('uses the mockup ticket card classes without forbidden content or active PDF action', () => {
+  assert.ok(mockupHtml.length > 0);
+  for (const className of [
+    'relative w-full bg-white rounded-3xl border border-slate-200/90 shadow-xl overflow-hidden flex flex-col lg:flex-row',
+    'lg:w-[65%] p-6 sm:p-9 flex flex-col justify-between gap-6 relative',
+    'grid grid-cols-2 gap-3.5 sm:gap-4',
+    'lg:w-[35%] bg-slate-50/60 p-6 sm:p-9 flex flex-col items-center justify-center text-center gap-4'
+  ]) {
+    assert.ok(pageHtml.includes(className), `Missing mockup class group: ${className}`);
   }
-});
-
-test('redirects 401 and PENDING orders, and shows retry for a missing ID', async () => {
-  const unauthorized = new Error('unauthorized');
-  unauthorized.status = 401;
-  const loginPage = createPageHarness({ bookingError: unauthorized });
-  await loginPage.waitForPage();
-  assert.equal(loginPage.redirects[0], '/dang-nhap.html?returnTo=%2Fdat-san-thanh-cong.html%3Fbooking_id%3D42');
-
-  const pendingPage = createPageHarness({ bookingResult: { ...booking, status: 'PENDING' } });
-  await pendingPage.waitForPage();
-  assert.equal(pendingPage.redirects[0], '/thanh-toan.html?booking_id=42');
-
-  const missingPage = createPageHarness({ search: '' });
-  await missingPage.waitForPage();
-  assert.equal(missingPage.elements.get('ticketError').hidden, false);
-  assert.equal(missingPage.elements.get('ticketErrorMessage').textContent, 'Thiếu mã đơn đặt sân.');
-  assert.equal(missingPage.elements.get('ticketRetry').hidden, false);
-  assert.deepEqual(missingPage.calls, []);
+  assert.equal((pageHtml.match(/rounded-2xl bg-slate-50\/90 border border-slate-100 flex flex-col gap-1/g) || []).length, 4);
+  assert.match(pageHtml, /SportBooking Pass/);
+  assert.match(pageHtml, /Mã QR vé/);
+  assert.doesNotMatch(pageHtml, /check-in|VIP|Gold/i);
+  const buttons = [...pageHtml.matchAll(/<button\b[^>]*>[\s\S]*?<\/button>/gi)]
+    .map((match) => match[0]);
+  for (const label of ['In vé', 'Tải PDF', 'Chia sẻ']) {
+    const disabledButton = buttons.find((button) => button.includes(label));
+    assert.ok(disabledButton, `${label} button must exist.`);
+    assert.match(disabledButton, /\bdisabled\b/);
+    assert.match(disabledButton, /Sắp có/);
+  }
+  assert.doesNotMatch(pageHtml, /Material\+Symbols|material-symbols-outlined/i);
+  assert.doesNotMatch(pageHtml, /<img\b/i);
+  assert.doesNotMatch(completionHtml, /bookingQr|assets\/qr-code\.js|QRCode\.toSvg/);
+  assert.match(pageHtml, /src="\/assets\/qr-code\.js"/);
+  const completionScript = fs.readFileSync(
+    path.join(root, 'booking', 'booking-complete-page.js'),
+    'utf8'
+  );
+  assert.match(completionHtml, /id="openTicket"[^>]*>Xem vé điện tử/);
+  assert.match(completionScript, /SportBookingBackNav\.buildTicketUrl\(bookingId,/);
+  const detailHtml = fs.readFileSync(path.join(root, 'chi-tiet-don-dat-san.html'), 'utf8');
+  assert.doesNotMatch(detailHtml, /id="openTicket"[^>]*href="\/dat-san-thanh-cong\.html/);
 });

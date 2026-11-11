@@ -2,7 +2,12 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { buildDetailUrl, resolveBackTarget, backLabel } = require('../shared/back-nav.js');
+const {
+  buildDetailUrl,
+  buildTicketUrl,
+  resolveBackTarget,
+  backLabel
+} = require('../shared/back-nav.js');
 
 const origin = 'https://sportbooking.test';
 
@@ -13,10 +18,19 @@ test('buildDetailUrl encodes booking ID and source path', () => {
   );
 });
 
+test('buildTicketUrl encodes booking ID and source path', () => {
+  assert.equal(
+    buildTicketUrl('42', '/chi-tiet-don-dat-san.html?booking_id=42'),
+    '/ve-dien-tu.html?booking_id=42&from=%2Fchi-tiet-don-dat-san.html%3Fbooking_id%3D42'
+  );
+});
+
 test('resolves a valid from route', () => {
   for (const route of [
     '/lich-su-dat-san.html',
     '/dat-san-thanh-cong.html',
+    '/chi-tiet-don-dat-san.html',
+    '/ve-dien-tu.html',
     '/trangchu-user.html',
     '/thanh-toan.html',
     '/tim-san.html'
@@ -73,13 +87,17 @@ test('returns the correct label for every allowed destination', () => {
     [
       '/lich-su-dat-san.html',
       '/dat-san-thanh-cong.html?booking_id=42',
+      '/chi-tiet-don-dat-san.html?booking_id=42',
+      '/ve-dien-tu.html?booking_id=42',
       '/trangchu-user.html',
       '/thanh-toan.html?booking_id=42',
       '/tim-san.html'
     ].map(backLabel),
     [
       'Quay lại lịch sử đặt sân',
-      'Quay lại vé đặt sân',
+      'Quay lại hoàn tất đặt lịch',
+      'Quay lại chi tiết đơn',
+      'Quay lại vé điện tử',
       'Quay lại trang chủ',
       'Quay lại thanh toán',
       'Quay lại tìm sân'

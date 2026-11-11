@@ -5,14 +5,6 @@
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root) root.SportBookingTicketData = api;
 }(typeof window === 'undefined' ? null : window, () => {
-  function amount(value, label) {
-    const text = String(value);
-    if (!/^(0|[1-9]\d*)$/.test(text)) {
-      throw new TypeError(`${label} không hợp lệ.`);
-    }
-    return BigInt(text);
-  }
-
   function displayDate(value) {
     const dateText = String(value || '').slice(0, 10);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dateText)) {
@@ -43,9 +35,14 @@
     return `${match[1]}:${match[2]}`;
   }
 
-  function buildTicketViewModel(booking, payments, facilityData) {
-    if (!booking || booking.status !== 'CONFIRMED') {
-      throw new TypeError('Đơn đặt sân chưa được xác nhận.');
+  function timeInMinutes(value) {
+    const [hours, minutes] = displayTime(value).split(':').map(Number);
+    return hours * 60 + minutes;
+  }
+
+  function buildTicketViewModel(booking, userData, facilityData) {
+    if (!booking || !['CONFIRMED', 'COMPLETED'].includes(booking.status)) {
+      throw new TypeError('Đơn đặt sân không có vé hợp lệ.');
     }
     if (typeof booking.booking_code !== 'string' || !booking.booking_code.trim()) {
       throw new TypeError('Không tìm thấy mã đơn đặt sân.');
@@ -53,25 +50,25 @@
     if (!Array.isArray(booking.slots) || booking.slots.length === 0) {
       throw new TypeError('Đơn đặt sân không có khung giờ.');
     }
-    const payment = payments?.payment;
-    if (!payment || typeof payment !== 'object') {
-      throw new TypeError('Không tìm thấy thông tin thanh toán của đơn.');
-    }
-
-    const total = amount(booking.total_amount, 'Tổng tiền');
-    const paid = amount(payment.paid_amount, 'Số tiền đã thanh toán');
-    if (paid > total) throw new TypeError('Số tiền đã thanh toán vượt quá tổng tiền.');
 
     const slots = booking.slots.map((slot) => ({
       serviceDate: displayDate(slot.service_date),
       startsAt: displayTime(slot.starts_at),
       endsAt: displayTime(slot.ends_at),
-      courtName: String(slot.court_name || '').trim()
+      startMinutes: timeInMinutes(slot.starts_at),
+      endMinutes: timeInMinutes(slot.ends_at),
+      courtName: String(slot.court_name || '').trim(),
+      sportType: String(slot.sport_type || '').trim().toUpperCase()
     }));
     const facility = facilityData?.facility || facilityData || {};
     const facilityName = String(facility.name || booking.slots[0].facility_name || '').trim();
-    const courtNames = [...new Set(slots.map((slot) => slot.courtName).filter(Boolean))];
-    if (!facilityName || courtNames.length === 0) {
+    const courtName = slots[0].courtName;
+    const sportType = slots[0].sportType;
+    if (!facilityName || !courtName || !sportType
+        || slots.some((slot) => slot.courtName !== courtName
+          || slot.sportType !== sportType
+          || slot.serviceDate.iso !== slots[0].serviceDate.iso
+          || slot.endMinutes <= slot.startMinutes)) {
       throw new TypeError('Thiếu thông tin cơ sở hoặc sân của đơn.');
     }
 
@@ -79,32 +76,66 @@
     const hotline = String(facility.hotline || '').trim();
     const mapUrl = String(facility.map_url || '').trim();
     const date = slots[0].serviceDate;
-    const slotLabels = slots.map((slot) => `${slot.startsAt} - ${slot.endsAt}`);
-    const paidAmount = paid.toString();
-    const venueAmount = (total - paid).toString();
+    const sortedSlots = [...slots].sort((left, right) => left.startMinutes - right.startMinutes);
+    const ranges = [];
+    let durationMinutes = 0;
+    for (const slot of sortedSlots) {
+      durationMinutes += slot.endMinutes - slot.startMinutes;
+      const previous = ranges[ranges.length - 1];
+      if (previous && previous.endMinutes === slot.startMinutes) {
+        previous.endsAt = slot.endsAt;
+        previous.endMinutes = slot.endMinutes;
+      } else {
+        ranges.push({
+          startsAt: slot.startsAt,
+          endsAt: slot.endsAt,
+          endMinutes: slot.endMinutes
+        });
+      }
+    }
+    const timeRange = ranges.map((range) => `${range.startsAt} - ${range.endsAt}`).join(', ');
+    const sportLabels = {
+      BADMINTON: 'Cầu lông',
+      FOOTBALL_MINI: 'Bóng đá mini',
+      PICKLEBALL: 'Pickleball'
+    };
+    const sportName = sportLabels[sportType];
+    if (!sportName) throw new TypeError('Môn thể thao của đơn đặt sân không hợp lệ.');
+    const user = userData?.user || userData || {};
+    const phoneDigits = String(user.phone || '').replace(/\D/g, '');
+    const maskedPhone = phoneDigits.length >= 8
+      ? `${phoneDigits.slice(0, 4)} *** ${phoneDigits.slice(-3)}`
+      : '—';
+    const statusCode = booking.display_status_code
+      || (booking.status === 'COMPLETED' ? 'COMPLETED' : 'UPCOMING');
+    const statusLabels = {
+      UPCOMING: 'Sắp tới',
+      IN_PROGRESS: 'Đang trong trận',
+      COMPLETED: 'Hoàn thành'
+    };
+    if (!statusLabels[statusCode]) {
+      throw new TypeError('Trạng thái hiển thị của vé không hợp lệ.');
+    }
     const qrPayload = JSON.stringify({
       booking_code: booking.booking_code,
-      facility: facilityName,
-      court: courtNames.join(', '),
-      date: date.iso,
-      slots: slotLabels,
-      paid_amount: paidAmount,
-      amount_due_at_venue: venueAmount,
-      hotline
+      facility_name: facilityName,
+      address
     });
 
     return {
       bookingCode: booking.booking_code,
       facilityName,
-      courtName: courtNames.join(', '),
+      courtName,
+      sportName,
       address,
       hotline,
       mapUrl,
       date,
-      slotLabels,
-      totalAmount: total.toString(),
-      paidAmount,
-      venueAmount,
+      timeRange,
+      durationMinutes,
+      bookerName: String(user.fullName || user.full_name || user.name || '').trim() || '—',
+      maskedPhone,
+      statusLabel: statusLabels[statusCode],
       qrPayload
     };
   }
@@ -115,7 +146,12 @@
     if (error?.status === 403 || error?.status === 404) return { action: 'not-found' };
     if (error) return { action: 'error', message: error.message || 'Không thể tải vé đặt sân.' };
     if (booking?.status === 'PENDING') return { action: 'payment', bookingId };
-    if (booking?.status === 'CONFIRMED') return { action: 'render' };
+    if (booking?.status === 'CANCELLED' || booking?.status === 'EXPIRED'
+        || booking?.display_status_code === 'CANCELLED'
+        || booking?.display_status_code === 'EXPIRED') {
+      return { action: 'inactive' };
+    }
+    if (['CONFIRMED', 'COMPLETED'].includes(booking?.status)) return { action: 'render' };
     return { action: 'error', message: 'Đơn đặt sân chưa được xác nhận.' };
   }
 
