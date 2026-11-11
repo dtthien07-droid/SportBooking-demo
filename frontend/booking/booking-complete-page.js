@@ -47,6 +47,8 @@
     );
     const payment = booking.payment || {};
     const openTicket = document.getElementById('openTicket');
+    const ticketQrLink = document.getElementById('ticketQrLink');
+    const qrPanel = document.getElementById('bookingQrPanel');
     const bookingDetail = document.getElementById('bookingDetailLink');
     const fromPath = `${window.location.pathname}${window.location.search}`;
 
@@ -68,9 +70,18 @@
       booking.amount_due_at_venue || '0'
     ));
 
-    openTicket.href = window.SportBookingBackNav.buildTicketUrl(bookingId, fromPath);
+    const ticketUrl = window.SportBookingBackNav.buildTicketUrl(bookingId, fromPath);
+    openTicket.href = ticketUrl;
     openTicket.hidden = false;
     bookingDetail.href = window.SportBookingBackNav.buildDetailUrl(bookingId, fromPath);
+    if (booking.status === 'CONFIRMED') {
+      document.getElementById('bookingQr').innerHTML = window.SportBookingQRCode.toSvg(
+        model.qrPayload
+      );
+      ticketQrLink.href = ticketUrl;
+      ticketQrLink.hidden = false;
+      qrPanel.hidden = false;
+    }
     const mapLink = document.getElementById('ticketMapLink');
     mapLink.href = resolveMapUrl(model);
     mapLink.target = '_blank';

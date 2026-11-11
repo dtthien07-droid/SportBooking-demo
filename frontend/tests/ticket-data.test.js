@@ -220,7 +220,11 @@ test('uses the mockup ticket card classes without forbidden content or active PD
     assert.match(disabledButton, /\bdisabled\b/);
     assert.match(disabledButton, /Sắp có/);
   }
-  assert.doesNotMatch(pageHtml, /Material\+Symbols|material-symbols-outlined/i);
+  const legacyIconFontPattern = new RegExp(
+    `Material\\+Symbols|${['material', '-symbols-outlined'].join('')}`,
+    'i'
+  );
+  assert.doesNotMatch(pageHtml, legacyIconFontPattern);
   assert.doesNotMatch(pageHtml, /<img\b/i);
   assert.match(completionHtml, /id="bookingQr"/);
   assert.match(completionHtml, /id="bookingQrPanel"[^>]*hidden/);

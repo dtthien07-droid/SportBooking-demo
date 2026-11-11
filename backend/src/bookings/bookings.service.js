@@ -741,6 +741,8 @@ function createBookingsService(repository, {
         refund_amount: '0',
         paid_amount: String(booking.paid_amount || '0'),
         hours_until_start: Number(((startAt - currentTime.getTime()) / 3_600_000).toFixed(2)),
+        seconds_until_start: Math.max(0, Math.floor((startAt - currentTime.getTime()) / 1000)),
+        server_time: currentTime.toISOString(),
         message: REFUND_MESSAGES.unpaid
       };
     }

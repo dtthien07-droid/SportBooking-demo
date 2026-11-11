@@ -52,12 +52,18 @@ function getCancellationRefund({ firstSlot, paidAmount, now }) {
   const message = refundPercent === 100
     ? REFUND_MESSAGES.full
     : refundPercent === 50 ? REFUND_MESSAGES.half : REFUND_MESSAGES.none;
+  const secondsUntilStart = Math.max(
+    0,
+    Math.floor((slotStartTimestamp(firstSlot) - now.getTime()) / 1000)
+  );
 
   return {
     refund_percent: refundPercent,
     refund_amount: refundAmount.toString(),
     paid_amount: paid.toString(),
     hours_until_start: Number(hoursUntilStartExact.toFixed(2)),
+    seconds_until_start: secondsUntilStart,
+    server_time: now.toISOString(),
     message
   };
 }

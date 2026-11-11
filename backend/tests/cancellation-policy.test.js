@@ -47,5 +47,7 @@ test('partial refund rounds down to the nearest đồng', () => {
   assert.equal(result.refund_amount, '50000');
   assert.equal(result.paid_amount, '100001');
   assert.equal(result.hours_until_start, 10);
+  assert.equal(result.seconds_until_start, 10 * 60 * 60);
+  assert.equal(result.server_time, now.toISOString());
   assert.match(result.message, /hoàn 50%/);
 });

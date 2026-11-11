@@ -6,10 +6,9 @@
     <title>SportBooking - Tìm cụm sân thể thao tại Hà Nội</title>
 
     <!-- Font chữ & Icon -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
+
+
+
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -45,7 +44,8 @@
         @layer base { html, body { margin: 0; padding: 0; } body { overscroll-behavior: none; } }
         ::-webkit-scrollbar { display: none; }
     </style>
-<link rel="stylesheet" href="/shared/header.css"></head>
+<link rel="stylesheet" href="/shared/header.css">    <script src="/shared/icons.js"></script>
+</head>
 
 <body class="bg-surface font-['Be_Vietnam_Pro'] text-on-surface antialiased">
 
@@ -64,19 +64,19 @@
                 <!-- Tabs chọn môn nhanh -->
                 <div class="flex items-center gap-2 overflow-x-auto pb-1" id="quickSportTabs">
                     <button data-sport="all" class="sport-tab-btn px-4 py-2 rounded-xl text-sm font-bold bg-primary text-on-primary shadow-sm flex items-center gap-1.5 cursor-pointer" type="button">
-                        <span class="material-symbols-outlined text-[18px]">sports</span>
+                        <svg class="text-[18px]" data-sb-icon="sports"></svg>
                         <span>Tất cả môn</span>
                     </button>
                     <button data-sport="BADMINTON" class="sport-tab-btn px-4 py-2 rounded-xl text-sm font-medium bg-surface-container text-on-surface flex items-center gap-1.5 cursor-pointer" type="button">
-                        <span class="material-symbols-outlined text-[18px]">sports_tennis</span>
+                        <svg class="text-[18px]" data-sb-icon="sports"></svg>
                         <span>Cầu lông</span>
                     </button>
                     <button data-sport="FOOTBALL_MINI" class="sport-tab-btn px-4 py-2 rounded-xl text-sm font-medium bg-surface-container text-on-surface flex items-center gap-1.5 cursor-pointer" type="button">
-                        <span class="material-symbols-outlined text-[18px]">sports_soccer</span>
+                        <svg class="text-[18px]" data-sb-icon="sports_soccer"></svg>
                         <span>Bóng đá mini</span>
                     </button>
                     <button data-sport="PICKLEBALL" class="sport-tab-btn px-4 py-2 rounded-xl text-sm font-medium bg-surface-container text-on-surface flex items-center gap-1.5 cursor-pointer" type="button">
-                        <span class="material-symbols-outlined text-[18px]">sports_cricket</span>
+                        <svg class="text-[18px]" data-sb-icon="sports_cricket"></svg>
                         <span>Pickleball</span>
                     </button>
                 </div>
@@ -87,7 +87,7 @@
 
                     <!-- Tên sân / Địa chỉ -->
                     <div class="flex-1 flex items-center gap-2 bg-surface-container-low px-4 py-2.5 rounded-xl">
-                        <span class="material-symbols-outlined text-gray-500 text-[20px]">search</span>
+                        <svg class="text-gray-500 text-[20px]" data-sb-icon="search"></svg>
                         <div class="flex flex-col flex-1">
                             <label class="text-[11px] uppercase font-bold text-gray-500">Tên sân hoặc khu vực</label>
                             <input name="q" id="queryInput" class="bg-transparent text-sm text-on-surface focus:outline-none w-full" placeholder="Nhập tên sân, địa chỉ..." type="text">
@@ -96,7 +96,7 @@
 
                     <!-- Chọn Quận/Khu vực (Nạp động từ Database) -->
                     <div class="w-full lg:w-60 flex items-center gap-2 bg-surface-container-low px-4 py-2.5 rounded-xl">
-                        <span class="material-symbols-outlined text-primary text-[20px]">location_on</span>
+                        <svg class="text-primary text-[20px]" data-sb-icon="location_on"></svg>
                         <div class="flex flex-col flex-1">
                             <span class="text-[11px] uppercase font-bold text-gray-500">Quận / Khu vực</span>
                             <input name="district" id="paramDistrict" class="bg-transparent text-sm font-semibold text-on-surface focus:outline-none w-full" placeholder="Nhập quận/huyện" type="text">
@@ -105,7 +105,7 @@
 
                     <!-- Chọn Ngày -->
                     <div class="w-full lg:w-56 flex items-center gap-2 bg-surface-container-low px-4 py-2.5 rounded-xl">
-                        <span class="material-symbols-outlined text-secondary text-[20px]">calendar_today</span>
+                        <svg class="text-secondary text-[20px]" data-sb-icon="calendar_today"></svg>
                         <div class="flex flex-col flex-1">
                             <span class="text-[11px] uppercase font-bold text-gray-500">Ngày chơi</span>
                             <input type="date" name="date" id="paramDate" class="bg-transparent text-sm font-semibold text-on-surface focus:outline-none cursor-pointer w-full" disabled>
@@ -114,7 +114,7 @@
 
                     <!-- Chọn Khung giờ -->
                     <div class="w-full lg:w-60 flex items-center gap-2 bg-surface-container-low px-4 py-2.5 rounded-xl">
-                        <span class="material-symbols-outlined text-secondary text-[20px]">schedule</span>
+                        <svg class="text-secondary text-[20px]" data-sb-icon="schedule"></svg>
                         <div class="flex flex-col flex-1">
                             <span class="text-[11px] uppercase font-bold text-gray-500">Khung giờ</span>
                             <select name="time_slot" id="timeSlotSelect" class="bg-transparent text-sm font-semibold text-on-surface focus:outline-none cursor-pointer w-full" disabled>
@@ -128,7 +128,7 @@
                     </div>
 
                     <button type="submit" class="w-full lg:w-auto px-6 py-3 rounded-xl bg-secondary-container hover:bg-secondary text-white font-bold text-sm flex items-center justify-center gap-1 shadow-md transition-all cursor-pointer active:scale-95">
-                        <span class="material-symbols-outlined text-[20px]">search</span>
+                        <svg class="text-[20px]" data-sb-icon="search"></svg>
                         <span>Tìm kiếm</span>
                     </button>
                 </form>
@@ -223,7 +223,7 @@
                     <!-- Danh sách sân render động -->
                     <div id="venuesListContainer" class="flex flex-col gap-6">
                         <div class="col-span-full py-16 text-center text-on-surface-variant flex flex-col items-center justify-center gap-3">
-                            <span class="material-symbols-outlined text-4xl animate-spin text-primary">sync</span>
+                            <svg class="text-4xl animate-spin text-primary" data-sb-icon="sync"></svg>
                             <span class="font-medium text-base">Đang tải danh sách sân từ cơ sở dữ liệu...</span>
                         </div>
                     </div>

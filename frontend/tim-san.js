@@ -86,7 +86,7 @@
     );
     state.setAttribute('role', isError ? 'alert' : 'status');
     if (!isError) {
-      state.append(makeElement('span', 'material-symbols-outlined text-4xl', 'sync'));
+      state.append(window.SportBookingIcons.createIcon('sync', 'text-4xl'));
     }
     state.append(makeElement('span', 'font-medium text-base', message));
     if (retry) {
@@ -101,7 +101,7 @@
   function addDetailLine(parent, icon, text) {
     if (!text) return;
     const line = makeElement('p', 'text-sm text-on-surface-variant flex items-center gap-1 mt-1.5');
-    line.append(makeElement('span', 'material-symbols-outlined text-primary text-[16px] shrink-0', icon));
+    line.append(window.SportBookingIcons.createIcon(icon, 'text-primary text-[16px] shrink-0'));
     line.append(makeElement('span', 'truncate', text));
     parent.append(line);
   }
@@ -131,7 +131,7 @@
       image.alt = facility.name || '';
       imageWrap.append(image);
     } else {
-      imageWrap.append(makeElement('span', 'material-symbols-outlined text-4xl text-primary', 'stadium'));
+      imageWrap.append(window.SportBookingIcons.createIcon('stadium', 'text-4xl text-primary'));
     }
     const sportBadge = makeElement('span', 'absolute bottom-2.5 left-2.5 px-2.5 py-0.5 rounded-full bg-primary text-on-primary text-xs font-bold shadow-sm', facility.sport_name || '');
     imageWrap.append(sportBadge);

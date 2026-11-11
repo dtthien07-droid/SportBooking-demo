@@ -40,6 +40,7 @@
     upcomingCount: document.getElementById('stat-upcoming-count'),
     completedCount: document.getElementById('stat-completed-count'),
     totalSpent: document.getElementById('stat-total-spent'),
+    cancelResult: null,
     counts: {
       all: document.getElementById('count-all'),
       upcoming: document.getElementById('count-upcoming'),
@@ -64,6 +65,80 @@
     requestSequence: 0,
     loading: false
   };
+
+  function initializeCancelResultToast() {
+    const toast = document.createElement('div');
+    toast.id = 'cancel-result-message';
+    toast.className = 'cancel-result-toast';
+    toast.hidden = true;
+    toast.setAttribute('role', 'status');
+    const message = document.createElement('span');
+    message.dataset.cancelResultMessage = '';
+    const close = document.createElement('button');
+    close.className = 'cancel-result-toast-close';
+    close.type = 'button';
+    close.textContent = 'Đóng';
+    close.setAttribute('aria-label', 'Đóng thông báo hủy');
+    close.addEventListener('click', () => {
+      window.clearTimeout(cancelResultTimer);
+      toast.hidden = true;
+    });
+    toast.append(message, close);
+    document.getElementById('cancel-result-message').replaceWith(toast);
+    return toast;
+  }
+
+  let cancelResultTimer = null;
+  elements.cancelResult = initializeCancelResultToast();
+
+  function showCancelResult(message) {
+    elements.cancelResult.querySelector('[data-cancel-result-message]').textContent = message;
+    elements.cancelResult.hidden = false;
+    window.clearTimeout(cancelResultTimer);
+    cancelResultTimer = window.setTimeout(() => {
+      elements.cancelResult.hidden = true;
+    }, 6000);
+  }
+
+  window.SportBookingCancellationDialog.initialize({
+    onCancelled: async (result, message, context) => {
+      if (!result) {
+        if (message) showCancelResult(message);
+        return;
+      }
+      const bookingId = String(context?.bookingId || result.booking_id || '');
+      const oldCard = [...elements.list.children]
+        .find((card) => card.dataset.bookingId === bookingId);
+      try {
+        const [bookingDetail, summary] = await Promise.all([
+          window.SportBookingApi.getBooking(bookingId),
+          window.SportBookingApi.getBookingSummary()
+        ]);
+        if (!bookingDetail || !summary) {
+          throw new TypeError('Máy chủ không trả đủ dữ liệu để cập nhật đơn đã hủy.');
+        }
+        const refreshedBooking = {
+          ...bookingDetail,
+          paid_amount: bookingDetail.payment?.paid_amount ?? null,
+          refunded_amount: bookingDetail.payment?.refunded_amount ?? null
+        };
+        const facilityData = await getFacility(refreshedBooking.slots?.[0]?.facility_id);
+        const replacement = createBookingCard(refreshedBooking, facilityData);
+        if (oldCard) oldCard.replaceWith(replacement);
+        else await loadBookings();
+        renderSummary(summary);
+      } catch (error) {
+        elements.errorMessage.textContent =
+          `Đơn đã hủy nhưng không thể cập nhật lịch sử: ${error.message || 'Vui lòng thử lại.'}`;
+        elements.error.hidden = false;
+      }
+      showCancelResult(state.getCancellationSuccessMessage(
+        context?.bookingCode,
+        result.refunded_amount,
+        context?.bookingStatus
+      ));
+    }
+  });
 
   function formatMoney(value) {
     if (value === null || value === undefined || value === '') return '--';
@@ -95,17 +170,49 @@
 
   function sportPresentation(value) {
     const sport = String(value || '').toUpperCase();
-    if (sport === 'FOOTBALL_MINI') return { label: 'Bóng đá mini', icon: 'sports_soccer', color: 'text-primary' };
-    if (sport === 'BADMINTON') return { label: 'Cầu lông', icon: 'sports_tennis', color: 'text-secondary' };
-    if (sport === 'PICKLEBALL') return { label: 'Pickleball', icon: 'sports_tennis', color: 'text-tertiary' };
-    return { label: '--', icon: 'sports', color: 'text-on-surface-variant' };
+    if (sport === 'FOOTBALL_MINI') {
+      return {
+        label: 'Bóng đá mini',
+        icon: 'sports_soccer',
+        color: 'text-primary',
+        fallbackColor: '#006b2c',
+        defaultImage: '/assets/images/court-default-football-mini.svg'
+      };
+    }
+    if (sport === 'BADMINTON') {
+      return {
+        label: 'Cầu lông',
+        icon: 'sports',
+        color: 'text-secondary',
+        fallbackColor: '#9d4300',
+        defaultImage: '/assets/images/court-default-badminton.svg'
+      };
+    }
+    if (sport === 'PICKLEBALL') {
+      return {
+        label: 'Pickleball',
+        icon: 'sports',
+        color: 'text-tertiary',
+        fallbackColor: '#0051d5',
+        defaultImage: '/assets/images/court-default-pickleball.svg'
+      };
+    }
+    return {
+      label: '--',
+      icon: 'sports',
+      color: 'text-on-surface-variant',
+      fallbackColor: '#e9edff',
+      defaultImage: '/assets/images/court-default-football-mini.svg'
+    };
   }
 
   function statusClasses(code) {
     if (code === 'PENDING') return 'bg-orange-100 text-secondary';
-    if (code === 'EXPIRED' || code === 'CANCELLED') return 'bg-gray-100 text-on-surface-variant';
-    if (code === 'COMPLETED') return 'bg-blue-100 text-tertiary';
-    if (code === 'UPCOMING' || code === 'IN_PROGRESS') return 'bg-emerald-100 text-primary';
+    if (code === 'EXPIRED') return 'bg-gray-100 text-gray-400';
+    if (code === 'CANCELLED') return 'bg-red-50 text-red-600';
+    if (code === 'COMPLETED') return 'bg-blue-50 text-tertiary';
+    if (code === 'UPCOMING') return 'bg-primary/10 text-primary';
+    if (code === 'IN_PROGRESS') return 'bg-emerald-100 text-emerald-800 animate-pulse border border-emerald-200';
     throw new TypeError('Trạng thái hiển thị của đơn đặt sân không hợp lệ.');
   }
 
@@ -179,7 +286,7 @@
   }
 
   function countdownText(node, remaining) {
-    node.textContent = `Còn lại ${state.formatCountdown(remaining)} để thanh toán`;
+    node.title = `${node.dataset.statusLabel} · Còn lại ${state.formatCountdown(remaining)} để thanh toán`;
   }
 
   function createBookingCard(booking, facilityData) {
@@ -192,64 +299,145 @@
     const card = elements.template.content.firstElementChild.cloneNode(true);
     const detailUrl = window.SportBookingBackNav.buildDetailUrl(booking.booking_id, fromPath);
     const sport = sportPresentation(firstSlot.sport_type);
+    const imageFrame = card.querySelector('[data-detail-image-link]');
     const image = card.querySelector('[data-booking-image]');
+    const facilityHeading = card.querySelector('[data-facility-name]');
+    const timeIcon = card.querySelector('[data-time-icon]');
     const status = card.querySelector('[data-status-badge]');
+    const statusIcon = card.querySelector('[data-status-icon]');
     const primaryAction = card.querySelector('[data-primary-action]');
-    const soonAction = card.querySelector('[data-soon-action]');
+    const primaryActionIcon = card.querySelector('[data-primary-action-icon]');
+    const detailActionIcon = card.querySelector('[data-detail-action-icon]');
+    const facilityAddressIcon = card.querySelector('[data-facility-address-icon]');
     const facility = facilityData?.facility;
+    const facilityName = facility?.name || firstSlot.facility_name || '--';
+    const courtName = firstSlot.court_name || '--';
+    const showCourtName = courtName !== '--'
+      && courtName.trim().toLowerCase() !== facilityName.trim().toLowerCase();
 
     card.dataset.status = booking.display_status_code;
+    card.dataset.bookingId = String(booking.booking_id);
+    card.dataset.category = firstSlot.sport_type || '';
     card.querySelector('[data-booking-code]').textContent = booking.booking_code || '--';
-    card.querySelector('[data-court-name]').textContent = firstSlot.court_name || '--';
-    card.querySelector('[data-facility-name]').textContent = facility?.name || firstSlot.facility_name || '--';
-    card.querySelector('[data-facility-address]').textContent = facility?.address || '--';
-    card.querySelector('[data-date]').textContent = booking.slots
+    card.querySelector('[data-court-name]').textContent = courtName;
+    card.querySelector('[data-court-name]').hidden = !showCourtName;
+    card.querySelector('[data-court-separator]').hidden = !showCourtName;
+    card.querySelector('[data-facility-name]').textContent = facilityName;
+    image.alt = facilityName;
+    const facilityAddress = card.querySelector('[data-facility-address]');
+    facilityAddress.textContent = facility?.address || '--';
+    facilityAddress.title = facility?.address || '';
+    const formattedDate = booking.slots
       .map((slot) => formatDate(slot.service_date))
       .filter((date, index, dates) => dates.indexOf(date) === index)
       .join(' – ');
+    card.querySelector('[data-date]').textContent = formattedDate;
     card.querySelector('[data-time-range]').textContent = booking.slots
       .map((slot) => `${formatTime(slot.starts_at)} – ${formatTime(slot.ends_at)}`)
       .join(', ');
-    card.querySelector('[data-paid-amount]').textContent = formatMoney(booking.paid_amount);
-    card.querySelector('[data-sport-icon]').textContent = sport.icon;
+    const amount = card.querySelector('[data-paid-amount]');
+    amount.textContent = formatMoney(booking.paid_amount);
+    window.SportBookingIcons.setIcon(card.querySelector('[data-sport-icon]'), sport.icon);
     card.querySelector('[data-sport-icon]').classList.add(sport.color);
+    window.SportBookingIcons.setIcon(timeIcon, 'schedule');
+    window.SportBookingIcons.setIcon(facilityAddressIcon, 'location_on');
     card.querySelector('[data-sport-label]').textContent = sport.label;
 
-    status.textContent = presentation.label;
-    status.classList.add(...statusClasses(booking.display_status_code).split(' '));
-    for (const link of card.querySelectorAll('[data-detail-link], [data-detail-image-link]')) {
-      link.href = detailUrl;
-    }
-    if (facility?.image_url) {
-      image.src = facility.image_url;
-      image.alt = facility.name || firstSlot.facility_name || 'Sân thể thao';
-    } else {
-      image.remove();
+    imageFrame.style.backgroundColor = sport.fallbackColor;
+    imageFrame.classList.toggle('grayscale', booking.display_status_code === 'CANCELLED');
+    card.classList.toggle('opacity-80', booking.display_status_code === 'CANCELLED');
+    facilityHeading.classList.toggle('text-gray-500', booking.display_status_code === 'CANCELLED');
+    facilityHeading.classList.toggle('line-through', booking.display_status_code === 'CANCELLED');
+    facilityHeading.classList.toggle('hover:text-primary', booking.display_status_code !== 'CANCELLED');
+    if (booking.display_status_code === 'CANCELLED') {
+      facilityHeading.classList.remove('text-on-surface');
     }
 
-    const disabledAction = card.querySelector('[data-disabled-action]');
+    const courtNameElement = card.querySelector('[data-court-name]');
+    courtNameElement.classList.remove('text-primary', 'text-secondary', 'text-gray-600');
+    courtNameElement.classList.add(
+      booking.display_status_code === 'UPCOMING' || booking.display_status_code === 'IN_PROGRESS'
+        ? 'text-primary'
+        : (booking.display_status_code === 'PENDING' ? 'text-secondary' : 'text-gray-600')
+    );
+    timeIcon.classList.remove('text-primary', 'text-secondary', 'text-gray-400');
+    timeIcon.classList.add(
+      booking.display_status_code === 'UPCOMING' || booking.display_status_code === 'IN_PROGRESS'
+        ? 'text-primary'
+        : (booking.display_status_code === 'PENDING' ? 'text-secondary' : 'text-gray-400')
+    );
+    const statusLabel = status.querySelector('[data-status-label]');
+    statusLabel.textContent = presentation.label;
+    status.dataset.statusLabel = presentation.label;
+    status.classList.add(...statusClasses(booking.display_status_code).split(' '));
+    const statusIcons = {
+      PENDING: ['timer', 'text-secondary'],
+      EXPIRED: ['timer', 'text-gray-400'],
+      UPCOMING: ['check', 'text-primary'],
+      IN_PROGRESS: ['timer', 'text-emerald-800'],
+      COMPLETED: ['check_circle', 'text-tertiary'],
+      CANCELLED: ['cancel', 'text-red-600']
+    };
+    const [statusIconName, statusIconColor] = statusIcons[booking.display_status_code];
+    statusIcon.classList.add(statusIconColor);
+    window.SportBookingIcons.setIcon(statusIcon, statusIconName);
+    const detailAction = card.querySelector('[data-detail-link]');
+    window.SportBookingIcons.setIcon(detailActionIcon, 'arrow_forward');
+    detailAction.addEventListener('click', () => window.location.assign(detailUrl));
+    imageFrame.addEventListener('click', () => window.location.assign(detailUrl));
+    imageFrame.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        window.location.assign(detailUrl);
+      }
+    });
+    facilityHeading.addEventListener('click', () => window.location.assign(detailUrl));
+    let usingFacilityImage = Boolean(facility?.image_url);
+    image.onerror = () => {
+      if (usingFacilityImage) {
+        usingFacilityImage = false;
+        image.src = sport.defaultImage;
+      } else {
+        image.hidden = true;
+      }
+    };
+    image.src = facility?.image_url || sport.defaultImage;
+
     const actionLabels = {
       'continue-payment': ['Tiếp tục thanh toán', presentation.href],
       'view-ticket': ['Xem vé', presentation.href]
     };
     if (actionLabels[presentation.action]) {
       const [label, href] = actionLabels[presentation.action];
-      primaryAction.href = href;
-      primaryAction.textContent = label;
+      primaryAction.addEventListener('click', () => window.location.assign(href));
+      primaryAction.querySelector('[data-primary-action-label]').textContent = label;
+      window.SportBookingIcons.setIcon(primaryActionIcon, 'arrow_forward');
       primaryAction.hidden = false;
-      disabledAction.hidden = true;
     } else {
-      const label = booking.display_status_code === 'COMPLETED' ? 'Đánh giá' : 'Đặt lại';
-      soonAction.textContent = `${label} · Sắp có`;
-      soonAction.hidden = false;
-      soonAction.title = 'Sắp có';
+      primaryAction.hidden = true;
+    }
+    const refundedAmount = booking.refunded_amount;
+    const hasRefund = refundedAmount !== null && refundedAmount !== undefined
+      && /^(?:[1-9]\d*)$/.test(String(refundedAmount));
+    if (booking.display_status_code === 'CANCELLED') {
+      if (hasRefund) {
+        card.querySelector('[data-paid-label]').textContent = 'Đã hoàn:';
+        amount.textContent = formatMoney(refundedAmount);
+      }
+      amount.classList.remove('text-primary');
+      amount.classList.add(...(hasRefund ? ['text-gray-500'] : ['text-gray-400', 'line-through']));
+    } else if (booking.display_status_code === 'COMPLETED') {
+      amount.classList.remove('text-primary');
+      amount.classList.add('text-on-surface');
+    } else if (booking.display_status_code === 'PENDING') {
+      amount.classList.remove('text-primary');
+      amount.classList.add('text-secondary');
     }
 
     const countdown = card.querySelector('[data-countdown]');
     if (presentation.remainingSeconds !== null) {
-      countdown.hidden = false;
-      countdownText(countdown, presentation.remainingSeconds);
-      current.countdowns.set(countdown, {
+      countdownText(status, presentation.remainingSeconds);
+      current.countdowns.set(status, {
         remaining: presentation.remainingSeconds,
         updatedAt: Date.now()
       });

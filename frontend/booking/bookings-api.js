@@ -81,7 +81,10 @@
 
   function getCourtSlots(courtId, date) {
     const query = new URLSearchParams({ date });
-    return requestJson(`/api/v1/courts/${encodeURIComponent(courtId)}/time-slots?${query}`);
+    return requestJson(
+      `/api/v1/courts/${encodeURIComponent(courtId)}/time-slots?${query}`,
+      { cache: 'no-store' }
+    );
   }
 
   function createBooking(slotIds, paymentOption, matchPreference) {
@@ -93,11 +96,24 @@
     });
   }
 
-  function cancelBooking(bookingId) {
+  function cancelBooking(bookingId, cancellationReason, preview) {
+    const body = {};
+    if (cancellationReason) body.cancellation_reason = cancellationReason;
+    if (preview) {
+      body.expected_refund_amount = preview.refund_amount;
+      body.expected_refund_percent = preview.refund_percent;
+    }
     return requestJson(`/api/v1/bookings/${encodeURIComponent(bookingId)}/cancel`, {
       method: 'POST',
-      body: JSON.stringify({})
+      body: JSON.stringify(body)
     });
+  }
+
+  function getRefundPreview(bookingId) {
+    return requestJson(
+      `/api/v1/bookings/${encodeURIComponent(bookingId)}/refund-preview`,
+      { cache: 'no-store' }
+    );
   }
 
   function getBooking(bookingId) {
@@ -141,6 +157,7 @@
     createBooking,
     getBooking,
     getBookingSummary,
+    getRefundPreview,
     getPendingBooking,
     listBookings,
     getCourtSlots,

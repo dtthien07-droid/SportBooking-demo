@@ -1,3 +1,16 @@
+## 2026-11-12 — Sửa cập nhật thẻ sau khi hủy
+- Sau POST hủy, lấy lại chi tiết đơn từ server, dựng lại và thay riêng thẻ bằng renderer lịch sử hiện có; tải summary mới cho ba số liệu và số đếm các tab.
+- Bỏ lời nhắn khỏi nội dung thẻ; thông báo hủy hiển thị trong banner `role="status"` độc lập, có nút đóng và tự ẩn sau 6 giây. Thẻ đã hủy chỉ hiển thị chi tiết và số tiền hoàn nếu có.
+- Kiểm tra trình duyệt: **Chờ người dùng xác nhận**.
+
+## 2026-11-11 — Cập nhật giao diện lịch sử và hủy đơn
+- Chẩn đoán slot: transaction đã giải phóng đủ trạng thái, API lịch lấy trạng thái từ `time_slots`; GET lịch chưa bỏ qua cache và frontend chưa đặt `cache: no-store`. Đã thêm bypass cache phía frontend; test HTTP create → thanh toán SUCCESS → hủy → GET slot AVAILABLE → đặt lại thành công.
+- Chuyển 7 icon ligature trên thẻ đơn sang SVG nội tuyến; bổ sung nút Hủy nhanh dùng popup chung, chỉ hiện với đơn server cho phép hủy và tự xuống dòng trên màn hẹp.
+- Popup hủy dùng `seconds_until_start`/`server_time` từ preview; đồng hồ lệch giờ máy theo server, tiến trình 3 mức, cập nhật preview qua mốc, khóa xác nhận khi trận bắt đầu. Nhãn tiền hoàn, hotline và thời lượng được điều chỉnh theo dữ liệu.
+- Frontend tests: 99/99; `node --check`: đạt; `npm test` với `APP_ENV=test`, `DB_NAME=sportbooking_test`: 52/52 hai lượt. Kiểm tra bằng trình duyệt: **Chờ người dùng xác nhận**.
+
+## 2026-11-11 — Lịch sử đặt sân: sửa bố cục thẻ, khóa ảnh và giới hạn địa chỉ; frontend 93/93, backend 52/52, node --check đạt. Trình duyệt: **Chờ người dùng xác nhận**.
+
 ## 2026-11-12 — SVG và nội dung QR vé
 - Thay icon ligature bằng SVG nội tuyến; trang hoàn tất hiển thị QR vé duy nhất cho đơn `CONFIRMED`, cùng payload văn bản với trang vé điện tử.
 - Điều chỉnh hàng nút trang hoàn tất và bỏ nút quay lại đầu trang vé; kiểm tra trình duyệt: **Chờ người dùng xác nhận**.

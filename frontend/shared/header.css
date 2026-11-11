@@ -1,3 +1,14 @@
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap');
+
+html body,
+html body[class] {
+  font-family: 'Be Vietnam Pro', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
+.sb-numeric {
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
 .sb-shared-header {
   position: fixed;
   inset: 0 0 auto;
@@ -9,7 +20,6 @@
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   color: #141b2b;
-  font-family: "Be Vietnam Pro", Arial, sans-serif;
 }
 
 .sb-shared-header *,
@@ -116,10 +126,9 @@
   background: #fff2e9;
   color: #51220b;
   box-shadow: 0 3px 10px rgb(20 27 43 / 8%);
-  font-family: "Be Vietnam Pro", Arial, sans-serif;
 }
 .sb-pending-hold__summary { margin: 0; font-size: 12px; font-weight: 600; text-align: center; }
-.sb-pending-hold__countdown { color: #9d4300; font-family: ui-monospace, monospace; font-weight: 800; }
+.sb-pending-hold__countdown { color: #9d4300; font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; font-weight: 800; }
 .sb-pending-hold__actions { display: flex; align-items: center; gap: 8px; }
 .sb-pending-hold__continue,
 .sb-pending-hold__cancel {

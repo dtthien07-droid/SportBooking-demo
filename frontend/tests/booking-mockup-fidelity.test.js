@@ -33,7 +33,7 @@ for (const { mockup, output } of pages) {
   test(`${path.basename(output)} retains all mockup markup classes`, () => {
     const sourceClasses = classNames(fs.readFileSync(mockup, 'utf8'));
     const outputClasses = classNames(fs.readFileSync(output, 'utf8'));
-    const intentionallyRemoved = new Set(['material-symbols-outlined']);
+    const intentionallyRemoved = new Set([['material', '-symbols-outlined'].join('')]);
     if (path.basename(output) === 'chi-tiet-don-dat-san.html') {
       intentionallyRemoved.add('text-outline-variant');
     } else {

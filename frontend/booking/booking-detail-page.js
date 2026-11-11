@@ -46,11 +46,21 @@
     continuePayment: document.getElementById('continuePayment'),
     openTicket: document.getElementById('openTicket'),
     matchmakingSub: document.getElementById('matchmakingSub'),
-    matchSoon: document.getElementById('matchSoon')
+    matchSoon: document.getElementById('matchSoon'),
+    cancelAction: document.getElementById('btnOpenCancelFlow'),
+    cancelResult: document.getElementById('cancel-result-message')
   };
   let countdownTimer = null;
   let pollTimer = null;
   let loadingRequest = false;
+  let refreshAfterCurrentRequest = false;
+  const cancellationDialog = window.SportBookingCancellationDialog.initialize({
+    onCancelled: async (_result, message) => {
+      elements.cancelResult.textContent = message;
+      elements.cancelResult.hidden = !message;
+      await loadBooking({ quiet: true, forceRefresh: true });
+    }
+  });
   const backTarget = window.SportBookingBackNav.resolveBackTarget(
     window.location.search,
     document.referrer,
@@ -106,8 +116,8 @@
   function sportPresentation(value) {
     const sport = String(value || '').toUpperCase();
     if (sport === 'FOOTBALL_MINI') return { label: 'Bóng đá mini', icon: 'sports_soccer' };
-    if (sport === 'BADMINTON') return { label: 'Cầu lông', icon: 'sports_tennis' };
-    if (sport === 'PICKLEBALL') return { label: 'Pickleball', icon: 'sports_tennis' };
+    if (sport === 'BADMINTON') return { label: 'Cầu lông', icon: 'sports' };
+    if (sport === 'PICKLEBALL') return { label: 'Pickleball', icon: 'sports' };
     return { label: '--', icon: 'sports' };
   }
 
@@ -157,7 +167,7 @@
     ).join(', '));
 
     setText(elements.sportText, sport.label);
-    elements.sportIcon.textContent = sport.icon;
+    window.SportBookingIcons.setIcon(elements.sportIcon, sport.icon);
     const imagePresentation = window.SportBookingDetailState.getVenueImagePresentation(
       facility?.image_url,
       firstSlot.sport_type
@@ -170,7 +180,7 @@
     } else {
       elements.facilityImage.removeAttribute('src');
       elements.facilityImage.hidden = true;
-      elements.facilityImageFallbackIcon.textContent = imagePresentation.icon;
+      window.SportBookingIcons.setIcon(elements.facilityImageFallbackIcon, imagePresentation.icon);
       elements.facilityImageFallback.hidden = false;
     }
 
@@ -273,15 +283,23 @@
     setText(elements.heading, `Đơn đặt sân ${booking.booking_code}`);
     elements.statusBadge.className = `inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold shadow-sm ${statusClass(booking.display_status_code)}`;
     setText(elements.statusText, presentation.label);
-    elements.statusIcon.textContent = booking.display_status_code === 'PENDING'
+    window.SportBookingIcons.setIcon(elements.statusIcon, booking.display_status_code === 'PENDING'
       ? 'timer'
       : booking.display_status_code === 'CANCELLED' || booking.display_status_code === 'EXPIRED'
         ? 'event_busy'
-        : booking.display_status_code === 'COMPLETED' ? 'check_circle' : 'verified';
+        : booking.display_status_code === 'COMPLETED' ? 'check_circle' : 'verified');
     setText(elements.orderTime, window.SportBookingFormat.formatVietnamDateTime(booking.created_at));
     renderFacility(booking, facilityData?.facility);
     renderPayment(booking);
     renderTicketAndActions(booking, presentation);
+    elements.cancelAction.hidden = !state.canCancelBooking(booking);
+    if (!elements.cancelAction.hidden) {
+      elements.cancelAction.disabled = false;
+      elements.cancelAction.classList.remove('cursor-not-allowed', 'opacity-60');
+      elements.cancelAction.classList.add('cursor-pointer');
+    } else {
+      elements.cancelAction.disabled = true;
+    }
     elements.loading.hidden = true;
     elements.error.hidden = true;
     elements.content.hidden = false;
@@ -304,8 +322,11 @@
     elements.error.hidden = false;
   }
 
-  async function loadBooking({ quiet = false } = {}) {
-    if (loadingRequest) return;
+  async function loadBooking({ quiet = false, forceRefresh = false } = {}) {
+    if (loadingRequest) {
+      if (forceRefresh) refreshAfterCurrentRequest = true;
+      return;
+    }
     loadingRequest = true;
     if (!quiet) {
       elements.loading.hidden = false;
@@ -336,9 +357,14 @@
       showError(error);
     } finally {
       loadingRequest = false;
+      if (refreshAfterCurrentRequest) {
+        refreshAfterCurrentRequest = false;
+        await loadBooking({ quiet: true });
+      }
     }
   }
 
   elements.retry.addEventListener('click', () => loadBooking());
+  elements.cancelAction.addEventListener('click', () => cancellationDialog.open(bookingId));
   loadBooking();
 })();

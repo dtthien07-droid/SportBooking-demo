@@ -105,7 +105,7 @@
       image.alt = facility.name || '';
       imageWrap.append(image);
     } else {
-      imageWrap.append(makeElement('span', 'material-symbols-outlined text-4xl text-primary', 'stadium'));
+      imageWrap.append(window.SportBookingIcons.createIcon('stadium', 'text-4xl text-primary'));
     }
     card.append(imageWrap);
 

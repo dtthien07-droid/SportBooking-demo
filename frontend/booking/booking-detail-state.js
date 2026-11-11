@@ -7,8 +7,8 @@
 }(typeof window === 'undefined' ? null : window, () => {
   const sportIcons = Object.freeze({
     FOOTBALL_MINI: 'sports_soccer',
-    BADMINTON: 'sports_tennis',
-    PICKLEBALL: 'sports_tennis'
+    BADMINTON: 'sports',
+    PICKLEBALL: 'sports'
   });
 
   function getVenueImagePresentation(imageUrl, sportType) {

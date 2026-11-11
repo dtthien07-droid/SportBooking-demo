@@ -220,9 +220,12 @@
     elements.directionsNote.textContent = map.note;
     document.getElementById('breadcrumbVenueName').textContent = facilityName || '';
     elements.sportName.textContent = state.court?.sport_name || state.court?.sport_type || 'Sân thể thao';
-    elements.sportIcon.textContent = String(state.court?.sport_type).toUpperCase() === 'FOOTBALL_MINI'
-      ? 'sports_soccer'
-      : 'sports_tennis';
+    window.SportBookingIcons.setIcon(
+      elements.sportIcon,
+      String(state.court?.sport_type).toUpperCase() === 'FOOTBALL_MINI'
+        ? 'sports_soccer'
+        : 'sports'
+    );
     elements.basePrice.textContent = formatCurrency(total);
     elements.total.parentElement.querySelector('span').textContent = 'Tổng tiền:';
     elements.refundText?.replaceChildren(document.createTextNode('Hoàn tiền theo chính sách rõ ràng'));

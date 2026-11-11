@@ -4,9 +4,6 @@
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>Hoàn tất đặt lịch - SportBooking</title>
-    <link href="https://fonts.googleapis.com" rel="preconnect"/>
-    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Inter:wght@500;600&display=swap" rel="stylesheet"/>
     <style>
         @layer base {
             html, body { margin: 0; padding: 0; }
@@ -15,7 +12,7 @@
             main > :last-child { margin-bottom: 0 !important; }
         }
         ::-webkit-scrollbar { display: none; }
-        .ticket-state { max-width: 1280px; margin: 6rem auto 2rem; padding: 1.25rem; }
+        #bookingQr svg { display: block; width: 144px; height: 144px; }
     </style>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -63,8 +60,8 @@
 </head>
 <body class="bg-surface font-['Be_Vietnam_Pro'] text-on-surface antialiased">
     <div data-shared-header></div>
-    <div class="ticket-state bg-surface-container-lowest rounded-2xl shadow-sm border border-gray-100 text-center" id="ticketLoading" role="status" aria-live="polite">Đang tải vé đặt sân…</div>
-    <section class="ticket-state bg-error-container rounded-2xl border border-error text-on-error-container text-center" id="ticketError" role="alert" aria-live="assertive" hidden>
+    <div class="mx-margin mt-28 max-w-[1240px] p-space-lg bg-surface-container-lowest rounded-2xl shadow-sm border border-gray-100" id="ticketLoading" role="status" aria-live="polite">Đang tải vé đặt sân…</div>
+    <section class="mx-margin mt-28 max-w-[1240px] p-space-lg bg-error-container rounded-2xl border border-error text-on-error-container text-center" id="ticketError" role="alert" aria-live="assertive" hidden>
         <p id="ticketErrorMessage"></p>
         <button class="mt-4 px-5 py-2 rounded-xl bg-primary text-white font-bold" id="ticketRetry" type="button">Thử lại</button>
     </section>
@@ -73,7 +70,7 @@
         <div class="w-full max-w-[1280px] mx-auto px-margin py-space-xl">
             <div class="flex items-center justify-between mb-space-md">
                 <a class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-surface-container-lowest hover:bg-surface-container text-on-surface text-sm font-bold border border-gray-200 shadow-xs transition-all cursor-pointer" href="/trangchu-user.html">
-                    <span class="material-symbols-outlined text-[19px] text-primary">arrow_back</span>
+                    <svg class="text-[19px] text-primary" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19 12H5m7 7-7-7 7-7"/></svg>
                     <span>Quay lại</span>
                 </a>
             </div>
@@ -82,10 +79,10 @@
             <section class="flex flex-col items-center text-center max-w-2xl mx-auto mb-space-xl">
                 <div class="flex items-start gap-space-sm mb-space-md">
                     <div class="w-20 h-20 rounded-full bg-primary-container text-white flex items-center justify-center shadow-lg">
-                        <span class="material-symbols-outlined text-5xl">check_circle</span>
+                        <svg class="text-5xl" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>
                     </div>
                     <span class="px-2.5 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant text-xs font-bold shadow-sm flex items-center gap-1">
-                        <span class="material-symbols-outlined text-xs">verified</span>
+                        <svg class="text-xs" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m12 2 3 2 4-.2.8 3.8 2.2 3-2.2 3 .2 4-4-.2-3 2.2-3-2.2-3 .2-.8-3.8L2 12l2.2-3L4 5.2 8 5l4-3Z"/><path d="m8 12 3 3 5-6"/></svg>
                         <span>Thành công</span>
                     </span>
                 </div>
@@ -97,9 +94,9 @@
                 <div class="flex flex-wrap items-center justify-center gap-space-md bg-surface-container-lowest px-6 py-2.5 rounded-2xl shadow-sm border border-gray-100">
                     <div class="flex items-center gap-space-xs">
                         <span class="text-xs text-on-surface-variant">Mã đặt sân:</span>
-                        <span class="text-base font-bold text-primary tracking-wide font-mono" id="bookingIdText">—</span>
+                        <span class="text-base font-bold text-primary tracking-wide sb-numeric" id="bookingIdText">—</span>
                         <button aria-label="Sao chép mã đặt sân" class="p-1 rounded-lg hover:bg-surface-container transition-colors text-on-surface-variant hover:text-primary cursor-pointer" id="copyBtn" type="button">
-                            <span class="material-symbols-outlined text-base align-middle">content_copy</span>
+                            <svg class="text-base align-middle" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M8 8V3h13v13h-5M3 8h13v13H3z"/></svg>
                         </button>
                         <span class="text-xs text-primary font-bold" id="copyFeedback" aria-live="polite"></span>
                     </div>
@@ -119,13 +116,13 @@
                             <div class="flex flex-col md:flex-row md:items-center justify-between gap-space-md">
                                 <div class="flex items-start gap-space-md">
                                     <div class="w-14 h-14 rounded-2xl bg-surface-container flex items-center justify-center text-primary shrink-0 shadow-sm">
-                                        <span class="material-symbols-outlined text-3xl">sports_tennis</span>
+                                        <svg class="text-3xl" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 4h18v16H3zM12 4v16m0-10a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM3 9h4v6H3m18-6h-4v6h4"/></svg>
                                     </div>
                                     <div>
                                         <span class="text-xs uppercase tracking-wider text-secondary font-bold">Thông tin đặt sân</span>
                                         <h2 class="text-xl font-bold text-on-surface mt-0.5" id="ticketFacilityName">—</h2>
                                         <p class="text-xs text-on-surface-variant flex items-center gap-1 mt-1">
-                                            <span class="material-symbols-outlined text-base text-primary">location_on</span>
+                                            <svg class="text-base text-primary" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
                                             <span id="ticketAddress">—</span>
                                         </p>
                                     </div>
@@ -145,26 +142,26 @@
                             <div class="grid grid-cols-2 md:grid-cols-4 gap-space-md">
                                 <div class="bg-surface-container-low p-space-md rounded-xl border">
                                     <span class="text-[11px] uppercase text-on-surface-variant font-bold flex items-center gap-1">
-                                        <span class="material-symbols-outlined text-sm text-primary">stadium</span> Vị trí sân
+                                        <svg class="text-sm text-primary" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 21h18M5 21V5h14v16M9 9h2m2 0h2m-6 4h2m2 0h2m-6 4h2m2 0h2M8 5V2h8v3"/></svg> Vị trí sân
                                     </span>
                                     <p class="text-sm font-bold text-on-surface mt-1" id="ticketCourtName">—</p>
                                 </div>
                                 <div class="bg-surface-container-low p-space-md rounded-xl border">
                                     <span class="text-[11px] uppercase text-on-surface-variant font-bold flex items-center gap-1">
-                                        <span class="material-symbols-outlined text-sm text-primary">schedule</span> Tất cả khung giờ
+                                        <svg class="text-sm text-primary" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Tất cả khung giờ
                                     </span>
                                     <p class="text-sm font-bold text-on-surface mt-1" id="displayMatchSlot">—</p>
                                 </div>
                                 <div class="bg-surface-container-low p-space-md rounded-xl border">
                                     <span class="text-[11px] uppercase text-on-surface-variant font-bold flex items-center gap-1">
-                                        <span class="material-symbols-outlined text-sm text-primary">calendar_today</span> Ngày thi đấu
+                                        <svg class="text-sm text-primary" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 4h14v17H5V4Zm3-2v4m8-4v4M5 9h14"/></svg> Ngày thi đấu
                                     </span>
                                     <p class="text-sm font-bold text-on-surface mt-1" id="displayMatchDayOfWeek">—</p>
                                     <p class="text-[11px] text-gray-500" id="displayMatchDate">—</p>
                                 </div>
                                 <div class="bg-surface-container-low p-space-md rounded-xl border">
                                     <span class="text-[11px] uppercase text-on-surface-variant font-bold flex items-center gap-1">
-                                        <span class="material-symbols-outlined text-sm text-primary">person</span> Người đặt sân
+                                        <svg class="text-sm text-primary" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="7" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg> Người đặt sân
                                     </span>
                                     <p class="text-sm font-bold text-on-surface mt-1" id="displayBookerName">—</p>
                                     <p class="text-[11px] text-gray-500" id="displayBookerPhone">—</p>
@@ -175,27 +172,31 @@
                                 <div class="md:col-span-8 flex flex-col gap-1 text-xs">
                                     <div class="flex justify-between items-center py-1">
                                         <span class="text-on-surface-variant">Tổng giá trị đặt sân:</span>
-                                        <span class="text-sm font-bold text-on-surface" id="ticketTotalAmount">—</span>
+                                        <span class="text-sm font-bold text-on-surface sb-numeric" id="ticketTotalAmount">—</span>
                                     </div>
                                     <div class="flex justify-between items-center py-1">
                                         <span class="text-on-surface-variant flex items-center gap-1">
-                                            <span class="material-symbols-outlined text-base text-primary">check_circle</span>
+                                            <svg class="text-base text-primary" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>
                                             <span>Đã thanh toán:</span>
                                         </span>
-                                        <span class="text-sm font-bold text-primary" id="ticketPaidAmount">—</span>
+                                        <span class="text-sm font-bold text-primary sb-numeric" id="ticketPaidAmount">—</span>
                                     </div>
                                     <div class="flex justify-between items-center py-2 bg-secondary-fixed/50 px-3 rounded-lg mt-1 border border-secondary-fixed">
                                         <span class="font-bold text-on-secondary-fixed-variant">Còn thanh toán tại sân:</span>
-                                        <span class="text-base font-bold text-secondary" id="ticketVenueAmount">—</span>
+                                        <span class="text-base font-bold text-secondary sb-numeric" id="ticketVenueAmount">—</span>
                                     </div>
                                 </div>
-                                <div class="md:col-span-4 flex flex-col items-center justify-center p-3 bg-white rounded-xl border shadow-sm">
-                                    <a class="w-full px-4 py-3 rounded-xl bg-primary hover:bg-primary-container text-white text-sm font-bold text-center shadow-md transition-all" id="openTicket" hidden>Xem vé điện tử</a>
+                                <div class="md:col-span-4 flex flex-col items-center justify-center p-3 bg-white rounded-xl border shadow-sm" id="bookingQrPanel" hidden>
+                                    <a class="flex flex-col items-center gap-2 text-center" id="ticketQrLink" hidden aria-label="Mở vé điện tử">
+                                        <span class="text-xs font-bold text-primary">Mã QR vé</span>
+                                        <span class="ticket-qr-code bg-white p-2 rounded-lg" id="bookingQr" aria-label="Mã QR vé"></span>
+                                        <span class="text-xs text-on-surface-variant">Xuất trình khi đến sân</span>
+                                    </a>
                                 </div>
                             </div>
 
                             <div class="flex items-start gap-space-sm bg-amber-50 p-space-md rounded-xl text-amber-900 border border-amber-100">
-                                <span class="material-symbols-outlined text-amber-600 text-xl mt-0.5">info</span>
+                                <svg class="text-amber-600 text-xl mt-0.5" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-8h.01"/></svg>
                                 <div class="flex flex-col gap-0.5 text-xs">
                                     <span class="font-bold text-amber-900">Lưu ý khi đến sân:</span>
                                     <p class="leading-relaxed">Vui lòng mang giày thể thao đế mềm chuyên dụng. Có mặt trước 10 phút để nhận sân và thanh toán phần còn lại tại quầy lễ tân.</p>
@@ -204,19 +205,19 @@
                         </div>
                     </article>
 
-                    <div class="flex flex-wrap items-center gap-space-md">
-                        <button class="flex-1 min-w-[200px] h-12 px-space-lg rounded-xl bg-secondary-container text-white font-bold text-sm flex items-center justify-center gap-1.5 opacity-60 cursor-not-allowed" type="button" disabled aria-disabled="true">
-                            <span class="material-symbols-outlined text-xl">group_add</span>
-                            <span>Tìm đối — Sắp có</span>
-                        </button>
-                        <a class="h-12 px-space-lg rounded-xl bg-primary text-white font-bold text-sm flex items-center justify-center gap-1.5" href="/lich-su-dat-san.html">
-                            <span class="material-symbols-outlined text-xl">calendar_month</span>
+                    <div class="grid grid-cols-2 min-[640px]:grid-cols-4 gap-space-md">
+                        <a class="w-full min-h-12 px-2 py-2 rounded-xl bg-primary text-white font-bold text-sm flex items-center justify-center gap-1.5 text-center" id="openTicket" hidden>
+                            <span>Xem vé điện tử</span>
+                        </a>
+                        <a class="w-full min-h-12 px-2 py-2 rounded-xl bg-surface-container text-on-surface font-bold text-sm flex items-center justify-center gap-1.5 text-center" href="/lich-su-dat-san.html">
                             <span>Lịch sử đặt sân</span>
                         </a>
-                        <a class="h-12 px-space-md rounded-xl bg-surface-container-lowest text-on-surface font-semibold text-xs flex items-center justify-center gap-1 border" id="bookingDetailLink">
-                            <span class="material-symbols-outlined text-lg">receipt_long</span>
+                        <a class="w-full min-h-12 px-2 py-2 rounded-xl bg-surface-container-lowest text-on-surface font-semibold text-sm flex items-center justify-center gap-1.5 text-center border" id="bookingDetailLink">
                             <span>Xem chi tiết đơn này</span>
                         </a>
+                        <button class="w-full min-h-12 px-2 py-2 rounded-xl bg-secondary-container text-white font-bold text-sm flex items-center justify-center gap-1.5 opacity-60 cursor-not-allowed" type="button" disabled aria-disabled="true">
+                            <span>Tìm đối — Sắp có</span>
+                        </button>
                     </div>
                 </div>
 
@@ -225,19 +226,19 @@
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2">
                                 <div class="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                                    <span class="material-symbols-outlined text-xl">navigation</span>
+                                    <svg class="text-xl" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m3 3 18 9-8 2-2 7L3 3Z"/></svg>
                                 </div>
                                 <h3 class="text-base font-bold text-on-surface">Vị trí &amp; Đường đi</h3>
                             </div>
                             <a class="text-xs text-primary font-bold hover:underline flex items-center gap-0.5" id="ticketMapLink" rel="noopener noreferrer" target="_blank">
                                 <span>Mở Maps</span>
-                                <span class="material-symbols-outlined text-xs">open_in_new</span>
+                                <svg class="text-xs" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 3h7v7m0-7L10 14M19 13v7H4V5h7"/></svg>
                             </a>
                         </div>
                         <div class="w-full h-40 rounded-xl overflow-hidden relative shadow-inner border bg-surface-container-low">
                             <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end p-3">
                                 <span class="text-white text-xs flex items-center gap-1 font-medium">
-                                    <span class="material-symbols-outlined text-sm text-green-300">directions_walk</span>
+                                    <svg class="text-sm text-green-300" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="13" cy="4" r="2"/><path d="m10 22 2-7-3-3 2-5 5 2 2 5m-8-2 5 2-1 6m-5-8-3 4"/></svg>
                                     <span id="ticketAddressMap">Địa chỉ cơ sở</span>
                                 </span>
                             </div>
@@ -245,7 +246,7 @@
                         <div class="flex flex-col gap-2 pt-1 text-xs">
                             <div class="flex items-center justify-between">
                                 <span class="text-on-surface-variant flex items-center gap-1">
-                                    <span class="material-symbols-outlined text-base text-primary">call</span>
+                                    <svg class="text-base text-primary" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.4 19.4 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7l.5 3a2 2 0 0 1-.6 1.7L7.1 10a16 16 0 0 0 6 6l1.6-1.9a2 2 0 0 1 1.7-.6l3 .5a2 2 0 0 1 1.6 1.9Z"/></svg>
                                     <span>Hotline sân:</span>
                                 </span>
                                 <a class="font-bold text-primary hover:underline" id="ticketHotline">Chưa có thông tin</a>
@@ -263,6 +264,7 @@
     <script src="/shared/format.js"></script>
     <script src="/booking/ticket-data.js"></script>
     <script src="/shared/back-nav.js"></script>
+    <script src="/assets/qr-code.js"></script>
     <script src="/booking/booking-complete-page.js"></script>
 </body>
 </html>

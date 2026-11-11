@@ -240,6 +240,8 @@ test('cancellation and refunds work through HTTP on sportbooking_test', async (t
         assert.equal(preview.refund_percent, item.percent);
         assert.equal(preview.refund_amount, expectedRefund.toString());
         assert.equal(preview.paid_amount, item.paidAmount);
+        assert.ok(Number.isSafeInteger(preview.seconds_until_start));
+        assert.match(preview.server_time, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
         assert.ok(Math.abs(preview.hours_until_start - item.hoursAhead) < 0.2);
         assert.match(preview.message, /hoàn|không hoàn/);
 

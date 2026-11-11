@@ -34,6 +34,62 @@
     return displayStatusLabels[code];
   }
 
+  function canCancelBooking(booking) {
+    return Boolean(booking && (
+      (booking.status === 'CONFIRMED' && booking.display_status_code === 'UPCOMING')
+      || (booking.status === 'PENDING' && booking.display_status_code === 'PENDING')
+    ));
+  }
+
+  function formatStartCountdown(seconds) {
+    const remaining = Number(seconds);
+    if (!Number.isFinite(remaining)) {
+      throw new TypeError('Thời gian đến giờ thi đấu không hợp lệ.');
+    }
+    if (remaining <= 0) return 'Đã bắt đầu';
+    const safeSeconds = Math.floor(remaining);
+    const hours = Math.floor(safeSeconds / 3600);
+    const minutes = Math.floor((safeSeconds % 3600) / 60);
+    const secondsPart = safeSeconds % 60;
+    if (hours > 0) return `${hours} giờ ${minutes} phút ${secondsPart} giây`;
+    if (minutes > 0) return `${minutes} phút ${secondsPart} giây`;
+    return `${secondsPart} giây`;
+  }
+
+  function getRefundPercentBySeconds(seconds) {
+    const remaining = Number(seconds);
+    if (!Number.isFinite(remaining)) {
+      throw new TypeError('Thời gian đến giờ thi đấu không hợp lệ.');
+    }
+    if (remaining >= 24 * 60 * 60) return 100;
+    if (remaining >= 6 * 60 * 60) return 50;
+    return 0;
+  }
+
+  function getCancelConfirmationLabel(refundAmount, isPending = false) {
+    if (isPending) return 'Xác nhận hủy đơn';
+    const amount = String(refundAmount);
+    if (!/^(0|[1-9]\d*)$/.test(amount)) {
+      throw new TypeError('Số tiền hoàn trong thông tin hủy không hợp lệ.');
+    }
+    if (BigInt(amount) === 0n) return 'Xác nhận hủy (không hoàn tiền)';
+    return `Xác nhận hủy & hoàn ${new Intl.NumberFormat('vi-VN').format(BigInt(amount))} đ`;
+  }
+
+  function getCancellationSuccessMessage(bookingCode, refundedAmount, bookingStatus) {
+    const code = String(bookingCode || '').trim();
+    if (!code) throw new TypeError('Mã đơn đặt sân không hợp lệ.');
+    if (bookingStatus === 'PENDING') return `Đã hủy đơn ${code}.`;
+    const amount = String(refundedAmount);
+    if (!/^(0|[1-9]\d*)$/.test(amount)) {
+      throw new TypeError('Số tiền hoàn trong kết quả hủy không hợp lệ.');
+    }
+    if (BigInt(amount) === 0n) {
+      return `Đã hủy đơn ${code}. Không có khoản hoàn theo chính sách hủy.`;
+    }
+    return `Đã hủy đơn ${code}. Hoàn ${new Intl.NumberFormat('vi-VN').format(BigInt(amount))} đ về phương thức thanh toán.`;
+  }
+
   function getBookingPresentation(booking, fromPath = '/lich-su-dat-san.html') {
     if (!booking || !displayStatuses.has(booking.display_status_code)) {
       throw new TypeError('Trạng thái hiển thị của đơn đặt sân không hợp lệ.');
@@ -158,6 +214,11 @@
     getBookingStatusLabel,
     getBookingErrorAction,
     getBookingErrorView,
-    getBookingPresentation
+    getBookingPresentation,
+    canCancelBooking,
+    formatStartCountdown,
+    getRefundPercentBySeconds,
+    getCancelConfirmationLabel,
+    getCancellationSuccessMessage
   };
 }));

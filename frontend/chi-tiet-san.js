@@ -290,7 +290,10 @@
       FOOTBALL_MINI: '/assets/images/court-default-football-mini.svg',
       PICKLEBALL: '/assets/images/court-default-pickleball.svg'
     }[sport];
-    elements.imageFallbackIcon.textContent = sport === 'FOOTBALL_MINI' ? 'sports_soccer' : 'sports_tennis';
+    window.SportBookingIcons.setIcon(
+      elements.imageFallbackIcon,
+      sport === 'FOOTBALL_MINI' ? 'sports_soccer' : 'sports'
+    );
     elements.imageFallback.setAttribute('aria-label', `Ảnh mặc định theo môn ${court.sport_name || ''}`);
     elements.galleryUnavailable.hidden = false;
     elements.image.onerror = () => {
@@ -341,9 +344,10 @@
     elements.sportText.textContent = sportName;
     elements.sportNameHeader.textContent = sportName;
     elements.sportNameBooking.textContent = sportName;
-    elements.sportIcon.textContent = String(court.sport_type).toUpperCase() === 'FOOTBALL_MINI'
-      ? 'sports_soccer'
-      : 'sports_tennis';
+    window.SportBookingIcons.setIcon(
+      elements.sportIcon,
+      String(court.sport_type).toUpperCase() === 'FOOTBALL_MINI' ? 'sports_soccer' : 'sports'
+    );
     const hasMode = ['BADMINTON', 'PICKLEBALL'].includes(String(court.sport_type).toUpperCase());
     elements.modeContainer.hidden = !hasMode;
     renderRating(court);

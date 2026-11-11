@@ -9,7 +9,6 @@
     <link href="https://fonts.googleapis.com" rel="preconnect">
     <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -75,7 +74,8 @@
 .sb-legal-content h3 { margin: .75rem 0 .4rem; font-size: 1rem; font-weight: 700; }
 .sb-legal-content p { margin: .35rem 0; }
 .sb-legal-content ul, .sb-legal-content ol { margin: .35rem 0; padding-left: 1.25rem; }
-</style></head>
+</style>    <script src="/shared/icons.js"></script>
+</head>
 
 <body class="bg-surface font-['Be_Vietnam_Pro'] text-on-surface antialiased" data-page="register">
 
@@ -88,7 +88,7 @@
 
             <div>
                 <a class="px-5 py-2.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary text-sm font-bold transition-all shadow-sm flex items-center justify-center gap-1.5" href="/dang-nhap.html">
-                    <span class="material-symbols-outlined text-lg">login</span>
+                    <svg class="text-lg" data-sb-icon="login"></svg>
                     <span>Đăng nhập</span>
                 </a>
             </div>
@@ -108,7 +108,7 @@
                     <!-- Huy hiệu trạng thái -->
                     <div class="flex items-center justify-between mb-space-md">
                         <a class="inline-flex items-center gap-space-xs text-on-surface-variant hover:text-primary transition-colors text-sm font-medium" href="#">
-                            <span class="material-symbols-outlined text-lg"></span>
+                            <svg class="text-lg" data-sb-icon="account_circle"></svg>
                             <span></span>
                         </a>
                         <div class="inline-flex items-center gap-space-xs px-3 py-1 rounded-full bg-surface-container-high text-primary text-xs font-semibold">
@@ -122,7 +122,7 @@
                         <!-- Banner tiêu đề -->
                         <div class="relative w-full bg-gradient-to-r from-primary-container via-primary to-on-surface p-space-lg text-on-primary overflow-hidden">
                             <div class="absolute right-0 top-0 bottom-0 w-1/3 opacity-10 flex items-center justify-center pointer-events-none">
-                                <span class="material-symbols-outlined text-[160px]">sports_tennis</span>
+                                <svg class="text-[160px]" data-sb-icon="sports"></svg>
                             </div>
                             <div class="relative z-10 max-w-xl">
                                 <span class="inline-block px-2.5 py-0.5 rounded-full bg-white/20 text-white text-xs font-bold tracking-wider uppercase mb-space-xs">Tài khoản mới</span>
@@ -148,7 +148,7 @@
                                             Họ và tên <span class="text-error">*</span>
                                         </label>
                                         <div class="relative flex items-center">
-                                            <span class="material-symbols-outlined absolute left-3 text-on-surface-variant pointer-events-none text-xl">badge</span>
+                                            <svg class="absolute left-3 text-on-surface-variant pointer-events-none text-xl" data-sb-icon="badge"></svg>
                                             <input class="w-full pl-10 pr-4 py-3 rounded-xl bg-surface-container-low text-on-surface text-sm placeholder:text-gray-400 border border-transparent focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all shadow-sm" id="register-full-name" aria-describedby="register-full-name-error" name="fullName" placeholder="VD: Nguyễn Tuấn Anh" required type="text">
                                         </div>
 <p class="auth-field-error" id="register-full-name-error" data-field-error="fullName"></p>
@@ -160,7 +160,7 @@
                                             <span>Số điện thoại <span class="text-error">*</span></span>
                                         </label>
                                         <div class="relative flex items-center">
-                                            <span class="material-symbols-outlined absolute left-3 text-on-surface-variant pointer-events-none text-xl">phone_iphone</span>
+                                            <svg class="absolute left-3 text-on-surface-variant pointer-events-none text-xl" data-sb-icon="phone_iphone"></svg>
                                             <input class="w-full pl-10 pr-4 py-3 rounded-xl bg-surface-container-low text-on-surface text-sm placeholder:text-gray-400 border border-transparent focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all shadow-sm" id="register-phone" name="phone" aria-describedby="register-phone-error" placeholder="VD: 0988 123 456" required type="tel">
                                         </div>
 <p class="auth-field-error" id="register-phone-error" data-field-error="phone"></p>
@@ -172,7 +172,7 @@
                                             <span>Địa chỉ Email <span class="text-error">*</span></span>
                                         </label>
                                         <div class="relative flex items-center">
-                                            <span class="material-symbols-outlined absolute left-3 text-on-surface-variant pointer-events-none text-xl">mail</span>
+                                            <svg class="absolute left-3 text-on-surface-variant pointer-events-none text-xl" data-sb-icon="mail"></svg>
                                             <input class="w-full pl-10 pr-4 py-3 rounded-xl bg-surface-container-low text-on-surface text-sm placeholder:text-gray-400 border border-transparent focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all shadow-sm" id="register-email" name="email" aria-describedby="register-email-error" placeholder="VD: tuananh.sport@gmail.com" required type="email">
                                         </div>
 <p class="auth-field-error" id="register-email-error" data-field-error="email"></p>
@@ -184,10 +184,10 @@
                                             Mật khẩu <span class="text-error">*</span>
                                         </label>
                                         <div class="relative flex items-center">
-                                            <span class="material-symbols-outlined absolute left-3 text-on-surface-variant pointer-events-none text-xl">lock</span>
+                                            <svg class="absolute left-3 text-on-surface-variant pointer-events-none text-xl" data-sb-icon="lock"></svg>
                                             <input class="w-full pl-10 pr-11 py-3 rounded-xl bg-surface-container-low text-on-surface text-sm placeholder:text-gray-400 border border-transparent focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all shadow-sm" id="register-password" name="password" aria-describedby="register-password-error" placeholder="Tối thiểu 8 ký tự" required type="password">
                                             <button aria-label="Hiện mật khẩu" aria-controls="register-password" class="absolute right-3 z-10 cursor-pointer text-on-surface-variant hover:text-on-surface transition-colors p-1" data-toggle-password="register-password" type="button">
-                                                <span class="material-symbols-outlined text-xl">visibility</span>
+                                                <svg class="text-xl" data-sb-icon="visibility"></svg>
                                             </button>
                                         </div>
                                         <p class="auth-field-error" id="register-password-error" data-field-error="password"></p>
@@ -199,10 +199,10 @@
                                             Xác nhận mật khẩu <span class="text-error">*</span>
                                         </label>
                                         <div class="relative flex items-center">
-                                            <span class="material-symbols-outlined absolute left-3 text-on-surface-variant pointer-events-none text-xl">shield_lock</span>
+                                            <svg class="absolute left-3 text-on-surface-variant pointer-events-none text-xl" data-sb-icon="shield_lock"></svg>
                                             <input class="w-full pl-10 pr-11 py-3 rounded-xl bg-surface-container-low text-on-surface text-sm placeholder:text-gray-400 border border-transparent focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all shadow-sm" id="register-confirm-password" name="confirmPassword" aria-describedby="register-confirm-password-error" placeholder="Nhập lại mật khẩu" required type="password">
                                             <button aria-label="Hiện mật khẩu" aria-controls="register-confirm-password" class="absolute right-3 z-10 cursor-pointer text-on-surface-variant hover:text-on-surface transition-colors p-1" data-toggle-password="register-confirm-password" type="button">
-                                                <span class="material-symbols-outlined text-xl">visibility</span>
+                                                <svg class="text-xl" data-sb-icon="visibility"></svg>
                                             </button>
                                         </div>
                                         <p class="auth-field-error" id="register-confirm-password-error" data-field-error="confirmPassword"></p>
@@ -214,7 +214,7 @@
                             <div class="flex flex-col gap-space-sm pt-space-xs">
                                 <div class="flex items-center justify-between">
                                     <label class="text-sm font-semibold text-on-surface flex items-center gap-space-xs">
-                                        <span class="material-symbols-outlined text-primary text-xl">wc</span>
+                                        <svg class="text-primary text-xl" data-sb-icon="wc"></svg>
                                         <span>Giới tính <span class="text-error">*</span></span>
                                     </label>
                                     <span class="text-xs text-on-surface-variant">Hỗ trợ ghép đội nam/nữ/đôi nam-nữ</span>
@@ -223,33 +223,33 @@
                                     <label class="gender-card cursor-pointer relative flex flex-col items-center justify-center p-space-md rounded-xl transition-all hover:bg-surface-container-high select-none bg-surface-container-lowest shadow-md border border-primary/20" data-value="MALE">
                                         <input checked required class="sr-only" name="gender" type="radio" value="MALE">
                                         <div class="w-12 h-12 rounded-full flex items-center justify-center bg-surface mb-space-xs transition-all text-primary">
-                                            <span class="material-symbols-outlined text-2xl">male</span>
+                                            <svg class="text-2xl" data-sb-icon="male"></svg>
                                         </div>
                                         <span class="text-sm text-on-surface font-semibold">Nam</span>
                                         <span class="check-indicator absolute top-2 right-2 w-5 h-5 rounded-full bg-primary text-on-primary flex items-center justify-center text-xs">
-                                            <span class="material-symbols-outlined text-sm font-bold">check</span>
+                                            <svg class="text-sm font-bold" data-sb-icon="check"></svg>
                                         </span>
                                     </label>
 
                                     <label class="gender-card cursor-pointer relative flex flex-col items-center justify-center p-space-md rounded-xl bg-surface-container-low transition-all hover:bg-surface-container-high shadow-sm select-none border border-transparent" data-value="FEMALE">
                                         <input required class="sr-only" name="gender" type="radio" value="FEMALE">
                                         <div class="w-12 h-12 rounded-full flex items-center justify-center bg-surface mb-space-xs text-on-surface-variant transition-all">
-                                            <span class="material-symbols-outlined text-2xl">female</span>
+                                            <svg class="text-2xl" data-sb-icon="female"></svg>
                                         </div>
                                         <span class="text-sm text-on-surface font-semibold">Nữ</span>
                                         <span class="check-indicator hidden absolute top-2 right-2 w-5 h-5 rounded-full bg-primary text-on-primary flex items-center justify-center text-xs">
-                                            <span class="material-symbols-outlined text-sm font-bold">check</span>
+                                            <svg class="text-sm font-bold" data-sb-icon="check"></svg>
                                         </span>
                                     </label>
 
                                     <label class="gender-card cursor-pointer relative flex flex-col items-center justify-center p-space-md rounded-xl bg-surface-container-low transition-all hover:bg-surface-container-high shadow-sm select-none border border-transparent" data-value="OTHER">
                                         <input required class="sr-only" name="gender" type="radio" value="OTHER">
                                         <div class="w-12 h-12 rounded-full flex items-center justify-center bg-surface mb-space-xs text-on-surface-variant transition-all">
-                                            <span class="material-symbols-outlined text-2xl">transgender</span>
+                                            <svg class="text-2xl" data-sb-icon="transgender"></svg>
                                         </div>
                                         <span class="text-sm text-on-surface font-semibold">Khác</span>
                                         <span class="check-indicator hidden absolute top-2 right-2 w-5 h-5 rounded-full bg-primary text-on-primary flex items-center justify-center text-xs">
-                                            <span class="material-symbols-outlined text-sm font-bold">check</span>
+                                            <svg class="text-sm font-bold" data-sb-icon="check"></svg>
                                         </span>
                                     </label>
                                 </div>
@@ -274,26 +274,26 @@
                                     <div class="flex flex-wrap gap-space-sm" id="sportSelectionGroup">
                                         <label class="sport-chip flex items-center gap-space-xs px-space-md py-2.5 rounded-full font-medium text-sm transition-all bg-surface-container text-on-surface-variant cursor-pointer select-none" data-sport="badminton">
                                             <input required class="sr-only" name="favorite_sport" type="radio" value="badminton">
-                                            <span class="material-symbols-outlined text-lg">sports_tennis</span>
+                                            <svg class="text-lg" data-sb-icon="sports"></svg>
                                             <span>Cầu lông</span>
                                             <span class="sport-choice-indicator hidden w-5 h-5 rounded-full bg-white text-primary items-center justify-center">
-                                                <span class="material-symbols-outlined text-sm font-bold">check</span>
+                                                <svg class="text-sm font-bold" data-sb-icon="check"></svg>
                                             </span>
                                         </label>
                                         <label class="sport-chip flex items-center gap-space-xs px-space-md py-2.5 rounded-full font-medium text-sm transition-all bg-primary-container text-on-primary shadow-sm cursor-pointer select-none" data-sport="soccer">
                                             <input checked required class="sr-only" name="favorite_sport" type="radio" value="soccer">
-                                            <span class="material-symbols-outlined text-lg">sports_soccer</span>
+                                            <svg class="text-lg" data-sb-icon="sports_soccer"></svg>
                                             <span>Bóng đá mini</span>
                                             <span class="sport-choice-indicator w-5 h-5 rounded-full bg-white text-primary flex items-center justify-center">
-                                                <span class="material-symbols-outlined text-sm font-bold">check</span>
+                                                <svg class="text-sm font-bold" data-sb-icon="check"></svg>
                                             </span>
                                         </label>
                                         <label class="sport-chip flex items-center gap-space-xs px-space-md py-2.5 rounded-full font-medium text-sm transition-all bg-surface-container text-on-surface-variant cursor-pointer select-none" data-sport="pickleball">
                                             <input required class="sr-only" name="favorite_sport" type="radio" value="pickleball">
-                                            <span class="material-symbols-outlined text-lg">sports_cricket</span>
+                                            <svg class="text-lg" data-sb-icon="sports_cricket"></svg>
                                             <span>Pickleball</span>
                                             <span class="sport-choice-indicator hidden w-5 h-5 rounded-full bg-white text-primary items-center justify-center">
-                                                <span class="material-symbols-outlined text-sm font-bold">check</span>
+                                                <svg class="text-sm font-bold" data-sb-icon="check"></svg>
                                             </span>
                                         </label>
                                     </div>
@@ -305,7 +305,7 @@
                                     <div class="flex items-center justify-between">
                                         <span class="text-sm font-semibold text-on-surface">Trình độ thực tế của bạn:</span>
                                         <span class="text-xs text-primary font-medium flex items-center gap-1">
-                                            <span class="material-symbols-outlined text-sm">verified</span>
+                                            <svg class="text-sm" data-sb-icon="verified"></svg>
                                             Đánh giá trung thực để có trận đấu chất lượng
                                         </span>
                                     </div>
@@ -317,7 +317,7 @@
                                             <div class="flex flex-col gap-space-xs">
                                                 <div class="flex items-center justify-between">
                                                     <div class="w-10 h-10 rounded-xl bg-surface-container-highest flex items-center justify-center text-on-surface-variant level-icon">
-                                                        <span class="material-symbols-outlined">sentiment_satisfied</span>
+                                                        <svg  data-sb-icon="sentiment_satisfied"></svg>
                                                     </div>
                                                     <span class="px-2 py-0.5 rounded text-[11px] font-bold text-on-surface-variant bg-surface-container-highest uppercase">Beginner</span>
                                                 </div>
@@ -330,10 +330,10 @@
                                             </div>
                                             <div class="mt-space-md pt-space-xs flex items-center justify-between text-xs text-on-surface-variant border-t border-gray-100/60">
                                                 <span class="flex items-center gap-1">
-                                                    <span class="material-symbols-outlined text-base text-primary">speed</span> Kèo giải trí
+                                                    <svg class="text-base text-primary" data-sb-icon="speed"></svg> Kèo giải trí
                                                 </span>
                                                 <span class="select-badge w-6 h-6 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant">
-                                                    <span class="material-symbols-outlined text-sm">radio_button_unchecked</span>
+                                                    <svg class="text-sm" data-sb-icon="radio_button_unchecked"></svg>
                                                 </span>
                                             </div>
                                         </label>
@@ -344,7 +344,7 @@
                                             <div class="flex flex-col gap-space-xs">
                                                 <div class="flex items-center justify-between">
                                                     <div class="w-10 h-10 rounded-xl bg-primary-container text-on-primary flex items-center justify-center level-icon shadow-sm">
-                                                        <span class="material-symbols-outlined">bolt</span>
+                                                        <svg  data-sb-icon="bolt"></svg>
                                                     </div>
                                                     <span class="px-2 py-0.5 rounded text-[11px] font-bold text-on-primary-container bg-primary-container uppercase">Intermediate</span>
                                                 </div>
@@ -357,10 +357,10 @@
                                             </div>
                                             <div class="mt-space-md pt-space-xs flex items-center justify-between text-xs text-on-surface border-t border-gray-100/60">
                                                 <span class="flex items-center gap-1 text-primary font-medium">
-                                                    <span class="material-symbols-outlined text-base">groups</span> Kèo phong trào
+                                                    <svg class="text-base" data-sb-icon="groups"></svg> Kèo phong trào
                                                 </span>
                                                 <span class="select-badge w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center">
-                                                    <span class="material-symbols-outlined text-sm">check</span>
+                                                    <svg class="text-sm" data-sb-icon="check"></svg>
                                                 </span>
                                             </div>
                                         </label>
@@ -371,7 +371,7 @@
                                             <div class="flex flex-col gap-space-xs">
                                                 <div class="flex items-center justify-between">
                                                     <div class="w-10 h-10 rounded-xl bg-surface-container-highest flex items-center justify-center text-on-surface-variant level-icon">
-                                                        <span class="material-symbols-outlined">military_tech</span>
+                                                        <svg  data-sb-icon="military_tech"></svg>
                                                     </div>
                                                     <span class="px-2 py-0.5 rounded text-[11px] font-bold text-on-surface-variant bg-surface-container-highest uppercase">Advanced</span>
                                                 </div>
@@ -384,10 +384,10 @@
                                             </div>
                                             <div class="mt-space-md pt-space-xs flex items-center justify-between text-xs text-on-surface-variant border-t border-gray-100/60">
                                                 <span class="flex items-center gap-1">
-                                                    <span class="material-symbols-outlined text-base text-secondary">workspace_premium</span> Kèo tranh tài
+                                                    <svg class="text-base text-secondary" data-sb-icon="workspace_premium"></svg> Kèo tranh tài
                                                 </span>
                                                 <span class="select-badge w-6 h-6 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant">
-                                                    <span class="material-symbols-outlined text-sm">radio_button_unchecked</span>
+                                                    <svg class="text-sm" data-sb-icon="radio_button_unchecked"></svg>
                                                 </span>
                                             </div>
                                         </label>
@@ -415,10 +415,10 @@
 </ul>
 <h3>Điều 2. Mục đích xử lý dữ liệu cá nhân</h3>
 <p>Dữ liệu của bạn được sử dụng vào các mục đích hợp pháp sau:</p>
-<p><strong>event_available</strong> Xác nhận &amp; Giữ slot sân Thực hiện khóa slot 10 phút, gửi mã xác nhận và đối chiếu nhận sân tại cơ sở.</p>
-<p><strong>group_add</strong> Kết nối đấu thủ MatchMaker Giúp bạn tìm đồng đội hoặc đối thủ cùng trình độ, cùng khu vực tại Hà Nội.</p>
-<p><strong>notifications_active</strong> Nhắc lịch &amp; Cảnh báo Thông báo trước giờ thi đấu, cập nhật tiến độ hoàn tiền hoặc xác nhận kèo ghép.</p>
-<p><strong>shield</strong> Bảo mật &amp; Phòng ngừa gian lận Ngăn ngừa tài khoản ảo giữ slot sân trái phép và bảo vệ an toàn cho cơ sở dữ liệu.</p>
+<p><strong><svg data-sb-icon="event_available"></svg></strong> Xác nhận &amp; Giữ slot sân Thực hiện khóa slot 10 phút, gửi mã xác nhận và đối chiếu nhận sân tại cơ sở.</p>
+<p><strong><svg data-sb-icon="group_add"></svg></strong> Kết nối đấu thủ MatchMaker Giúp bạn tìm đồng đội hoặc đối thủ cùng trình độ, cùng khu vực tại Hà Nội.</p>
+<p><strong><svg data-sb-icon="notifications_active"></svg></strong> Nhắc lịch &amp; Cảnh báo Thông báo trước giờ thi đấu, cập nhật tiến độ hoàn tiền hoặc xác nhận kèo ghép.</p>
+<p><strong><svg data-sb-icon="shield"></svg></strong> Bảo mật &amp; Phòng ngừa gian lận Ngăn ngừa tài khoản ảo giữ slot sân trái phép và bảo vệ an toàn cho cơ sở dữ liệu.</p>
 <h3>Điều 3. Nguyên tắc Chia sẻ Dữ liệu</h3>
 <ol>
 <li><strong>Tuyệt đối không thương mại hóa:</strong> SportBooking cam kết không bán, không cho thuê và không chia sẻ thông tin cá nhân của bạn cho bên thứ ba vì mục đích tiếp thị khi chưa có sự đồng ý của bạn.</li>
@@ -457,7 +457,7 @@
                                     <details class="sb-legal-document" id="legal-terms">
                                         <summary>Điều khoản sử dụng</summary>
                                         <div class="sb-legal-content"><h3>Điều khoản sử dụng dịch vụ SportBooking</h3>
-<p><strong>gavel</strong> Văn bản pháp lý nền tảng</p>
+<p><strong><svg data-sb-icon="gavel"></svg></strong> Văn bản pháp lý nền tảng</p>
 <p>Áp dụng từ: Tháng 10/2026 • Khu vực: Thành phố Hà Nội</p>
 <h3>Điều 1. Chấp thuận Điều khoản</h3>
 <ol>
@@ -525,7 +525,7 @@
                             <!-- Nút Đăng Ký Chính -->
                             <div class="flex flex-col gap-space-md">
                                 <button class="w-full py-4 rounded-xl bg-secondary-container hover:bg-secondary text-on-secondary font-bold text-base tracking-wide shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-space-xs active:scale-[0.99] cursor-pointer" id="submitBtn" type="submit" data-submit data-idle-label="ĐĂNG KÝ TÀI KHOẢN" data-loading-label="ĐANG TẠO TÀI KHOẢN...">
-                                    <span class="material-symbols-outlined">how_to_reg</span>
+                                    <svg  data-sb-icon="how_to_reg"></svg>
                                     <span>ĐĂNG KÝ TÀI KHOẢN</span>
                                 </button>
 
@@ -533,7 +533,7 @@
                                     <span>Đã có tài khoản SportBooking?</span>
                                     <a class="text-primary hover:text-primary-container font-semibold transition-colors flex items-center gap-0.5" href="/dang-nhap.html">
                                         <span>Đăng nhập ngay</span>
-                                        <span class="material-symbols-outlined text-base">arrow_forward</span>
+                                        <svg class="text-base" data-sb-icon="arrow_forward"></svg>
                                     </a>
                                 </div>
                             </div>
@@ -542,15 +542,15 @@
                         <!-- Social Proof Mini Footer -->
                         <div class="bg-surface-container-low px-space-xl py-space-md flex flex-wrap items-center justify-around gap-space-md border-t border-gray-100">
                             <div class="flex items-center gap-2 text-on-surface-variant">
-                                <span class="material-symbols-outlined text-primary">verified_user</span>
+                                <svg class="text-primary" data-sb-icon="verified_user"></svg>
                                 <span class="text-xs">Bảo mật thông tin cá nhân chuẩn NĐ 13/2023</span>
                             </div>
                             <div class="flex items-center gap-2 text-on-surface-variant">
-                                <span class="material-symbols-outlined text-secondary">flash_on</span>
+                                <svg class="text-secondary" data-sb-icon="flash_on"></svg>
                                 <span class="text-xs">Khóa slot tự động 10 phút chống trùng sân</span>
                             </div>
                             <div class="flex items-center gap-2 text-on-surface-variant">
-                                <span class="material-symbols-outlined text-tertiary">groups_3</span>
+                                <svg class="text-tertiary" data-sb-icon="groups_3"></svg>
                                 <span class="text-xs">+45,000 Người chơi hoạt động tại Hà Nội</span>
                             </div>
                         </div>
@@ -587,11 +587,11 @@
 <script>
   document.querySelectorAll('[data-toggle-password]').forEach((button) => {
     const input = document.getElementById(button.dataset.togglePassword);
-    const icon = button.querySelector('.material-symbols-outlined');
+    const icon = button.querySelector('svg[data-sb-icon]');
     button.addEventListener('click', () => {
       const showing = input.type === 'password';
       input.type = showing ? 'text' : 'password';
-      icon.textContent = showing ? 'visibility_off' : 'visibility';
+      window.SportBookingIcons.setIcon(icon, showing ? 'visibility_off' : 'visibility');
       button.setAttribute('aria-label', showing ? 'Ẩn mật khẩu' : 'Hiện mật khẩu');
     });
   });

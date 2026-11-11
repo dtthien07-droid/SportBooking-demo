@@ -7,6 +7,7 @@ const test = require('node:test');
 const { names } = require('../shared/icons.js');
 
 const frontendRoot = path.resolve(__dirname, '..');
+const materialIconClassPattern = new RegExp(['material', '-symbols'].join(''), 'i');
 
 function runtimeFiles(directory) {
   const files = [];
@@ -62,11 +63,21 @@ test('all frontend markup uses local SVG icons instead of Material ligatures', (
     `<[^>]+>\\s*(?:${ligatures.join('|')})\\s*<\\/[^>]+>`,
     'i'
   );
+  const requestedLigatures = [
+    'sports', 'check', 'schedule', 'location_on', 'arrow_forward', 'arrow_back',
+    'cancel', 'receipt', 'event', 'info', 'close', 'delete', 'phone', 'map',
+    'directions', 'person'
+  ];
+  const requestedLigaturePattern = new RegExp(
+    `<[^>]+>\\s*(?:${requestedLigatures.join('|')})\\s*<\\/[^>]+>`,
+    'i'
+  );
   const files = runtimeFiles(frontendRoot).filter((file) => !file.includes(`${path.sep}tests${path.sep}`));
   for (const file of files) {
     const source = fs.readFileSync(file, 'utf8');
-    assert.doesNotMatch(source, /material-symbols-outlined/i, `${file} contains a Material icon class.`);
+    assert.doesNotMatch(source, materialIconClassPattern, `${file} contains a Material icon class.`);
     assert.doesNotMatch(source, ligaturePattern, `${file} contains an icon ligature as element text.`);
+    assert.doesNotMatch(source, requestedLigaturePattern, `${file} contains a requested icon ligature as text.`);
     for (const [, iconName] of source.matchAll(/data-sb-icon=["']([^"']+)["']/g)) {
       assert.ok(names.has(iconName), `${file} references an unmapped icon: ${iconName}`);
     }

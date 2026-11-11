@@ -4,12 +4,11 @@
     <meta charset="utf-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <title>SportBooking - Chi tiết đơn đặt sân</title>
-    
-    <link href="https://fonts.googleapis.com" rel="preconnect">
-    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Inter:wght@500;600&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
-    
+
+
+
+
+
     <style>
         @layer base {
             html, body { margin: 0; padding: 0; }
@@ -20,7 +19,7 @@
         ::-webkit-scrollbar { display: none; }
         [hidden] { display: none !important; }
     </style>
-    
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script id="tailwind-config">
         tailwind.config = {
@@ -72,6 +71,7 @@
         };
     </script>
     <link rel="stylesheet" href="/shared/header.css">
+    <script src="/shared/icons.js"></script>
 </head>
 
 <body class="bg-surface font-['Be_Vietnam_Pro'] text-on-surface antialiased" data-page="booking-detail">
@@ -96,7 +96,7 @@
 
             <div class="flex items-center gap-space-lg">
                 <a href="thong-bao.html" aria-label="Thông báo" class="relative p-2 rounded-xl text-on-surface-variant hover:bg-surface-container transition-colors" type="button">
-                    <span class="material-symbols-outlined align-middle">notifications</span>
+                    <svg class="align-middle" data-sb-icon="notifications"></svg>
                     <span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
                 </a>
 
@@ -110,7 +110,7 @@
                         <span id="headerUserRole" class="text-[11px] font-bold text-secondary"></span>
                     </div>
                     <button title="Đăng xuất" class="p-1 text-gray-400 hover:text-gray-700 transition-colors ml-1">
-                        <span class="material-symbols-outlined text-lg">logout</span>
+                        <svg class="text-lg" data-sb-icon="logout"></svg>
                     </button>
                 </div>
             </div>
@@ -132,7 +132,7 @@
             <div class="max-w-[1280px] w-full mx-auto px-margin py-space-lg flex flex-col gap-space-lg">
                 
                 <button type="button" data-back-button class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-surface-container-lowest hover:bg-surface-container text-on-surface text-sm font-bold border border-gray-200 shadow-xs transition-all cursor-pointer group hover:border-primary/50 self-start">
-                    <span class="material-symbols-outlined text-[19px] text-primary group-hover:-translate-x-1 transition-transform">arrow_back</span>
+                    <svg class="text-[19px] text-primary group-hover:-translate-x-1 transition-transform" data-sb-icon="arrow_back"></svg>
                     <span data-back-label></span>
                 </button>
 
@@ -142,11 +142,11 @@
                         <div class="flex flex-wrap items-center gap-space-md mt-1">
                             <h1 class="text-2xl md:text-3xl font-bold text-on-surface tracking-tight" id="pageTitleOrderId">Đơn đặt sân --</h1>
                             <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold shadow-sm" id="orderStatusBadge">
-                                <span class="material-symbols-outlined text-[18px]" id="orderStatusIcon">verified</span>
+                                <svg class="text-[18px]" id="orderStatusIcon" data-sb-icon="verified"></svg>
                                 <span id="orderStatusText">--</span>
                             </div>
                             <span class="text-on-surface-variant text-xs flex items-center gap-1">
-                                <span class="material-symbols-outlined text-[16px] text-primary">schedule</span>
+                                <svg class="text-[16px] text-primary" data-sb-icon="schedule"></svg>
                                 Đặt lúc <span id="orderTimeDisplay">--</span>
                             </span>
                         </div>
@@ -155,11 +155,11 @@
                     <!-- Nút thao tác nhanh -->
                     <div class="flex items-center gap-space-sm self-start md:self-center">
                         <button class="px-4 py-2 rounded-xl bg-surface-container-high hover:bg-surface-variant text-on-surface text-sm font-semibold transition-all flex items-center gap-1.5 shadow-sm cursor-not-allowed opacity-60" type="button" disabled title="Sắp có">
-                            <span class="material-symbols-outlined text-[18px]">print</span>
+                            <svg class="text-[18px]" data-sb-icon="print"></svg>
                             In đơn · Sắp có
                         </button>
                         <button class="px-4 py-2 rounded-xl bg-surface-container-high hover:bg-surface-variant text-on-surface text-sm font-semibold transition-all flex items-center gap-1.5 shadow-sm cursor-not-allowed opacity-60" type="button" disabled title="Sắp có">
-                            <span class="material-symbols-outlined text-[18px]">share</span>
+                            <svg class="text-[18px]" data-sb-icon="share"></svg>
                             Chia sẻ · Sắp có
                         </button>
                     </div>
@@ -181,10 +181,10 @@
                             <div class="relative md:w-5/12 h-56 md:h-auto min-h-[220px]">
                                 <img id="venueImage" class="w-full h-full object-cover" alt="Sân thể thao" hidden>
                                 <div id="venueImageFallback" class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-green-700 via-emerald-500 to-green-900 text-white" hidden>
-                                    <span id="venueImageFallbackIcon" class="material-symbols-outlined text-7xl" aria-hidden="true">sports</span>
+                                    <svg id="venueImageFallbackIcon" class="text-7xl" aria-hidden="true" data-sb-icon="sports"></svg>
                                 </div>
                                 <div id="sportBadge" class="absolute top-3 left-3 bg-primary text-on-primary text-xs uppercase tracking-wide px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1 font-bold">
-                                    <span id="sportBadgeIcon" class="material-symbols-outlined text-[14px]">sports_soccer</span>
+                                    <svg id="sportBadgeIcon" class="text-[14px]" data-sb-icon="sports_soccer"></svg>
                                     <span id="sportBadgeText">--</span>
                                 </div>
                             </div>
@@ -197,12 +197,12 @@
                                     </div>
                                     
                                     <div class="flex items-start gap-1.5 text-sm text-on-surface-variant mt-1">
-                                        <span class="material-symbols-outlined text-[20px] text-secondary shrink-0">location_on</span>
+                                        <svg class="text-[20px] text-secondary shrink-0" data-sb-icon="location_on"></svg>
                                         <div class="flex flex-col">
                                             <span id="venueAddress">--</span>
                                             <a id="venueMapLink" class="text-primary hover:underline text-xs inline-flex items-center gap-1 mt-0.5 font-bold" hidden rel="noopener noreferrer" target="_blank">
                                                 <span>Mở bản đồ chỉ đường Google Maps</span>
-                                                <span class="material-symbols-outlined text-[14px]">open_in_new</span>
+                                                <svg class="text-[14px]" data-sb-icon="open_in_new"></svg>
                                             </a>
                                         </div>
                                     </div>
@@ -211,7 +211,7 @@
                                 <div class="grid grid-cols-2 gap-2 p-3 bg-surface-container-low rounded-xl">
                                     <div class="flex items-center gap-2">
                                         <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                                            <span class="material-symbols-outlined text-[18px]">stadium</span>
+                                            <svg class="text-[18px]" data-sb-icon="stadium"></svg>
                                         </div>
                                         <div class="flex flex-col min-w-0">
                                             <span class="text-[11px] text-on-surface-variant">Sân thi đấu</span>
@@ -220,7 +220,7 @@
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <div class="w-8 h-8 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary shrink-0">
-                                            <span class="material-symbols-outlined text-[18px]">calendar_today</span>
+                                            <svg class="text-[18px]" data-sb-icon="calendar_today"></svg>
                                         </div>
                                         <div class="flex flex-col min-w-0">
                                             <span class="text-[11px] text-on-surface-variant">Ngày thi đấu</span>
@@ -229,7 +229,7 @@
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <div class="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center text-[#15803D] shrink-0">
-                                            <span class="material-symbols-outlined text-[18px]">timer</span>
+                                            <svg class="text-[18px]" data-sb-icon="timer"></svg>
                                         </div>
                                         <div class="flex flex-col min-w-0">
                                             <span class="text-[11px] text-on-surface-variant">Khung giờ</span>
@@ -238,7 +238,7 @@
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-tertiary shrink-0">
-                                            <span class="material-symbols-outlined text-[18px]">call</span>
+                                            <svg class="text-[18px]" data-sb-icon="call"></svg>
                                         </div>
                                         <div class="flex flex-col min-w-0">
                                             <span class="text-[11px] text-on-surface-variant">Hotline sân</span>
@@ -253,7 +253,7 @@
                         <section class="bg-surface-container-lowest rounded-2xl shadow-sm p-space-lg flex flex-col gap-space-md border border-gray-100">
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-2">
-                                    <span class="material-symbols-outlined text-primary text-[24px]">qr_code_scanner</span>
+                                    <svg class="text-primary text-[24px]" data-sb-icon="qr_code_scanner"></svg>
                                     <h3 class="text-base font-bold text-on-surface">Vé đặt sân</h3>
                                 </div>
                                 <span class="px-2.5 py-0.5 rounded-full bg-surface-container text-xs text-on-surface-variant font-bold uppercase" id="ticketStatusLabel">--</span>
@@ -269,11 +269,11 @@
                                     <div class="flex items-center gap-2 bg-white px-4 py-2.5 rounded-xl shadow-sm w-fit border border-gray-200">
                                         <span class="font-mono font-bold text-lg text-primary tracking-widest" id="displayCheckinCode">--</span>
                                         <button class="p-1 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors cursor-not-allowed opacity-60" title="Sắp có" type="button" disabled>
-                                            <span class="material-symbols-outlined text-[18px]">content_copy</span>
+                                            <svg class="text-[18px]" data-sb-icon="content_copy"></svg>
                                         </button>
                                     </div>
                                     <div class="bg-amber-50 p-3 rounded-xl text-amber-900 text-xs flex items-start gap-2 border border-amber-100 mt-1" id="ticketInstructionBox">
-                                        <span class="material-symbols-outlined text-[18px] shrink-0 text-amber-600">info</span>
+                                        <svg class="text-[18px] shrink-0 text-amber-600" data-sb-icon="info"></svg>
                                         <p class="leading-relaxed" id="ticketInstructionText">
                                             Thông tin vé sẽ được hiển thị trên trang vé khi có dữ liệu từ hệ thống.
                                         </p>
@@ -290,7 +290,7 @@
                             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-gray-100" id="matchHeader">
                                 <div class="flex items-center gap-2.5">
                                     <div id="matchHeaderIconBox" class="w-10 h-10 rounded-xl bg-orange-100 text-secondary flex items-center justify-center shrink-0">
-                                        <span class="material-symbols-outlined text-[22px]" id="matchHeaderIcon">sensors</span>
+                                        <svg class="text-[22px]" id="matchHeaderIcon" data-sb-icon="sensors"></svg>
                                     </div>
                                     <div>
                                         <h3 class="text-base font-bold text-on-surface" id="matchmakingTitle">Ghép Đối Thi Đấu (MatchMaker)</h3>
@@ -314,7 +314,7 @@
                                 <div class="p-3.5 bg-orange-50/80 rounded-xl border border-orange-200 text-xs text-orange-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                                     <div class="flex items-start gap-2.5">
                                         <div class="w-8 h-8 rounded-full bg-secondary/15 flex items-center justify-center shrink-0 mt-0.5">
-                                            <span class="material-symbols-outlined text-secondary text-[18px] animate-spin" style="animation-duration: 3s;">radar</span>
+                                            <svg class="text-secondary text-[18px] animate-spin" style="animation-duration: 3s;" data-sb-icon="radar"></svg>
                                         </div>
                                         <div>
                                             <span class="font-bold text-orange-900 block" id="findingStatusHeading">Đang quét tìm kiếm người ghép đối quanh bán kính 5km...</span>
@@ -322,7 +322,7 @@
                                         </div>
                                     </div>
                                     <div class="bg-white px-3 py-1.5 rounded-lg border border-orange-200 shadow-2xs flex items-center gap-1.5 self-start sm:self-auto shrink-0">
-                                        <span class="material-symbols-outlined text-secondary text-[16px]">timer</span>
+                                        <svg class="text-secondary text-[16px]" data-sb-icon="timer"></svg>
                                         <span class="text-[11px] text-slate-500 font-medium">Thời gian quét:</span>
                                         <span id="findingLiveTimer" class="font-mono text-secondary font-bold text-xs">09:50</span>
                                     </div>
@@ -330,7 +330,7 @@
 
                                 <div class="flex flex-col sm:flex-row items-center gap-2 pt-1">
                                     <button type="button" class="w-full sm:w-auto py-2.5 px-4 rounded-xl bg-surface-container-lowest hover:bg-red-50 text-error border border-red-200 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
-                                        <span class="material-symbols-outlined text-[17px]">pause_circle</span>
+                                        <svg class="text-[17px]" data-sb-icon="pause_circle"></svg>
                                         <span>Dừng ghép đối</span>
                                     </button>
                                 </div>
@@ -357,23 +357,23 @@
 
                                     <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-2 border-t border-gray-200">
                                         <div class="flex items-center gap-1.5 text-slate-700">
-                                            <span class="material-symbols-outlined text-[16px] text-primary">call</span>
+                                            <svg class="text-[16px] text-primary" data-sb-icon="call"></svg>
                                             <span>Liên hệ: <strong class="font-mono text-primary text-sm font-bold">Sắp có</strong></span>
                                         </div>
                                         <div class="flex items-center gap-2">
                                             <a aria-disabled="true" title="Sắp có" class="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-primary font-bold text-xs border border-emerald-200 flex items-center gap-1 transition-colors">
-                                                <span class="material-symbols-outlined text-[15px]">call</span>
+                                                <svg class="text-[15px]" data-sb-icon="call"></svg>
                                                 <span>Gọi điện · Sắp có</span>
                                             </a>
                                             <a aria-disabled="true" title="Sắp có" class="px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-tertiary font-bold text-xs border border-blue-200 flex items-center gap-1 transition-colors">
-                                                <span class="material-symbols-outlined text-[15px]">forum</span>
+                                                <svg class="text-[15px]" data-sb-icon="forum"></svg>
                                                 <span>Nhắn Zalo · Sắp có</span>
                                             </a>
                                         </div>
                                     </div>
 
                                     <div class="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-[11px] text-emerald-900 font-semibold flex items-center gap-1.5">
-                                        <span class="material-symbols-outlined text-primary text-[18px] shrink-0">payments</span>
+                                        <svg class="text-primary text-[18px] shrink-0" data-sb-icon="payments"></svg>
                                         <span>Tìm đối · Sắp có.</span>
                                     </div>
                                 </div>
@@ -384,7 +384,7 @@
                                 <div class="p-4 bg-amber-50/70 rounded-xl border border-amber-200 flex flex-col gap-3 text-xs">
                                     <div class="flex items-start gap-3">
                                         <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0 mt-0.5">
-                                            <span class="material-symbols-outlined text-2xl">tune</span>
+                                            <svg class="text-2xl" data-sb-icon="tune"></svg>
                                         </div>
                                         <div class="flex-1">
                                             <h4 class="font-bold text-sm text-amber-950">Hết thời gian ghép trực tiếp - Đề xuất nới lỏng tiêu chí</h4>
@@ -396,11 +396,11 @@
 
                                     <div class="flex flex-col sm:flex-row items-center gap-2 pt-1 border-t border-amber-200">
                                         <button type="button" class="w-full sm:w-auto flex-1 py-2.5 px-4 rounded-xl bg-secondary hover:bg-orange-600 text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer">
-                                            <span class="material-symbols-outlined text-[17px]">tune</span>
+                                            <svg class="text-[17px]" data-sb-icon="tune"></svg>
                                             <span>Nới lỏng tiêu chí &amp; Quét lại</span>
                                         </button>
                                         <button type="button" class="w-full sm:w-auto py-2.5 px-4 rounded-xl bg-white hover:bg-gray-100 text-slate-700 border border-gray-300 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
-                                            <span class="material-symbols-outlined text-[17px]">lock</span>
+                                            <svg class="text-[17px]" data-sb-icon="lock"></svg>
                                             <span>Giữ sân chơi riêng</span>
                                         </button>
                                     </div>
@@ -418,7 +418,7 @@
                         <div class="bg-surface-container-lowest rounded-2xl shadow-md p-space-lg flex flex-col gap-space-md border border-gray-100">
                             <div class="flex items-center justify-between pb-2 border-b">
                                 <h3 class="text-base font-bold text-on-surface">Chi Tiết Thanh Toán</h3>
-                                <span class="material-symbols-outlined text-primary text-[22px]">receipt_long</span>
+                                <svg class="text-primary text-[22px]" data-sb-icon="receipt_long"></svg>
                             </div>
 
                             <div class="flex flex-col gap-2.5 text-sm">
@@ -468,20 +468,21 @@
                             <!-- Nút thao tác -->
                             <div class="flex flex-col gap-2 pt-1" id="orderActionsContainer">
                                 <button class="w-full py-3 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-not-allowed shadow-sm opacity-60" type="button" disabled title="Sắp có">
-                                    <span class="material-symbols-outlined text-[18px]">file_download</span>
+                                    <svg class="text-[18px]" data-sb-icon="file_download"></svg>
                                     <span>Tải Hóa Đơn / Vé (PDF) · Sắp có</span>
                                 </button>
                                 
                                 <!-- VÙNG NÚT HỦY SÂN HOẶC THÔNG BÁO -->
                                 <div id="cancelActionWrapper" class="w-full">
-                                    <button id="btnOpenCancelFlow" class="w-full py-3 rounded-xl bg-error-container hover:bg-red-200 text-error text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-not-allowed shadow-sm opacity-60" type="button" disabled title="Sắp có">
-                                        <span class="material-symbols-outlined text-[18px]">cancel</span>
-                                        <span>HỦY ĐẶT SÂN NÀY · Sắp có</span>
+                                    <button id="btnOpenCancelFlow" class="w-full py-3 rounded-xl bg-error-container hover:bg-red-200 text-error text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-not-allowed shadow-sm opacity-60" type="button" hidden>
+                                        <svg class="text-[18px]" data-sb-icon="cancel"></svg>
+                                        <span>HỦY ĐẶT SÂN NÀY</span>
                                     </button>
+                                    <p id="cancel-result-message" class="text-sm font-semibold text-primary" role="status" hidden></p>
                                 </div>
 
                                 <button type="button" data-back-button class="w-full py-3 rounded-xl bg-surface-container-low hover:bg-surface-container text-on-surface text-sm font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
-                                    <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+                                    <svg class="text-[18px]" data-sb-icon="arrow_back"></svg>
                                     <span data-back-label></span>
                                 </button>
                                 <a id="continuePayment" href="/thanh-toan.html?booking_id=" class="w-full py-3 rounded-xl bg-secondary-container hover:bg-secondary text-white text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-sm" hidden>Tiếp tục thanh toán</a>
@@ -492,7 +493,7 @@
                         <!-- Hỗ trợ khách hàng -->
                         <div class="bg-surface-container-lowest rounded-2xl shadow-sm p-4 flex items-center gap-3 border border-gray-100">
                             <div class="w-10 h-10 rounded-xl bg-secondary-fixed text-on-secondary-fixed-variant flex items-center justify-center shrink-0">
-                                <span class="material-symbols-outlined text-[22px]">headset_mic</span>
+                                <svg class="text-[22px]" data-sb-icon="headset_mic"></svg>
                             </div>
                             <div class="flex flex-col">
                                 <span class="text-sm font-bold text-on-surface">Hỗ Trợ Khách Hàng 24/7</span>
@@ -509,14 +510,14 @@
         <!-- HỘP THOẠI MODAL XÁC NHẬN HỦY VĨNH VIỄN -->
         <!-- ========================================================================= -->
         <div class="fixed inset-0 z-50 bg-inverse-surface/65 backdrop-blur-md hidden flex items-center justify-center p-4 transition-all duration-300" id="cancel-modal">
-            <div aria-labelledby="modal-title" aria-modal="true" class="relative w-full max-w-[620px] bg-surface-container-lowest rounded-2xl shadow-2xl overflow-hidden flex flex-col transition-all transform scale-100 border border-gray-100" role="dialog">
+            <div aria-labelledby="modal-title" aria-modal="true" class="relative w-full max-w-[620px] max-h-[calc(100vh-2rem)] overflow-y-auto bg-surface-container-lowest rounded-2xl shadow-2xl flex flex-col transition-all transform scale-100 border border-gray-100" role="dialog">
                 
                 <!-- Dải màu cảnh báo trên cùng -->
                 <div class="w-full h-1.5 bg-gradient-to-r from-error via-secondary-container to-error"></div>
 
                 <!-- Nút đóng góc phải -->
                 <button aria-label="Đóng cửa sổ" class="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors cursor-pointer" id="btn-close-modal">
-                    <span class="material-symbols-outlined text-lg">close</span>
+                    <svg class="text-lg" data-sb-icon="close"></svg>
                 </button>
 
                 <!-- Nội dung Modal -->
@@ -525,7 +526,7 @@
                     <!-- Tiêu đề & Icon Cảnh Báo -->
                     <div class="flex items-start gap-3.5">
                         <div class="relative shrink-0 w-12 h-12 rounded-2xl bg-error-container text-error flex items-center justify-center shadow-xs">
-                            <span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">event_busy</span>
+                            <svg class="text-2xl" style="font-variation-settings: 'FILL' 1;" data-sb-icon="event_busy"></svg>
                         </div>
                         <div class="flex flex-col gap-1 pr-6">
                             <div class="flex items-center gap-1.5">
@@ -536,7 +537,9 @@
                                 Xác nhận hủy đặt sân vĩnh viễn?
                             </h2>
                             <p class="text-xs text-on-surface-variant leading-relaxed">
-                                Thao tác này <strong class="text-error font-semibold">không thể hoàn tác</strong>. Khung giờ đặt sân của bạn sẽ được giải phóng ngay lập tức trên hệ thống và nhường cho người chơi khác.
+                                Thao tác này <strong class="text-error font-semibold">không thể hoàn tác</strong>. Khung giờ đặt sân sẽ được giải phóng ngay khi xác nhận.
+                            </p>
+                            <p class="text-xs text-on-surface-variant leading-relaxed" id="cancel-dialog-message" role="status" hidden>
                             </p>
                         </div>
                     </div>
@@ -545,7 +548,7 @@
                     <div class="bg-surface-container-low rounded-xl p-4 flex flex-col gap-3 border border-gray-100">
                         <div class="flex items-center justify-between pb-2 border-b border-gray-200">
                             <div class="flex items-center gap-1.5">
-                                <span class="material-symbols-outlined text-primary text-base">receipt_long</span>
+                                <svg class="text-primary text-base" data-sb-icon="receipt_long"></svg>
                                 <span class="text-xs text-on-surface font-bold">Mã đơn đặt sân:</span>
                             </div>
                             <span class="font-mono text-xs font-bold text-primary tracking-wide" id="displayModalOrderId">--</span>
@@ -565,6 +568,7 @@
                             <div class="flex flex-col pt-1">
                                 <span class="text-gray-500 font-medium">Lý do hủy đơn</span>
                                 <select id="selectCancelReason" class="mt-0.5 p-1.5 bg-white border border-gray-300 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-primary">
+                                    <option value="" selected>Không cung cấp</option>
                                     <option value="Bận việc đột xuất / Lịch công tác">Bận việc đột xuất / Lịch công tác</option>
                                     <option value="Thay đổi địa điểm hoặc thời gian chơi">Thay đổi địa điểm hoặc thời gian chơi</option>
                                     <option value="Thời tiết không thuận lợi">Thời tiết không thuận lợi</option>
@@ -573,10 +577,10 @@
                                 </select>
                             </div>
                             <div class="flex flex-col pt-1">
-                                <span class="text-gray-500 font-medium">Kênh hoàn tiền</span>
+                                <span class="text-gray-500 font-medium">Căn cứ hoàn tiền</span>
                                 <div class="flex items-center gap-1 text-on-surface font-bold mt-1">
-                                    <span class="material-symbols-outlined text-primary text-sm">account_balance</span>
-                                    <span>Sắp có</span>
+                                    <svg class="text-primary text-sm" data-sb-icon="account_balance"></svg>
+                                    <span>Tính trên số đã trả</span>
                                 </div>
                             </div>
                         </div>
@@ -586,37 +590,57 @@
                             <div class="flex flex-col">
                                 <div class="flex items-center gap-1.5">
                                     <span class="text-xs font-bold text-on-surface">Tổng tiền hoàn lại:</span>
-                                    <span class="text-[10px] bg-green-100 text-primary px-1.5 py-0.5 rounded-full font-bold" id="displayModalRefundPercentBadge">Sắp có</span>
+                                    <span class="text-[10px] bg-green-100 text-primary px-1.5 py-0.5 rounded-full font-bold" id="displayModalRefundPercentBadge">--</span>
                                 </div>
-                                <span class="text-[11px] text-gray-500 mt-0.5" id="displayModalRefundPolicyDesc">Thông tin sẽ có sau</span>
+                                <span class="text-[11px] text-gray-500 mt-0.5" id="displayModalRefundPolicyDesc">--</span>
+                                <span class="text-[11px] text-gray-500 mt-0.5">Đã thanh toán: <strong id="displayModalPaidAmount">--</strong></span>
                             </div>
                             <div class="flex flex-col items-end">
                                 <span class="text-xl font-bold text-primary tracking-tight" id="displayModalRefundAmount">--</span>
-                                <span class="text-[11px] text-gray-400">Chuyển về tài khoản thanh toán</span>
+                                <span class="text-[11px] text-gray-400">Dự kiến hoàn</span>
                             </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-3 border border-gray-200" id="cancel-countdown-panel">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-xs font-bold text-on-surface">Thời gian đến giờ thi đấu</span>
+                                <span class="text-xs font-bold text-primary text-right" id="cancel-countdown-value">--</span>
+                            </div>
+                            <div aria-label="Các mức hoàn tiền theo thời gian còn lại" class="relative mt-3 h-3 rounded-full overflow-hidden flex" id="cancel-refund-progress">
+                                <span class="w-1/3 bg-red-200" aria-hidden="true"></span>
+                                <span class="w-1/3 bg-yellow-200" aria-hidden="true"></span>
+                                <span class="w-1/3 bg-green-200" aria-hidden="true"></span>
+                                <span aria-hidden="true" class="absolute top-[-2px] h-4 w-1 bg-on-surface rounded" id="cancel-refund-progress-marker"></span>
+                            </div>
+                            <div class="mt-1 grid grid-cols-3 gap-1 text-[10px] text-center text-on-surface-variant">
+                                <span>Dưới 6 giờ · 0%</span>
+                                <span>6–24 giờ · 50%</span>
+                                <span>Từ 24 giờ · 100%</span>
+                            </div>
+                            <p class="mt-2 text-[11px] font-bold text-on-surface" id="cancel-refund-level-label">Mức hoàn hiện tại: --</p>
                         </div>
                     </div>
 
                     <!-- Banner quy trình hoàn tiền tự động -->
                     <div class="bg-secondary-fixed/50 text-on-secondary-fixed-variant rounded-xl p-3 flex items-start gap-2.5 border border-secondary-fixed">
-                        <span class="material-symbols-outlined text-secondary shrink-0 text-lg mt-0.5" style="font-variation-settings: 'FILL' 1;">info</span>
+                        <svg class="text-secondary shrink-0 text-lg mt-0.5" style="font-variation-settings: 'FILL' 1;" data-sb-icon="info"></svg>
                         <div class="flex flex-col gap-0.5 text-xs">
-                            <span class="font-bold text-secondary">Hủy đơn · Sắp có</span>
+                            <span class="font-bold text-secondary">Chính sách hoàn tiền</span>
                             <p class="leading-relaxed text-slate-700">
-                                Hủy và hoàn tiền · <strong class="font-bold text-on-secondary-fixed">Sắp có</strong>.
+                                Số tiền dự kiến hoàn: <strong class="font-bold text-on-secondary-fixed" id="bannerRefundText">--</strong>.
                             </p>
                         </div>
                     </div>
 
                     <!-- Nút thao tác -->
                     <div class="flex flex-col-reverse sm:flex-row items-center gap-2 pt-1" id="modalActionsGroup">
-                        <button class="w-full sm:flex-1 py-3 px-4 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface text-sm font-semibold flex items-center justify-center gap-1.5 transition-all cursor-not-allowed opacity-60" id="btn-keep-court" type="button" disabled title="Sắp có">
-                            <span class="material-symbols-outlined text-primary text-[18px]">sports_tennis</span>
-                            <span>Đóng · Sắp có</span>
+                        <button class="w-full sm:flex-1 py-3 px-4 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface text-sm font-semibold flex items-center justify-center gap-1.5 transition-all cursor-not-allowed opacity-60" id="btn-keep-court" type="button">
+                            <svg class="text-primary text-[18px]" data-sb-icon="sports"></svg>
+                            <span>Không, giữ lại sân</span>
                         </button>
-                        <button class="w-full sm:flex-1 py-3 px-4 rounded-xl bg-error hover:bg-red-700 text-white text-sm font-bold shadow-md flex items-center justify-center gap-1.5 transition-all cursor-not-allowed active:scale-95 opacity-60" id="btn-confirm-cancel" type="button" disabled title="Sắp có">
-                            <span class="material-symbols-outlined text-[18px]">delete_forever</span>
-                            <span>Hủy sân · Sắp có</span>
+                        <button class="w-full sm:flex-1 py-3 px-4 rounded-xl bg-error hover:bg-red-700 text-white text-sm font-bold shadow-md flex items-center justify-center gap-1.5 transition-all cursor-not-allowed active:scale-95 opacity-60" id="btn-confirm-cancel" type="button" disabled>
+                            <svg class="text-[18px]" data-sb-icon="delete_forever"></svg>
+                            <span id="btn-confirm-cancel-label">Xác nhận hủy đơn</span>
                         </button>
                     </div>
                 </div>
@@ -624,12 +648,12 @@
                 <!-- Chân Modal -->
                 <div class="bg-surface-container px-6 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-1 text-on-surface-variant text-xs border-t border-gray-100">
                     <div class="flex items-center gap-1.5">
-                        <span class="material-symbols-outlined text-xs text-primary">verified_user</span>
+                        <svg class="text-xs text-primary" data-sb-icon="verified_user"></svg>
                         <span>Thông tin đơn đặt sân</span>
                     </div>
-                    <div class="flex items-center gap-1">
+                    <div class="flex items-center gap-1" id="cancel-support" hidden>
                         <span>Hỗ trợ 24/7:</span>
-                        <span class="font-bold text-secondary hover:underline" aria-disabled="true">--</span>
+                        <a class="font-bold text-secondary hover:underline" href="#" id="cancel-support-phone"></a>
                     </div>
                 </div>
             </div>
@@ -671,6 +695,7 @@
     <script src="/shared/back-nav.js"></script>
     <script src="/booking/booking-detail-state.js"></script>
     <script src="/booking/booking-history-state.js"></script>
+    <script src="/booking/cancellation-dialog.js"></script>
     <script src="/booking/booking-detail-page.js"></script>
 </body>
 </html>

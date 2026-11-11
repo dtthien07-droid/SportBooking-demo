@@ -334,10 +334,10 @@
           const icon = card.querySelector('.level-icon');
           const title = card.querySelector('h4');
           const badge = card.querySelector('.select-badge');
-          const badgeIcon = badge.querySelector('.material-symbols-outlined');
+          const badgeIcon = badge.querySelector('svg[data-sb-icon]');
           const footer = card.querySelector('.mt-space-md.pt-space-xs');
           const footerLabel = footer.children[0];
-          const footerIcon = footerLabel.querySelector('.material-symbols-outlined');
+          const footerIcon = footerLabel.querySelector('svg[data-sb-icon]');
 
           icon.classList.toggle('bg-primary-container', selected);
           icon.classList.toggle('text-on-primary', selected);
@@ -350,7 +350,10 @@
           badge.classList.toggle('text-on-primary', selected);
           badge.classList.toggle('bg-surface-container', !selected);
           badge.classList.toggle('text-on-surface-variant', !selected);
-          badgeIcon.textContent = selected ? 'check' : 'radio_button_unchecked';
+          window.SportBookingIcons.setIcon(
+            badgeIcon,
+            selected ? 'check' : 'radio_button_unchecked'
+          );
           footer.classList.toggle('text-on-surface', selected);
           footer.classList.toggle('text-on-surface-variant', !selected);
           footerLabel.classList.toggle('text-primary', selected);
