@@ -14,12 +14,40 @@ const { createApp } = require('../src/app');
 function localSlot(hoursAhead, minuteOffset = 0) {
   const start = new Date(Math.ceil((Date.now() + hoursAhead * 3_600_000) / 60_000) * 60_000
     + minuteOffset * 60_000);
-  const localStart = new Date(start.getTime() + 7 * 3_600_000);
-  const localEnd = new Date(localStart.getTime() + 3_600_000);
+  let localStart = new Date(start.getTime() + 7 * 3_600_000);
+  let localEnd = new Date(localStart.getTime() + 3_600_000);
+  let endsAt = localEnd.toISOString().slice(11, 19);
+  if (localEnd.toISOString().slice(0, 10) !== localStart.toISOString().slice(0, 10)) {
+    const localDate = localStart.toISOString().slice(0, 10);
+    if (hoursAhead > 0) {
+      localStart = new Date(`${localDate}T23:00:00.000Z`);
+      localStart.setUTCMinutes(minuteOffset);
+      endsAt = '24:00:00';
+    } else if (hoursAhead >= -1) {
+      const currentLocal = new Date(Date.now() + 7 * 3_600_000);
+      const currentDate = currentLocal.toISOString().slice(0, 10);
+      if (currentLocal.getUTCHours() >= 23) {
+        localStart = new Date(`${currentDate}T23:00:00.000Z`);
+        localStart.setUTCMinutes(minuteOffset);
+        endsAt = '24:00:00';
+      } else {
+        localStart = new Date(`${currentDate}T00:00:00.000Z`);
+        localStart.setUTCMinutes(minuteOffset);
+        localEnd = new Date(localStart.getTime() + 3_600_000);
+        endsAt = localEnd.toISOString().slice(11, 19);
+      }
+    } else {
+      localStart = new Date(`${localDate}T22:00:00.000Z`);
+      localStart.setUTCMinutes(minuteOffset);
+      localEnd = new Date(localStart.getTime() + 3_600_000);
+      endsAt = localEnd.toISOString().slice(11, 19);
+    }
+  }
   return {
     serviceDate: localStart.toISOString().slice(0, 10),
     startsAt: localStart.toISOString().slice(11, 19),
-    endsAt: localEnd.toISOString().slice(11, 19)
+    endsAt,
+    hoursAhead: (localStart.getTime() - 7 * 3_600_000 - Date.now()) / 3_600_000
   };
 }
 
@@ -191,15 +219,16 @@ test('cancellation and refunds work through HTTP on sportbooking_test', async (t
         ['DEPOSIT_50', '101001'],
         ['FULL', '203005']
       ]) {
-        cases.push({
-          ...(await addBooking({
-            hoursAhead,
-            minuteOffset: cases.length,
-            paidAmount,
-            paymentOption,
-            matchPreference: cases.length === 0 ? { mode: 'RANDOM' } : null
-          })),
+        const booking = await addBooking({
           hoursAhead,
+          minuteOffset: cases.length,
+          paidAmount,
+          paymentOption,
+          matchPreference: cases.length === 0 ? { mode: 'RANDOM' } : null
+        });
+        cases.push({
+          ...booking,
+          hoursAhead: booking.slot.hoursAhead,
           percent,
           paidAmount
         });
@@ -231,7 +260,11 @@ test('cancellation and refunds work through HTTP on sportbooking_test', async (t
           `${baseUrl}/api/v1/bookings/${item.bookingId}/refund-preview`,
           { headers: { cookie: owner.cookie } }
         );
-        assert.equal(previewResponse.status, 200);
+        assert.equal(
+          previewResponse.status,
+          200,
+          JSON.stringify({ hoursAhead: item.hoursAhead, slot: item.slot, error: await previewResponse.clone().text() })
+        );
         assert.match(previewResponse.headers.get('cache-control'), /no-store/);
         const preview = await previewResponse.json();
         const expectedRefund = item.percent === 100
@@ -396,6 +429,18 @@ test('cancellation and refunds work through HTTP on sportbooking_test', async (t
         hoursAhead: -4,
         paidAmount: '0'
       });
+      const [pastSlotRows] = await pool.execute(
+        `SELECT CONCAT(DATE_FORMAT(ts.service_date, '%Y-%m-%d'), 'T',
+                       TIME_FORMAT(ts.starts_at, '%H:%i:%s')) AS slot_start,
+                CONCAT(DATE_FORMAT(ts.service_date, '%Y-%m-%d'), 'T',
+                       TIME_FORMAT(ts.ends_at, '%H:%i:%s')) AS slot_end
+         FROM booking_slots bs
+         INNER JOIN time_slots ts ON ts.id = bs.time_slot_id
+         WHERE bs.booking_id = ?`,
+        [pastBooking.bookingId]
+      );
+      assert.equal(pastSlotRows.length, 1);
+      assert.ok(pastSlotRows[0].slot_end > pastSlotRows[0].slot_start, JSON.stringify(pastSlotRows[0]));
       const before = await app.locals.bookingsService.completeDueBookings();
       assert.ok(before >= 1);
       const [completedRows] = await pool.execute(
