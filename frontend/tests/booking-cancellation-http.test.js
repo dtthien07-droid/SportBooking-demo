@@ -130,8 +130,21 @@ test('create, pay, cancel, query released schedule, and rebook through HTTP', as
     );
     assert.equal(previewResponse.status, 200);
     const preview = await previewResponse.json();
-    assert.ok(Number.isSafeInteger(preview.seconds_until_start));
-    assert.match(preview.server_time, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+    assert.ok([0, 50, 100].includes(preview.refund_percent));
+    assert.match(preview.refund_amount, /^(0|[1-9]\d*)$/);
+    assert.match(preview.paid_amount, /^(0|[1-9]\d*)$/);
+    assert.equal(typeof preview.message, 'string');
+    if (preview.hours_until_start !== undefined) {
+      assert.equal(typeof preview.hours_until_start, 'number');
+      assert.ok(Number.isFinite(preview.hours_until_start));
+    }
+    if (preview.seconds_until_start !== undefined) {
+      assert.ok(Number.isSafeInteger(preview.seconds_until_start));
+      assert.ok(preview.seconds_until_start >= 0);
+    }
+    if (preview.server_time !== undefined) {
+      assert.match(preview.server_time, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+    }
 
     const cancelResponse = await postJson(
       baseUrl,

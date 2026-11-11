@@ -19,7 +19,7 @@
     percent: document.getElementById('displayModalRefundPercentBadge'),
     policy: document.getElementById('displayModalRefundPolicyDesc'),
     refund: document.getElementById('displayModalRefundAmount'),
-    banner: document.getElementById('bannerRefundText'),
+    countdownPanel: document.getElementById('cancel-countdown-panel'),
     countdown: document.getElementById('cancel-countdown-value'),
     progressMarker: document.getElementById('cancel-refund-progress-marker'),
     refundLevel: document.getElementById('cancel-refund-level-label'),
@@ -66,27 +66,51 @@
     return match[1];
   }
 
-  function formatPolicyDuration(seconds) {
-    const wholeMinutes = Math.floor(Math.max(0, seconds) / 60);
+  function formatApproximateDuration(seconds) {
+    const wholeMinutes = Math.max(0, Math.round(seconds / 60));
     const hours = Math.floor(wholeMinutes / 60);
     const minutes = wholeMinutes % 60;
-    if (hours === 0) return `${minutes} phút`;
-    return minutes === 0 ? `${hours} giờ` : `${hours} giờ ${minutes} phút`;
+    if (hours === 0) return `Còn khoảng ${minutes} phút`;
+    return minutes === 0 ? `Còn ${hours} giờ` : `Còn ${hours} giờ ${minutes} phút`;
   }
 
   function validatePreview(preview) {
-    const seconds = Number(preview?.seconds_until_start);
-    const serverTime = Date.parse(preview?.server_time);
-    if (![0, 50, 100].includes(preview?.refund_percent)
-        || !/^(0|[1-9]\d*)$/.test(String(preview?.refund_amount))
-        || !/^(0|[1-9]\d*)$/.test(String(preview?.paid_amount))
-        || !Number.isSafeInteger(seconds)
-        || seconds < 0
-        || !Number.isFinite(serverTime)
-        || !String(preview.server_time).endsWith('Z')
-        || typeof preview.message !== 'string') {
-      throw new TypeError('Máy chủ trả về thông tin hoàn tiền không hợp lệ.');
+    const invalidFields = [];
+    if (!preview || typeof preview !== 'object' || Array.isArray(preview)) {
+      invalidFields.push('refund_percent, refund_amount, paid_amount, message');
+    } else {
+      if (![0, 50, 100].includes(preview.refund_percent)) {
+        invalidFields.push('refund_percent');
+      }
+      for (const field of ['refund_amount', 'paid_amount']) {
+        if (typeof preview[field] !== 'string' || !/^(0|[1-9]\d*)$/.test(preview[field])) {
+          invalidFields.push(field);
+        }
+      }
+      if (typeof preview.message !== 'string') invalidFields.push('message');
     }
+    if (invalidFields.length) {
+      const status = Number.isInteger(preview?.httpStatus) ? preview.httpStatus : 200;
+      throw new TypeError(
+        `HTTP ${status}: Thông tin hoàn tiền không hợp lệ. Trường thiếu hoặc sai kiểu: ${invalidFields.join(', ')}.`
+      );
+    }
+
+    const hours = preview.hours_until_start;
+    const hoursSeconds = typeof hours === 'number' && Number.isFinite(hours) && hours >= 0
+      ? Math.round(hours * 3600)
+      : null;
+    const suppliedSeconds = preview.seconds_until_start;
+    const seconds = Number.isSafeInteger(hoursSeconds)
+      ? hoursSeconds
+      : Number.isSafeInteger(suppliedSeconds) && suppliedSeconds >= 0
+        ? suppliedSeconds
+        : null;
+    const parsedServerTime = typeof preview.server_time === 'string'
+        && preview.server_time.endsWith('Z')
+      ? Date.parse(preview.server_time)
+      : Number.NaN;
+    const serverTime = Number.isFinite(parsedServerTime) ? parsedServerTime : Date.now();
     return { seconds, serverTime };
   }
 
@@ -101,6 +125,8 @@
   function setModalVisible(visible) {
     elements.modal.hidden = !visible;
     elements.modal.classList.toggle('hidden', !visible);
+    document.documentElement.classList.toggle('cancel-dialog-open', visible);
+    document.body.classList.toggle('cancel-dialog-open', visible);
   }
 
   function stopCountdown() {
@@ -136,8 +162,8 @@
       100: 'Mức hoàn hiện tại: Hoàn 100%',
       50: 'Mức hoàn hiện tại: Hoàn 50%',
       0: activeBooking?.status === 'PENDING'
-        ? 'Mức hoàn hiện tại: Đơn chờ thanh toán · không hoàn tiền'
-        : 'Mức hoàn hiện tại: Không hoàn tiền'
+        ? 'Mức hoàn hiện tại: 0% · Đơn chờ thanh toán, không hoàn tiền'
+        : 'Mức hoàn hiện tại: 0% · Không hoàn tiền'
     };
     elements.refundLevel.textContent = labels[percent];
   }
@@ -159,15 +185,21 @@
   }
 
   function remainingSeconds() {
-    if (deadlineMs === null) return 0;
+    if (deadlineMs === null) return null;
     return Math.max(0, Math.ceil((deadlineMs - (Date.now() + serverOffsetMs)) / 1000));
   }
 
   function updateCountdown() {
-    if (!activePreview || deadlineMs === null) return;
+    if (!activePreview) return;
+    if (deadlineMs === null) {
+      elements.countdownPanel.hidden = true;
+      if (!busy && !refreshingPreview && !previewRefreshFailed) setConfirmEnabled(true);
+      return;
+    }
+    elements.countdownPanel.hidden = false;
     const seconds = remainingSeconds();
     const previous = lastSecondsUntilStart;
-    elements.countdown.textContent = state.formatStartCountdown(seconds);
+    elements.countdown.textContent = formatApproximateDuration(seconds);
     updateProgress(seconds);
     lastSecondsUntilStart = seconds;
     if (seconds === 0) {
@@ -187,20 +219,21 @@
     const { seconds, serverTime } = validatePreview(preview);
     activePreview = preview;
     previewRefreshFailed = false;
-    serverOffsetMs = serverTime - (requestStartedAt + responseReceivedAt) / 2;
-    deadlineMs = serverTime + seconds * 1000;
+    serverOffsetMs = typeof preview.server_time === 'string' && preview.server_time.endsWith('Z')
+      ? serverTime - (requestStartedAt + responseReceivedAt) / 2
+      : 0;
+    deadlineMs = seconds === null ? null : serverTime + seconds * 1000;
     lastSecondsUntilStart = seconds;
     elements.paid.textContent = money(preview.paid_amount);
     elements.percent.textContent = `${preview.refund_percent}% Hoàn tiền`;
-    elements.policy.textContent = `Còn ${formatPolicyDuration(seconds)}. ${preview.message}`;
+    elements.policy.textContent = preview.message;
     elements.refund.textContent = money(preview.refund_amount);
-    elements.banner.textContent = money(preview.refund_amount);
     elements.confirmLabel.textContent = state.getCancelConfirmationLabel(
       preview.refund_amount,
       activeBooking.status === 'PENDING'
     );
     setRefundLevel(preview.refund_percent);
-    updateProgress(seconds);
+    if (seconds !== null) updateProgress(seconds);
     showMessage('', false);
     updateCountdown();
   }
@@ -263,7 +296,7 @@
       setConfirmEnabled(false);
     } finally {
       refreshingPreview = false;
-      if (activeBookingId && remainingSeconds() > 0 && activePreview && !busy
+      if (activeBookingId && (remainingSeconds() === null || remainingSeconds() > 0) && activePreview && !busy
           && !previewRefreshFailed) {
         setConfirmEnabled(true);
       }
@@ -280,6 +313,7 @@
     setConfirmEnabled(false);
     elements.keep.disabled = true;
     elements.reason.value = '';
+    elements.countdownPanel.hidden = true;
     elements.support.hidden = true;
     showMessage('Đang tải thông tin hoàn tiền...', false);
     setModalVisible(true);
@@ -308,7 +342,8 @@
   async function confirm() {
     if (busy || !activeBookingId || !activePreview || previewRefreshFailed) return;
     updateCountdown();
-    if (remainingSeconds() <= 0 || refreshingPreview) return;
+    const seconds = remainingSeconds();
+    if ((seconds !== null && seconds <= 0) || refreshingPreview) return;
     busy = true;
     setConfirmEnabled(false);
     showMessage('Đang xử lý yêu cầu hủy...', false);

@@ -6,6 +6,27 @@ main > :last-child { margin-bottom: 0 !important; }
 .step-panel { transition: opacity 0.25s ease-in-out, transform 0.25s ease-in-out; }
 [hidden] { display: none !important; }
 #confirmBooking:disabled, #cancelBooking:disabled { cursor: not-allowed; opacity: .55; }
+#cancel-modal { z-index: 1100; }
+.cancel-dialog-panel {
+  display: flex;
+  width: min(620px, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
+  flex-direction: column;
+  overflow: hidden;
+}
+.cancel-dialog-header,
+.cancel-dialog-actions,
+.cancel-dialog-footer { flex: 0 0 auto; }
+.cancel-dialog-body {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.cancel-dialog-actions { display: flex; flex-direction: row; }
+html.cancel-dialog-open,
+body.cancel-dialog-open { overflow: hidden; }
 #bookingMessage { margin-top: 1rem; padding: .75rem 1rem; border-radius: .75rem; background: #f1f3ff; font-size: .8rem; }
 #bookingMessage[data-kind="error"] { color: #ba1a1a; background: #ffdad6; }
 #bookingMessage[data-kind="success"] { color: #006b2c; background: #dcfce7; }
@@ -116,6 +137,16 @@ main > :last-child { margin-bottom: 0 !important; }
   [data-page="booking-history"] .booking-card [data-booking-info] {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+@media (max-width: 640px) {
+  .cancel-dialog-panel {
+    width: calc(100vw - 1rem);
+    max-height: calc(100vh - 1rem);
+    max-height: calc(100dvh - 1rem);
+  }
+  .cancel-dialog-actions { flex-direction: column; }
+  .cancel-dialog-actions > button { width: 100%; flex: 0 0 auto; }
 }
 
 @media (min-width: 1024px) {

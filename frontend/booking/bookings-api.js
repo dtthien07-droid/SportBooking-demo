@@ -6,7 +6,7 @@
     window.location.assign(`/dang-nhap.html?returnTo=${encodeURIComponent(returnTo)}`);
   }
 
-  async function requestJson(path, options = {}) {
+  async function requestJson(path, options = {}, includeHttpStatus = false) {
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), 15000);
     let response;
@@ -39,7 +39,7 @@
     try {
       data = await response.json();
     } catch (error) {
-      const requestError = new Error('Máy chủ trả về phản hồi không hợp lệ.');
+      const requestError = new Error(`HTTP ${response.status}: Máy chủ trả về phản hồi không hợp lệ.`);
       requestError.status = response.status;
       requestError.cause = error;
       throw requestError;
@@ -52,6 +52,9 @@
       requestError.code = data?.error?.code;
       requestError.details = data?.error?.details || {};
       throw requestError;
+    }
+    if (includeHttpStatus && data && typeof data === 'object' && !Array.isArray(data)) {
+      Object.defineProperty(data, 'httpStatus', { value: response.status });
     }
     return data;
   }
@@ -112,7 +115,8 @@
   function getRefundPreview(bookingId) {
     return requestJson(
       `/api/v1/bookings/${encodeURIComponent(bookingId)}/refund-preview`,
-      { cache: 'no-store' }
+      { cache: 'no-store' },
+      true
     );
   }
 

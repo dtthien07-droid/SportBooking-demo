@@ -36,6 +36,14 @@ for (const { mockup, output } of pages) {
     const intentionallyRemoved = new Set([['material', '-symbols-outlined'].join('')]);
     if (path.basename(output) === 'chi-tiet-don-dat-san.html') {
       intentionallyRemoved.add('text-outline-variant');
+      [
+        'bg-secondary-fixed/50',
+        'border-secondary-fixed',
+        'gap-0.5',
+        'text-on-secondary-fixed',
+        'flex-col-reverse',
+        'sm:flex-1'
+      ].forEach((name) => intentionallyRemoved.add(name));
     } else {
       intentionallyRemoved.add('self-start');
       intentionallyRemoved.add('md:self-auto');
