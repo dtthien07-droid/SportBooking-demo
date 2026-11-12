@@ -24,37 +24,13 @@
     totalPages: 0,
     serverTime: null,
     notifications: [],
-    request: 0
-  };
-  const notificationTypes = {
-    confirmed: { icon: 'check_circle' },
-    cancelled: { icon: 'cancel' },
-    holdExpiring: { icon: 'timer' },
-    holdExpired: { icon: 'hourglass_top' },
-    paymentSuccess: { icon: 'payments' },
-    refund: { icon: 'assignment_return' },
-    paymentFailed: { icon: 'close' },
-    payment: { icon: 'account_balance_wallet' },
-    system: { icon: 'notifications' },
-    match: { icon: 'groups' },
-    booking: { icon: 'event_available' }
+    request: 0,
+    reading: new Set()
   };
 
   function loginRedirect() {
     const returnTo = `${window.location.pathname}${window.location.search}`;
     window.location.assign(`/dang-nhap.html?returnTo=${encodeURIComponent(returnTo)}`);
-  }
-
-  function bookingTarget(notification) {
-    if (notification.resource_type !== 'BOOKING'
-        || !/^[1-9]\d*$/.test(String(notification.resource_id || ''))) {
-      return null;
-    }
-    const query = new URLSearchParams({
-      booking_id: String(notification.resource_id),
-      from: `${window.location.pathname}?page=${state.page}`
-    });
-    return `/chi-tiet-don-dat-san.html?${query}`;
   }
 
   function setView({ loading = false, error = null, items = [] } = {}) {
@@ -89,6 +65,20 @@
     }).format(date);
   }
 
+  function updateUnreadCounts() {
+    const counts = stateTools.countUnreadByCategory(state.notifications);
+    const pageBadge = document.querySelector('[data-notifications-unread-count]');
+    if (pageBadge) {
+      pageBadge.textContent = `${counts.all} chưa đọc`;
+      pageBadge.hidden = counts.all === 0;
+    }
+    for (const badge of document.querySelectorAll('[data-category-unread]')) {
+      const count = counts[badge.dataset.categoryUnread] || 0;
+      badge.textContent = String(count);
+      badge.hidden = count === 0;
+    }
+  }
+
   function createNotificationGroup(title, notifications) {
     if (notifications.length === 0) return null;
     const section = document.createElement('section');
@@ -107,16 +97,33 @@
     return section;
   }
 
-  function createNotificationCardFrame(notification, type, details) {
-    const presentation = notificationTypes[type];
+  function applyStyle(element, style) {
+    element.style.setProperty('--notification-accent', style.borderColor);
+    element.style.setProperty('--notification-card-bg', style.cardBackground);
+    element.style.setProperty('--notification-unread-bg', style.unreadBackground);
+    element.style.setProperty('--notification-icon-bg', style.iconBackground);
+    element.style.setProperty('--notification-icon-color', style.iconColor);
+    element.style.setProperty('--notification-text-color', style.textColor);
+    element.style.setProperty('--notification-label-color', style.labelColor);
+  }
+
+  function createNotificationCardFrame(notification, style, details) {
     const article = document.createElement('article');
-    article.className = `notification-card notification-card--${type}${notification.read_at ? '' : ' is-unread'}`;
+    article.className = `notification-card${notification.read_at ? '' : ' is-unread'}`;
+    article.tabIndex = 0;
+    article.setAttribute('aria-label', notification.title);
+    applyStyle(article, style);
+
     const iconBox = document.createElement('span');
     iconBox.className = 'notification-card__icon';
-    iconBox.append(makeIcon(presentation.icon, 'notification-card__svg'));
+    iconBox.append(makeIcon(style.icon, 'notification-card__svg'));
 
     const content = document.createElement('div');
     content.className = 'notification-card__content';
+    content.append(details);
+
+    const actions = document.createElement('div');
+    actions.className = 'notification-card__actions';
     const meta = document.createElement('div');
     meta.className = 'notification-card__meta';
     const time = document.createElement('time');
@@ -124,144 +131,78 @@
     time.dateTime = String(notification.created_at);
     time.textContent = stateTools.formatRelativeTime(notification.created_at, state.serverTime);
     meta.append(time);
-    content.append(meta, details);
-
-    const actions = document.createElement('div');
-    actions.className = 'notification-card__actions';
     if (!notification.read_at) {
-      const readButton = document.createElement('button');
-      readButton.className = 'notification-card__read';
-      readButton.type = 'button';
-      readButton.textContent = 'Đánh dấu đã đọc';
-      readButton.addEventListener('click', () => markOne(notification.id));
-      actions.append(readButton);
-    } else {
-      const readState = document.createElement('span');
-      readState.className = 'notification-card__read-state';
-      readState.textContent = 'Đã đọc';
-      actions.append(readState);
+      const unread = document.createElement('span');
+      unread.className = 'notification-card__unread';
+      unread.append(
+        document.createElement('span'),
+        document.createTextNode('Chưa đọc')
+      );
+      unread.firstElementChild.className = 'notification-card__unread-dot';
+      unread.firstElementChild.setAttribute('aria-hidden', 'true');
+      meta.append(unread);
     }
+    actions.append(meta);
 
-    const target = bookingTarget(notification);
-    if (target) {
+    const action = stateTools.getNotificationAction(
+      notification,
+      `${window.location.pathname}?page=${state.page}`
+    );
+    if (action) {
       const link = document.createElement('a');
       link.className = 'notification-card__link';
-      link.href = target;
-      link.textContent = 'Xem đơn';
+      link.href = action.href;
+      link.textContent = action.label;
       link.addEventListener('click', async (event) => {
         event.preventDefault();
         try {
-          if (!notification.read_at) await markOneRequest(notification.id);
-          window.location.assign(target);
+          if (!notification.read_at) {
+            const result = await markOneRequest(notification.id);
+            if (!result) return;
+            markReadLocally(notification.id, result.read_at);
+          }
+          window.location.assign(action.href);
         } catch (error) {
           setView({ error: error.message });
         }
       });
       actions.append(link);
-    } else {
-      const unavailable = document.createElement('span');
-      unavailable.className = 'notification-card__unavailable';
-      unavailable.textContent = 'Sắp có';
-      unavailable.setAttribute('aria-disabled', 'true');
-      actions.append(unavailable);
     }
+
     article.append(iconBox, content, actions);
+    article.addEventListener('click', (event) => {
+      if (event.target.closest('a, button') || notification.read_at) return;
+      markOne(notification.id);
+    });
+    article.addEventListener('keydown', (event) => {
+      if ((event.key === 'Enter' || event.key === ' ') && !notification.read_at) {
+        event.preventDefault();
+        markOne(notification.id);
+      }
+    });
     return article;
   }
 
-  function createNotificationDetails(notification, type) {
+  function createNotificationDetails(notification) {
     const details = document.createElement('div');
-    details.className = `notification-card__details notification-card__details--${type}`;
+    details.className = 'notification-card__details';
     const title = document.createElement('h2');
     title.className = 'notification-card__title';
-    title.textContent = notification.title;
+    title.textContent = stateTools.dedupeFacilityLabel(notification.title);
     const body = document.createElement('p');
     body.className = 'notification-card__body';
-    body.textContent = notification.body;
+    body.textContent = stateTools.dedupeFacilityLabel(notification.body);
     details.append(title, body);
     return details;
   }
 
-  function createConfirmedNotificationCard(notification) {
-    return createNotificationCardFrame(
-      notification,
-      'confirmed',
-      createNotificationDetails(notification, 'confirmed')
-    );
-  }
-
-  function createCancelledNotificationCard(notification) {
-    return createNotificationCardFrame(
-      notification,
-      'cancelled',
-      createNotificationDetails(notification, 'cancelled')
-    );
-  }
-
-  function createHoldExpiredNotificationCard(notification) {
-    return createNotificationCardFrame(
-      notification,
-      'holdExpired',
-      createNotificationDetails(notification, 'holdExpired')
-    );
-  }
-
-  function createHoldExpiringNotificationCard(notification) {
-    return createNotificationCardFrame(
-      notification,
-      'holdExpiring',
-      createNotificationDetails(notification, 'holdExpiring')
-    );
-  }
-
-  function createPaymentNotificationCard(notification, type) {
-    return createNotificationCardFrame(
-      notification,
-      type,
-      createNotificationDetails(notification, type)
-    );
-  }
-
-  function createSystemNotificationCard(notification) {
-    return createNotificationCardFrame(
-      notification,
-      'system',
-      createNotificationDetails(notification, 'system')
-    );
-  }
-
-  function createMatchNotificationCard(notification) {
-    return createNotificationCardFrame(
-      notification,
-      'match',
-      createNotificationDetails(notification, 'match')
-    );
-  }
-
-  function createBookingNotificationCard(notification) {
-    return createNotificationCardFrame(
-      notification,
-      'booking',
-      createNotificationDetails(notification, 'booking')
-    );
-  }
-
   function createNotificationCard(notification) {
-    const type = stateTools.getNotificationType(notification);
-    const renderers = {
-      confirmed: createConfirmedNotificationCard,
-      cancelled: createCancelledNotificationCard,
-      holdExpiring: createHoldExpiringNotificationCard,
-      holdExpired: createHoldExpiredNotificationCard,
-      paymentSuccess: (item) => createPaymentNotificationCard(item, 'paymentSuccess'),
-      refund: (item) => createPaymentNotificationCard(item, 'refund'),
-      paymentFailed: (item) => createPaymentNotificationCard(item, 'paymentFailed'),
-      payment: (item) => createPaymentNotificationCard(item, 'payment'),
-      system: createSystemNotificationCard,
-      match: createMatchNotificationCard,
-      booking: createBookingNotificationCard
-    };
-    return renderers[type](notification);
+    const style = stateTools.getNotificationStyle(notification);
+    return createNotificationCardFrame(
+      notification,
+      style,
+      createNotificationDetails(notification)
+    );
   }
 
   async function markOneRequest(id) {
@@ -275,18 +216,40 @@
       return null;
     }
     if (!response.ok) throw new Error('Không thể đánh dấu thông báo đã đọc. Hãy thử lại.');
+    const result = await response.json();
+    if (!result || !result.read_at) {
+      throw new Error('Phản hồi đánh dấu đã đọc không hợp lệ.');
+    }
+    return result;
+  }
+
+  function dispatchStateChanged(detail) {
+    window.dispatchEvent(new CustomEvent('notification-state-changed', { detail }));
+  }
+
+  function markReadLocally(id, readAt) {
+    const notification = state.notifications.find((item) => String(item.id) === String(id));
+    if (!notification || notification.read_at) return;
+    notification.read_at = readAt;
+    renderItems(state.notifications);
+    dispatchStateChanged({ id: String(id), readAt });
   }
 
   async function markOne(id) {
+    if (state.reading.has(String(id))) return;
+    state.reading.add(String(id));
     try {
-      await markOneRequest(id);
-      await loadNotifications();
+      const result = await markOneRequest(id);
+      if (result) markReadLocally(id, result.read_at);
     } catch (error) {
       setView({ error: error.message });
+    } finally {
+      state.reading.delete(String(id));
     }
   }
 
   function renderItems(notifications) {
+    updateUnreadCounts();
     const filtered = stateTools.filterNotifications(notifications, state.category);
     state.totalPages = Math.ceil(filtered.length / 10);
     state.page = Math.min(state.page, state.totalPages || 1);
@@ -316,11 +279,10 @@
     const requestId = ++state.request;
     elements.list.replaceChildren();
     setView({ loading: true });
-    const pageSize = 10;
+    const pageSize = 50;
     try {
-      const fetchPage = async (category, page) => {
+      const fetchPage = async (page) => {
         const query = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
-        if (category) query.set('category', category);
         const response = await fetch(`/api/v1/notifications?${query}`, {
           credentials: 'same-origin',
           cache: 'no-store'
@@ -337,41 +299,23 @@
         }
         return result;
       };
-      const fetchCategory = async (category) => {
-        const firstPage = await fetchPage(category, 1);
-        if (!firstPage) return null;
-        const notifications = [...firstPage.notifications];
-        for (let page = 2; page <= firstPage.pagination.total_pages; page += 1) {
-          const result = await fetchPage(category, page);
-          if (!result) return null;
-          notifications.push(...result.notifications);
-          if (requestId !== state.request) return null;
-        }
-        return { notifications, serverTime: firstPage.server_time };
-      };
-      const categories = state.category === 'all'
-        ? [null]
-        : state.category === 'BOOKING_HOLD'
-          ? ['BOOKING_HOLD', 'PAYMENT']
-          : [state.category];
-      const results = [];
-      for (const category of categories) {
-        const result = await fetchCategory(category);
+      const firstPage = await fetchPage(1);
+      if (!firstPage || requestId !== state.request) return;
+      const notifications = [...firstPage.notifications];
+      for (let page = 2; page <= firstPage.pagination.total_pages; page += 1) {
+        const result = await fetchPage(page);
         if (!result || requestId !== state.request) return;
-        results.push(result);
+        notifications.push(...result.notifications);
       }
-      const byId = new Map();
-      for (const result of results) {
-        for (const notification of result.notifications) {
-          byId.set(notification.id, notification);
-        }
-      }
-      const notifications = [...byId.values()].sort((first, second) =>
-        String(second.created_at).localeCompare(String(first.created_at))
-      );
-      if (requestId !== state.request) return;
-      state.notifications = notifications;
-      state.serverTime = results[0]?.serverTime;
+      const byId = new Map(notifications.map((item) => [item.id, item]));
+      state.notifications = [...byId.values()].sort((first, second) => {
+        const byCreatedAt = String(second.created_at).localeCompare(String(first.created_at));
+        if (byCreatedAt !== 0) return byCreatedAt;
+        const firstId = BigInt(String(first.id));
+        const secondId = BigInt(String(second.id));
+        return firstId < secondId ? 1 : firstId > secondId ? -1 : 0;
+      });
+      state.serverTime = firstPage.server_time;
       renderItems(state.notifications);
     } catch (error) {
       if (requestId === state.request) setView({ error: error.message });
@@ -391,7 +335,12 @@
         return;
       }
       if (!response.ok) throw new Error('Không thể đánh dấu tất cả đã đọc. Hãy thử lại.');
-      await loadNotifications();
+      const readAt = new Date().toISOString();
+      for (const notification of state.notifications) {
+        if (!notification.read_at) notification.read_at = readAt;
+      }
+      renderItems(state.notifications);
+      dispatchStateChanged({ readAll: true, readAt });
     } catch (error) {
       setView({ error: error.message });
     } finally {
@@ -417,7 +366,7 @@
         String(item === tab)
       ));
       elements.title.textContent = tab.dataset.label;
-      loadNotifications();
+      renderItems(state.notifications);
     });
   });
   elements.retry.addEventListener('click', loadNotifications);
@@ -433,6 +382,19 @@
       state.page += 1;
       renderItems(state.notifications);
     }
+  });
+  window.addEventListener('notification-state-changed', (event) => {
+    const { id, readAt, readAll } = event.detail || {};
+    let changed = false;
+    for (const notification of state.notifications) {
+      if (readAll || String(notification.id) === String(id)) {
+        if (!notification.read_at) {
+          notification.read_at = readAt || new Date().toISOString();
+          changed = true;
+        }
+      }
+    }
+    if (changed) renderItems(state.notifications);
   });
   loadNotifications();
 })();

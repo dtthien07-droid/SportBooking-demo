@@ -7,42 +7,143 @@
 }(typeof window === 'undefined' ? null : window, () => {
   const CATEGORY_GROUPS = Object.freeze({
     all: null,
-    BOOKING_HOLD: new Set(['confirmed', 'cancelled', 'holdExpiring', 'holdExpired', 'booking']),
-    MATCH: new Set(['match']),
-    PAYMENT: new Set(['paymentSuccess', 'refund', 'paymentFailed', 'payment']),
-    SYSTEM: new Set(['system'])
+    BOOKING_HOLD: 'BOOKING_HOLD',
+    MATCH: 'MATCH',
+    PAYMENT: 'PAYMENT',
+    SYSTEM: 'SYSTEM'
   });
 
-  function getNotificationType(notification) {
-    const text = `${notification.title || ''} ${notification.body || ''}`
+  const NOTIFICATION_STYLES = Object.freeze({
+    BOOKED: Object.freeze({
+      type: 'BOOKED',
+      borderColor: 'var(--notification-booked-accent)',
+      cardBackground: 'var(--notification-booked-bg)',
+      unreadBackground: 'var(--notification-booked-unread-bg)',
+      iconBackground: 'var(--notification-booked-icon-bg)',
+      iconColor: 'var(--notification-booked-accent)',
+      textColor: 'var(--notification-text)',
+      labelColor: 'var(--notification-booked-accent)',
+      icon: 'check_circle',
+      label: 'Đã đặt'
+    }),
+    PAID: Object.freeze({
+      type: 'PAID',
+      borderColor: 'var(--notification-paid-accent)',
+      cardBackground: 'var(--notification-paid-bg)',
+      unreadBackground: 'var(--notification-paid-unread-bg)',
+      iconBackground: 'var(--notification-paid-icon-bg)',
+      iconColor: 'var(--notification-paid-accent)',
+      textColor: 'var(--notification-text)',
+      labelColor: 'var(--notification-paid-accent)',
+      icon: 'credit_card',
+      label: 'Thanh toán'
+    }),
+    REFUND: Object.freeze({
+      type: 'REFUND',
+      borderColor: 'var(--notification-refund-accent)',
+      cardBackground: 'var(--notification-refund-bg)',
+      unreadBackground: 'var(--notification-refund-unread-bg)',
+      iconBackground: 'var(--notification-refund-icon-bg)',
+      iconColor: 'var(--notification-refund-accent)',
+      textColor: 'var(--notification-text)',
+      labelColor: 'var(--notification-refund-accent)',
+      icon: 'replay',
+      label: 'Hoàn tiền'
+    }),
+    CANCELLED: Object.freeze({
+      type: 'CANCELLED',
+      borderColor: 'var(--notification-cancelled-accent)',
+      cardBackground: 'var(--notification-cancelled-bg)',
+      unreadBackground: 'var(--notification-cancelled-unread-bg)',
+      iconBackground: 'var(--notification-cancelled-icon-bg)',
+      iconColor: 'var(--notification-cancelled-accent)',
+      textColor: 'var(--notification-text)',
+      labelColor: 'var(--notification-cancelled-accent)',
+      icon: 'close',
+      label: 'Đã hủy'
+    }),
+    EXPIRED: Object.freeze({
+      type: 'EXPIRED',
+      borderColor: 'var(--notification-expired-accent)',
+      cardBackground: 'var(--notification-expired-bg)',
+      unreadBackground: 'var(--notification-expired-unread-bg)',
+      iconBackground: 'var(--notification-expired-icon-bg)',
+      iconColor: 'var(--notification-expired-accent)',
+      textColor: 'var(--notification-text)',
+      labelColor: 'var(--notification-expired-accent)',
+      icon: 'timer',
+      label: 'Hết hạn'
+    }),
+    MATCH: Object.freeze({
+      type: 'MATCH',
+      borderColor: 'var(--notification-match-accent)',
+      cardBackground: 'var(--notification-match-bg)',
+      unreadBackground: 'var(--notification-match-unread-bg)',
+      iconBackground: 'var(--notification-match-icon-bg)',
+      iconColor: 'var(--notification-match-accent)',
+      textColor: 'var(--notification-text)',
+      labelColor: 'var(--notification-match-accent)',
+      icon: 'groups',
+      label: 'Ghép kèo'
+    }),
+    SYSTEM: Object.freeze({
+      type: 'SYSTEM',
+      borderColor: 'var(--notification-system-accent)',
+      cardBackground: 'var(--notification-system-bg)',
+      unreadBackground: 'var(--notification-system-unread-bg)',
+      iconBackground: 'var(--notification-system-icon-bg)',
+      iconColor: 'var(--notification-system-accent)',
+      textColor: 'var(--notification-text)',
+      labelColor: 'var(--notification-system-accent)',
+      icon: 'notifications',
+      label: 'Hệ thống'
+    })
+  });
+
+  function normalizeNotificationText(value) {
+    return String(value || '')
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/[đĐ]/g, 'd')
-      .toLowerCase();
-    if (notification.category === 'SYSTEM'
-        || text.includes('bao tri')
-        || text.includes('chinh sach')
-        || text.includes('he thong')) return 'system';
-    if (notification.category === 'MATCH') return 'match';
-    if (text.includes('huy') || text.includes('cancel')) return 'cancelled';
-    if (text.includes('sap het han') || text.includes('expires soon')) return 'holdExpiring';
-    if (text.includes('het han') || text.includes('het thoi han') || text.includes('expired')) {
-      return 'holdExpired';
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function getNotificationStyle(notification = {}) {
+    if (notification.category === 'SYSTEM') return NOTIFICATION_STYLES.SYSTEM;
+    if (notification.category === 'MATCH') return NOTIFICATION_STYLES.MATCH;
+    if (notification.category !== 'BOOKING_HOLD' && notification.category !== 'PAYMENT') {
+      return NOTIFICATION_STYLES.SYSTEM;
     }
-    if (text.includes('that bai')
-        || text.includes('khong thanh cong')
-        || text.includes('failed')) return 'paymentFailed';
-    if (text.includes('hoan tien') || text.includes('hoan coc') || text.includes('refund')) {
-      return 'refund';
+
+    const title = normalizeNotificationText(notification.title);
+    if (title.startsWith('dat san thanh cong')) return NOTIFICATION_STYLES.BOOKED;
+    if (title.startsWith('thanh toan thanh cong')) return NOTIFICATION_STYLES.PAID;
+    if (title.startsWith('hoan tien') || title.startsWith('hoan 100%')) {
+      return NOTIFICATION_STYLES.REFUND;
     }
-    if (text.includes('thanh toan thanh cong') || text.includes('payment successful')) {
-      return 'paymentSuccess';
+    if (title.includes('da huy') || title.includes('bi huy') || title.includes('cancel')) {
+      return NOTIFICATION_STYLES.CANCELLED;
     }
-    if (text.includes('xac nhan')
-        || text.includes('dat san thanh cong')
-        || text.includes('confirmed')) return 'confirmed';
-    if (notification.category === 'PAYMENT') return 'payment';
-    return 'booking';
+    if (title.includes('het han') || title.includes('expired')) {
+      return NOTIFICATION_STYLES.EXPIRED;
+    }
+    return NOTIFICATION_STYLES.SYSTEM;
+  }
+
+  function dedupeFacilityLabel(value) {
+    return String(value || '').replace(
+      /([^,;.\n]+?)\s+—\s+([^,;.\n]+?)(?=[,;.\n]|$)/g,
+      (match, left, right) => {
+        const normalizedLeft = normalizeNotificationText(left);
+        const normalizedRight = normalizeNotificationText(right);
+        return normalizedLeft === normalizedRight
+          || normalizedLeft.endsWith(` ${normalizedRight}`)
+          ? left.trimEnd()
+          : match;
+      }
+    );
   }
 
   function parseTimestamp(value) {
@@ -87,8 +188,51 @@
     if (!Object.hasOwn(CATEGORY_GROUPS, category)) return [];
     const allowed = CATEGORY_GROUPS[category];
     return allowed
-      ? notifications.filter((notification) => allowed.has(getNotificationType(notification)))
+      ? notifications.filter((notification) => notification.category === allowed)
       : notifications;
+  }
+
+  function getBookingTarget(notification, from) {
+    if (notification.resource_type !== 'BOOKING'
+        || !/^[1-9]\d*$/.test(String(notification.resource_id || ''))) {
+      return null;
+    }
+    const query = new URLSearchParams({
+      booking_id: String(notification.resource_id),
+      from
+    });
+    return `/chi-tiet-don-dat-san.html?${query}`;
+  }
+
+  function getNotificationAction(notification, from) {
+    const bookingTarget = getBookingTarget(notification, from);
+    if (!bookingTarget) return null;
+    const text = normalizeNotificationText(notification.title);
+    if (text.includes('ve dien tu') || text.includes('ticket')) {
+      const query = new URLSearchParams({
+        booking_id: String(notification.resource_id),
+        from
+      });
+      return { href: `/ve-dien-tu.html?${query}`, label: 'Xem vé' };
+    }
+    return {
+      href: bookingTarget,
+      label: getNotificationStyle(notification).type === 'CANCELLED'
+        ? 'Xem chi tiết đơn hủy'
+        : 'Xem đơn'
+    };
+  }
+
+  function countUnreadByCategory(notifications) {
+    const counts = { all: 0, BOOKING_HOLD: 0, MATCH: 0, PAYMENT: 0, SYSTEM: 0 };
+    for (const notification of Array.isArray(notifications) ? notifications : []) {
+      if (notification.read_at) continue;
+      counts.all += 1;
+      if (Object.prototype.hasOwnProperty.call(counts, notification.category)) {
+        counts[notification.category] += 1;
+      }
+    }
+    return counts;
   }
 
   function getDisplayState({ loading = false, error = null, items = [] } = {}) {
@@ -101,7 +245,11 @@
     filterNotifications,
     formatRelativeTime,
     formatUnreadBadge,
+    countUnreadByCategory,
+    getBookingTarget,
     getDisplayState,
-    getNotificationType
+    getNotificationAction,
+    getNotificationStyle,
+    dedupeFacilityLabel
   };
 }));

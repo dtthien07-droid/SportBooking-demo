@@ -107,6 +107,9 @@
 .notifications-tab[data-category="PAYMENT"] .notifications-tab__label svg { color: #0051d5; }
 .notifications-tab[data-category="SYSTEM"] .notifications-tab__label svg { color: #ba1a1a; }
 .notifications-tab[aria-pressed="true"] .notifications-tab__label svg { color: #fff; }
+.notifications-tab__unread { display: inline-grid; min-width: 20px; height: 20px; place-items: center; padding: 0 6px; border-radius: 999px; background: #e2e8f0; color: #1e293b; font-size: 10px; font-weight: 800; }
+.notifications-tab__unread[hidden] { display: none; }
+.notifications-tab[aria-pressed="true"] .notifications-tab__unread { background: rgb(255 255 255 / 20%); color: #fff; }
 .notifications-tab__soon { flex: none; border-radius: 999px; background: #ffdbca; color: #783200; padding: 3px 7px; font-size: 10px; font-weight: 700; }
 .notifications-content { padding: 20px; }
 .notifications-content__heading { display: flex; align-items: center; justify-content: space-between; padding: 0 2px 16px; border-bottom: 1px solid #edf0f4; }
@@ -150,60 +153,31 @@
 .notification-group__list { display: grid; gap: 12px; }
 .notification-card {
   display: grid;
-  grid-template-columns: 52px minmax(0, 1fr) auto;
-  align-items: start;
+  grid-template-columns: 52px minmax(0, 1fr) 150px;
+  align-items: center;
   gap: 14px;
   padding: 16px;
   border: 1px solid #e7e9f1;
+  border-left: 2px solid var(--notification-accent);
   border-radius: 18px;
-  background: #fff;
+  background: var(--notification-card-bg);
+  color: var(--notification-text-color);
   transition: background-color .15s ease, border-color .15s ease;
 }
-.notification-card:hover { border-color: #d7dded; background: #fcfcff; }
-.notification-card.is-unread { border-color: #d3e8d8; background: #f8fff9; }
-.notification-card__icon { display: grid; width: 52px; height: 52px; place-items: center; border-radius: 15px; background: #e7f5eb; color: #006b2c; }
+.notification-card:hover { filter: brightness(.985); }
+.notification-card.is-unread { border-left-width: 5px; background: var(--notification-unread-bg); }
+.notification-card__icon { display: grid; width: 52px; height: 52px; place-items: center; border-radius: 15px; background: var(--notification-icon-bg); color: var(--notification-icon-color); }
 .notification-card__svg { width: 25px; height: 25px; }
 .notification-card__content { min-width: 0; }
-.notification-card__meta { display: flex; justify-content: flex-end; margin-bottom: 4px; }
-.notification-card__time { color: #68756a; font-size: 11px; white-space: nowrap; }
-.notification-card__title { margin: 7px 0 4px; font-size: 15px; line-height: 1.45; }
-.notification-card__body { margin: 0; color: #3e4a3d; font-size: 13px; line-height: 1.55; }
-.notification-card__actions { display: flex; align-items: center; gap: 10px; }
-.notification-card__read,
-.notification-card__link,
-.notification-card__unavailable { color: #006b2c; font: inherit; font-size: 12px; font-weight: 700; white-space: nowrap; }
-.notification-card__read { border: 0; padding: 7px 0; background: transparent; cursor: pointer; }
-.notification-card__link { padding: 8px 12px; border-radius: 10px; background: #00873a; color: #fff; text-decoration: none; }
-.notification-card__link:hover { background: #006b2c; }
-.notification-card__read-state,
-.notification-card__unavailable { color: #68756a; }
-.notification-card--confirmed { border-left: 4px solid #00873a; }
-.notification-card--confirmed .notification-card__icon { background: #e7f5eb; color: #006b2c; }
-.notification-card--cancelled,
-.notification-card--cancelled.is-unread { border-color: #f1c7c3; border-left: 4px solid #ba1a1a; background: #fff9f8; }
-.notification-card--cancelled .notification-card__icon,
-.notification-card--paymentFailed .notification-card__icon { background: #ffdad6; color: #93000a; }
-.notification-card--paymentFailed,
-.notification-card--paymentFailed.is-unread { border-color: #f1c7c3; border-left: 4px solid #ba1a1a; background: #fff9f8; }
-.notification-card--holdExpiring,
-.notification-card--holdExpiring.is-unread,
-.notification-card--holdExpired,
-.notification-card--holdExpired.is-unread { border-color: #f0d4b8; border-left: 4px solid #9d4300; background: #fffaf5; }
-.notification-card--holdExpiring .notification-card__icon,
-.notification-card--holdExpired .notification-card__icon { background: #ffdbca; color: #783200; }
-.notification-card--paymentSuccess,
-.notification-card--paymentSuccess.is-unread { border-color: #cde7d3; border-left: 4px solid #00873a; background: #f8fff9; }
-.notification-card--paymentSuccess .notification-card__icon { background: #e7f5eb; color: #006b2c; }
-.notification-card--refund,
-.notification-card--refund.is-unread,
-.notification-card--payment,
-.notification-card--payment.is-unread { border-color: #d3dbfa; border-left: 4px solid #0051d5; background: #f5f7ff; }
-.notification-card--refund .notification-card__icon { background: #dbe1ff; color: #003ea8; }
-.notification-card--payment .notification-card__icon { background: #dbe1ff; color: #003ea8; }
-.notification-card--system { border-left: 4px solid #6e7b6c; }
-.notification-card--system .notification-card__icon { background: #e9edff; color: #3e4a3d; }
-.notification-card--match { border-left: 4px solid #fd761a; }
-.notification-card--match .notification-card__icon { background: #ffdbca; color: #783200; }
+.notification-card__title { min-width: 0; margin: 0; overflow-wrap: anywhere; color: var(--notification-text-color); font-size: 15px; line-height: 1.4; }
+.notification-card__body { display: -webkit-box; overflow: hidden; margin: 5px 0 0; color: var(--notification-text-color); font-size: 13px; line-height: 1.5; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.notification-card__actions { display: grid; width: 150px; grid-template-columns: minmax(0, 1fr); align-content: center; justify-items: stretch; gap: 9px; }
+.notification-card__meta { display: flex; min-width: 0; align-items: center; justify-content: flex-end; gap: 6px; }
+.notification-card__time { color: #475569; font-size: 10px; text-align: right; white-space: nowrap; }
+.notification-card__unread { display: inline-flex; min-height: 22px; align-items: center; gap: 5px; padding: 2px 7px; border: 1px solid var(--notification-accent); border-radius: 999px; color: var(--notification-accent); font-size: 9px; font-weight: 700; white-space: nowrap; }
+.notification-card__unread-dot { width: 6px; height: 6px; flex: none; border-radius: 50%; background: var(--notification-accent); }
+.notification-card__link { display: flex; min-height: 36px; width: 100%; align-items: center; justify-content: center; padding: 7px 9px; border-radius: 10px; background: #087443; color: #fff; font: inherit; font-size: 11px; font-weight: 700; line-height: 1.35; text-align: center; text-decoration: none; }
+.notification-card__link:hover { background: #065f37; }
 .notifications-pagination { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 20px; }
 .notifications-page-button { min-width: 88px; padding: 8px 12px; }
 .notifications-page-button:disabled { opacity: .48; cursor: not-allowed; }
@@ -224,9 +198,13 @@
   .notifications-tab { min-height: 44px; flex: initial; gap: 12px; padding: 9px 12px; border: 0; border-radius: 14px; }
   .notifications-tab__label { gap: 10px; }
   .notifications-tab__label svg { width: 17px; height: 17px; }
+}
+
+@media (max-width: 640px) {
   .notification-card { grid-template-columns: 44px minmax(0, 1fr); gap: 12px; padding: 14px; }
   .notification-card__icon { width: 44px; height: 44px; }
-  .notification-card__actions { grid-column: 2; justify-content: flex-start; flex-wrap: wrap; gap: 12px; }
+  .notification-card__actions { grid-column: 1 / -1; width: 100%; gap: 8px; }
+  .notification-card__link { width: 100%; }
 }
 
 @media (max-width: 420px) {
@@ -234,7 +212,6 @@
   .notifications-back { padding-left: 4px; }
   .notifications-sidebar,
   .notifications-content { border-radius: 18px; }
-  .notification-card__meta { align-items: flex-start; flex-direction: column; gap: 4px; }
   .notifications-heading { align-items: flex-start; flex-direction: column; }
   .notifications-heading__title { flex-wrap: nowrap; }
   .notifications-read-all { align-self: flex-end; }

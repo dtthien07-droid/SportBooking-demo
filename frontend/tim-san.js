@@ -150,7 +150,10 @@
     const contactParts = [];
     if (facility.hotline) contactParts.push(`Liên hệ: ${facility.hotline}`);
     if (facility.opening_time || facility.closing_time) {
-      contactParts.push(`Mở cửa: ${facility.opening_time || ''} - ${facility.closing_time || ''}`);
+      contactParts.push(window.SportBookingFormat.formatOpeningHours(
+        facility.opening_time,
+        facility.closing_time
+      ));
     }
     if (contactParts.length) addDetailLine(main, 'schedule', contactParts.join(' · '));
 
@@ -172,8 +175,9 @@
       priceValue.append(makeElement('span', 'text-xs font-normal text-gray-500', ' /h'));
       price.append(priceValue);
     }
-    if (facility.rating !== null && facility.rating !== undefined) {
-      price.append(makeElement('span', 'text-xs text-amber-600', `★ ${facility.rating}`));
+    const rating = window.SportBookingFormat.formatFacilityRating(facility.rating);
+    if (rating !== null) {
+      price.append(makeElement('span', 'text-xs text-amber-600', `★ ${rating}`));
     }
     actions.append(price);
 
