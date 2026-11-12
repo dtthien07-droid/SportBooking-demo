@@ -32,5 +32,26 @@
     }).format(date);
   }
 
-  return { maskPhone, formatBookingCode, formatVietnamDateTime };
+  function formatFacilityRating(value) {
+    if (value === null || value === undefined || String(value).trim() === '') return null;
+    const rating = Number(value);
+    if (!Number.isFinite(rating)) return null;
+    return rating.toFixed(1).replace(/\.0$/, '');
+  }
+
+  function formatOpeningHours(openingTime, closingTime) {
+    const opening = String(openingTime || '').trim().replace(/^(\d{1,2}:\d{2}):\d{2}(?:\.\d+)?$/, '$1');
+    const closing = String(closingTime || '').trim().replace(/^(\d{1,2}:\d{2}):\d{2}(?:\.\d+)?$/, '$1');
+    if (!opening && !closing) return '';
+    if (opening === '00:00' && closing === '24:00') return 'Mở cửa 24/24';
+    return `Mở cửa: ${opening}${opening && closing ? ' - ' : ''}${closing}`;
+  }
+
+  return {
+    formatBookingCode,
+    formatFacilityRating,
+    formatOpeningHours,
+    formatVietnamDateTime,
+    maskPhone
+  };
 }));

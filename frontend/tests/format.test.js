@@ -5,7 +5,9 @@ const test = require('node:test');
 const {
   maskPhone,
   formatBookingCode,
-  formatVietnamDateTime
+  formatVietnamDateTime,
+  formatFacilityRating,
+  formatOpeningHours
 } = require('../shared/format.js');
 
 test('masks phone numbers while keeping their final three digits', () => {
@@ -28,4 +30,17 @@ test('formats booking timestamps in Vietnam time', () => {
     '10:00 10/11/2026'
   );
   assert.throws(() => formatVietnamDateTime('invalid'), /Thời điểm đặt sân không hợp lệ/);
+});
+
+test('formats facility ratings to at most one decimal and hides missing ratings', () => {
+  assert.equal(formatFacilityRating('3.70000'), '3.7');
+  assert.equal(formatFacilityRating('4.00000'), '4');
+  assert.equal(formatFacilityRating(null), null);
+  assert.equal(formatFacilityRating(''), null);
+});
+
+test('formats opening hours without seconds and identifies 24-hour facilities', () => {
+  assert.equal(formatOpeningHours('06:00:00', '23:00:00'), 'Mở cửa: 06:00 - 23:00');
+  assert.equal(formatOpeningHours('00:00', '24:00'), 'Mở cửa 24/24');
+  assert.equal(formatOpeningHours(null, null), '');
 });

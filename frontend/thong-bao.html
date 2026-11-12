@@ -42,9 +42,11 @@
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v13H4zM4 7l8 6 8-6M18 3v4m-2-2h4"/></svg>
                   Tất cả thông báo
                 </span>
+                <span class="notifications-tab__unread" data-category-unread="all" hidden></span>
               </button>
               <button class="notifications-tab" type="button" data-notification-category data-category="BOOKING_HOLD" data-label="Lịch đặt sân &amp; Giữ chỗ" aria-pressed="false">
                 <span class="notifications-tab__label"><svg data-sb-icon="event_available" aria-hidden="true"></svg>Lịch đặt sân &amp; Giữ chỗ</span>
+                <span class="notifications-tab__unread" data-category-unread="BOOKING_HOLD" hidden></span>
               </button>
               <button class="notifications-tab" type="button" data-notification-category data-category="MATCH" data-label="Tìm đối &amp; Ghép kèo" aria-pressed="false" disabled>
                 <span class="notifications-tab__label">
@@ -52,15 +54,18 @@
                   Tìm đối &amp; Ghép kèo
                 </span>
                 <span class="notifications-tab__soon">Sắp có</span>
+                <span class="notifications-tab__unread" data-category-unread="MATCH" hidden></span>
               </button>
               <button class="notifications-tab" type="button" data-notification-category data-category="PAYMENT" data-label="Thanh toán &amp; Hoàn cọc" aria-pressed="false">
                 <span class="notifications-tab__label"><svg data-sb-icon="account_balance_wallet" aria-hidden="true"></svg>Thanh toán &amp; Hoàn cọc</span>
+                <span class="notifications-tab__unread" data-category-unread="PAYMENT" hidden></span>
               </button>
               <button class="notifications-tab" type="button" data-notification-category data-category="SYSTEM" data-label="Hệ thống" aria-pressed="false">
                 <span class="notifications-tab__label">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h4l7 4V6l-7 4H4Zm11-1 4-3m-4 9 4 3m-11-2 1 4"/></svg>
                   Hệ thống
                 </span>
+                <span class="notifications-tab__unread" data-category-unread="SYSTEM" hidden></span>
               </button>
             </nav>
           </aside>
@@ -95,6 +100,7 @@
     </div>
   </main>
   <script src="/shared/back-nav.js"></script>
+  <script src="/shared/header-state.js"></script>
   <script src="/shared/header.js"></script>
   <script src="/notifications/notifications-page.js"></script>
 </body>

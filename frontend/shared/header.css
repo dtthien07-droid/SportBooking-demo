@@ -1,5 +1,37 @@
 @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap');
 
+:root {
+  --notification-text: #1E293B;
+  --notification-booked-accent: #087443;
+  --notification-booked-bg: #F0FDF4;
+  --notification-booked-unread-bg: #E5F8EC;
+  --notification-booked-icon-bg: #DCFCE7;
+  --notification-paid-accent: #1D4ED8;
+  --notification-paid-bg: #EFF6FF;
+  --notification-paid-unread-bg: #E4EEFF;
+  --notification-paid-icon-bg: #DBEAFE;
+  --notification-refund-accent: #C2410C;
+  --notification-refund-bg: #FFF7ED;
+  --notification-refund-unread-bg: #FFF0E0;
+  --notification-refund-icon-bg: #FFEDD5;
+  --notification-cancelled-accent: #B91C1C;
+  --notification-cancelled-bg: #FEF2F2;
+  --notification-cancelled-unread-bg: #FDE8E8;
+  --notification-cancelled-icon-bg: #FEE2E2;
+  --notification-expired-accent: #A16207;
+  --notification-expired-bg: #FEFCE8;
+  --notification-expired-unread-bg: #FDF5D8;
+  --notification-expired-icon-bg: #FEF3C7;
+  --notification-match-accent: #7C3AED;
+  --notification-match-bg: #F5F3FF;
+  --notification-match-unread-bg: #EEE9FF;
+  --notification-match-icon-bg: #EDE9FE;
+  --notification-system-accent: #475569;
+  --notification-system-bg: #F8FAFC;
+  --notification-system-unread-bg: #F1F5F9;
+  --notification-system-icon-bg: #E2E8F0;
+}
+
 html body,
 html body[class] {
   font-family: 'Be Vietnam Pro', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
@@ -124,46 +156,30 @@ html body[class] {
   display: grid;
   width: 100%;
   grid-template-columns: 44px minmax(0, 1fr);
-  align-items: start;
+  align-items: center;
   gap: 12px;
-  padding: 14px 2px;
+  padding: 12px 8px;
   border: 0;
+  border-left: 3px solid var(--notification-accent);
   border-bottom: 1px solid #edf0f4;
-  background: #fff;
-  color: #3e4a3d;
+  background: var(--notification-card-bg);
+  color: var(--notification-text-color);
   font: inherit;
   text-align: left;
   cursor: pointer;
 }
-.sb-shared-header__notification-item:hover { background: #f9faff; }
-.sb-shared-header__notification-item.is-unread { background: #f8fff9; }
-.sb-shared-header__notification-icon { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 13px; background: #e7f5eb; color: #006b2c; }
+.sb-shared-header__notification-item:hover { filter: brightness(.98); }
+.sb-shared-header__notification-item.is-unread { border-left-width: 5px; background: var(--notification-unread-bg); }
+.sb-shared-header__notification-icon { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 13px; background: var(--notification-icon-bg); color: var(--notification-icon-color); }
 .sb-shared-header__notification-icon .sb-shared-header__icon { width: 22px; height: 22px; }
 .sb-shared-header__notification-content { display: grid; min-width: 0; gap: 5px; }
-.sb-shared-header__notification-item-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
-.sb-shared-header__notification-title { overflow: hidden; color: #141b2b; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.sb-shared-header__notification-item-heading { display: grid; min-width: 0; gap: 3px; }
+.sb-shared-header__notification-title { overflow: hidden; color: var(--notification-text-color); font-size: 11px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.sb-shared-header__notification-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .sb-shared-header__notification-time { flex: none; color: #68756a; font-size: 10px; white-space: nowrap; }
+.sb-shared-header__notification-unread { display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; border: 1px solid var(--notification-accent); border-radius: 999px; color: var(--notification-accent); font-size: 9px; font-weight: 700; white-space: nowrap; }
+.sb-shared-header__notification-unread-dot { width: 5px; height: 5px; flex: none; border-radius: 50%; background: var(--notification-accent); }
 .sb-shared-header__notification-body { display: -webkit-box; overflow: hidden; color: #3e4a3d; font-size: 11px; line-height: 1.5; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-.sb-shared-header__notification-item--confirmed.is-unread { background: #f8fff9; }
-.sb-shared-header__notification-item--confirmed .sb-shared-header__notification-icon { background: #e7f5eb; color: #006b2c; }
-.sb-shared-header__notification-item--cancelled.is-unread { background: #fff3f1; }
-.sb-shared-header__notification-item--cancelled .sb-shared-header__notification-icon { background: #ffdad6; color: #93000a; }
-.sb-shared-header__notification-item--payment-failed.is-unread { background: #fff3f1; }
-.sb-shared-header__notification-item--payment-failed .sb-shared-header__notification-icon { background: #ffdad6; color: #93000a; }
-.sb-shared-header__notification-item--hold-expiring.is-unread,
-.sb-shared-header__notification-item--hold-expired.is-unread { background: #fff7ee; }
-.sb-shared-header__notification-item--hold-expiring .sb-shared-header__notification-icon,
-.sb-shared-header__notification-item--hold-expired .sb-shared-header__notification-icon { background: #ffdbca; color: #783200; }
-.sb-shared-header__notification-item--payment-success.is-unread { background: #f8fff9; }
-.sb-shared-header__notification-item--payment-success .sb-shared-header__notification-icon { background: #e7f5eb; color: #006b2c; }
-.sb-shared-header__notification-item--refund.is-unread,
-.sb-shared-header__notification-item--payment.is-unread { background: #f5f7ff; }
-.sb-shared-header__notification-item--refund .sb-shared-header__notification-icon,
-.sb-shared-header__notification-item--payment .sb-shared-header__notification-icon { background: #dbe1ff; color: #003ea8; }
-.sb-shared-header__notification-item--match.is-unread { background: #fff7f0; }
-.sb-shared-header__notification-item--match .sb-shared-header__notification-icon { background: #ffdbca; color: #783200; }
-.sb-shared-header__notification-item--system.is-unread { background: #f6f7fb; }
-.sb-shared-header__notification-item--system .sb-shared-header__notification-icon { background: #e9edff; color: #3e4a3d; }
 .sb-shared-header__popover-error { margin: 0; padding: 14px 0; color: #93000a; text-align: center; }
 .sb-shared-header__view-all { display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 10px 0; color: #006b2c; font-size: 12px; font-weight: 700; text-align: center; text-decoration: none; }
 .sb-shared-header__view-all-icon { width: 16px; height: 16px; }

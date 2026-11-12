@@ -90,26 +90,30 @@
     );
   }
 
-  function createBooking(slotIds, paymentOption, matchPreference) {
+  async function createBooking(slotIds, paymentOption, matchPreference) {
     const payload = { slot_ids: slotIds, payment_option: paymentOption };
     if (matchPreference) payload.match_preference = matchPreference;
-    return requestJson('/api/v1/bookings', {
+    const booking = await requestJson('/api/v1/bookings', {
       method: 'POST',
       body: JSON.stringify(payload)
     });
+    if (booking) window.dispatchEvent(new Event('pending-booking-changed'));
+    return booking;
   }
 
-  function cancelBooking(bookingId, cancellationReason, preview) {
+  async function cancelBooking(bookingId, cancellationReason, preview) {
     const body = {};
     if (cancellationReason) body.cancellation_reason = cancellationReason;
     if (preview) {
       body.expected_refund_amount = preview.refund_amount;
       body.expected_refund_percent = preview.refund_percent;
     }
-    return requestJson(`/api/v1/bookings/${encodeURIComponent(bookingId)}/cancel`, {
+    const result = await requestJson(`/api/v1/bookings/${encodeURIComponent(bookingId)}/cancel`, {
       method: 'POST',
       body: JSON.stringify(body)
     });
+    if (result) window.dispatchEvent(new Event('pending-booking-changed'));
+    return result;
   }
 
   function getRefundPreview(bookingId) {
@@ -144,11 +148,15 @@
     return requestJson('/api/v1/bookings/pending', { cache: 'no-store' });
   }
 
-  function createPaymentAttempt(bookingId, method, simulationResult) {
-    return requestJson(`/api/v1/bookings/${encodeURIComponent(bookingId)}/payment-attempts`, {
+  async function createPaymentAttempt(bookingId, method, simulationResult) {
+    const result = await requestJson(`/api/v1/bookings/${encodeURIComponent(bookingId)}/payment-attempts`, {
       method: 'POST',
       body: JSON.stringify({ method, simulation_result: simulationResult })
     });
+    if (result && simulationResult === 'SUCCESS') {
+      window.dispatchEvent(new Event('pending-booking-changed'));
+    }
+    return result;
   }
 
   function getPayments(bookingId) {

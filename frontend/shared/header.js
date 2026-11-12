@@ -39,65 +39,16 @@
     return svg;
   }
 
+  window.addEventListener('notification-state-changed', () => {
+    const header = document.querySelector('.sb-shared-header');
+    if (!header) return;
+    const popover = document.querySelector('.sb-shared-header__popover');
+    refreshHeaderNotifications(header, Boolean(popover && !popover.hidden), true);
+  });
+
   function loginRedirect() {
     const returnTo = `${window.location.pathname}${window.location.search}${window.location.hash}`;
     window.location.assign(`/dang-nhap.html?returnTo=${encodeURIComponent(returnTo)}`);
-  }
-
-  function headerNotificationTarget(notification) {
-    if (notification.resource_type !== 'BOOKING'
-        || !/^[1-9]\d*$/.test(String(notification.resource_id || ''))) {
-      return null;
-    }
-    const query = new URLSearchParams({
-      booking_id: String(notification.resource_id),
-      from: '/thong-bao.html'
-    });
-    return `/chi-tiet-don-dat-san.html?${query}`;
-  }
-
-  function notificationPresentation(notification) {
-    const text = `${notification.title || ''} ${notification.body || ''}`
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[đĐ]/g, 'd')
-      .toLowerCase();
-    if (notification.category === 'SYSTEM'
-        || text.includes('bao tri')
-        || text.includes('chinh sach')
-        || text.includes('he thong')) {
-      return { type: 'system', icon: 'notifications' };
-    }
-    if (notification.category === 'MATCH') {
-      return { type: 'match', icon: 'groups' };
-    }
-    if (text.includes('huy') || text.includes('cancel')) {
-      return { type: 'cancelled', icon: 'cancel' };
-    }
-    if (text.includes('sap het han') || text.includes('expires soon')) {
-      return { type: 'hold-expiring', icon: 'timer' };
-    }
-    if (text.includes('het han') || text.includes('het thoi han') || text.includes('expired')) {
-      return { type: 'hold-expired', icon: 'hourglass_top' };
-    }
-    if (text.includes('that bai') || text.includes('khong thanh cong') || text.includes('failed')) {
-      return { type: 'payment-failed', icon: 'close' };
-    }
-    if (text.includes('hoan tien') || text.includes('hoan coc') || text.includes('refund')) {
-      return { type: 'refund', icon: 'assignment_return' };
-    }
-    if (text.includes('thanh toan thanh cong') || text.includes('payment successful')) {
-      return { type: 'payment-success', icon: 'payments' };
-    }
-    if (text.includes('xac nhan')
-        || text.includes('dat san thanh cong')
-        || text.includes('confirmed')) {
-      return { type: 'confirmed', icon: 'check_circle' };
-    }
-    if (notification.category === 'PAYMENT') {
-      return { type: 'payment', icon: 'account_balance_wallet' };
-    }
-    return { type: 'booking', icon: 'event_available' };
   }
 
   function relativeNotificationTime(createdAt, serverTime) {
@@ -131,6 +82,7 @@
 
   async function markQuickNotification(notification, header) {
     try {
+      let readAt = notification.read_at;
       if (!notification.read_at) {
         const response = await fetch(
           `/api/v1/notifications/${encodeURIComponent(notification.id)}/read`,
@@ -138,12 +90,23 @@
         );
         if (response.status === 401) { loginRedirect(); return; }
         if (!response.ok) throw new Error('Không thể đánh dấu thông báo đã đọc.');
+        const result = await response.json();
+        if (!result || !result.read_at) {
+          throw new Error('Phản hồi đánh dấu đã đọc không hợp lệ.');
+        }
+        readAt = result.read_at;
+        notification.read_at = readAt;
+        window.dispatchEvent(new CustomEvent('notification-state-changed', {
+          detail: { id: String(notification.id), readAt }
+        }));
       }
-      const target = headerNotificationTarget(notification);
-      if (target) {
-        window.location.assign(target);
+      const action = window.SportBookingNotificationState.getNotificationAction(
+        notification,
+        '/thong-bao.html'
+      );
+      if (action) {
+        window.location.assign(action.href);
       } else {
-        notification.read_at = notification.read_at || new Date().toISOString();
         await refreshHeaderNotifications(header, true);
       }
     } catch (error) {
@@ -152,7 +115,11 @@
   }
 
   async function refreshHeaderNotifications(header, includeList = false, force = false) {
-    if (notificationRequestActive || (document.hidden && !force)) return;
+    if (document.hidden && !force) return;
+    if (notificationRequestActive) {
+      notificationRefreshRequested = true;
+      return;
+    }
     const notification = document.querySelector('.sb-shared-header__notification');
     if (!notification) return;
     notificationRequestActive = true;
@@ -205,6 +172,15 @@
       }
     } finally {
       notificationRequestActive = false;
+      if (notificationRefreshRequested) {
+        notificationRefreshRequested = false;
+        const popover = document.querySelector('.sb-shared-header__popover');
+        refreshHeaderNotifications(
+          header,
+          Boolean(popover && !popover.hidden),
+          true
+        );
+      }
     }
   }
 
@@ -216,22 +192,51 @@
       return;
     }
     for (const item of notificationItems) {
-      const presentation = notificationPresentation(item);
-      const row = element('button', `sb-shared-header__notification-item sb-shared-header__notification-item--${presentation.type}`);
+      const style = window.SportBookingNotificationState.getNotificationStyle(item);
+      const row = element(
+        'button',
+        `sb-shared-header__notification-item${item.read_at ? '' : ' is-unread'}`
+      );
       row.type = 'button';
       row.addEventListener('click', () => markQuickNotification(item, header));
+      row.style.setProperty('--notification-accent', style.borderColor);
+      row.style.setProperty('--notification-card-bg', style.cardBackground);
+      row.style.setProperty('--notification-unread-bg', style.unreadBackground);
+      row.style.setProperty('--notification-icon-bg', style.iconBackground);
+      row.style.setProperty('--notification-icon-color', style.iconColor);
+      row.style.setProperty('--notification-text-color', style.textColor);
+      row.style.setProperty('--notification-label-color', style.labelColor);
       const iconBox = element('span', 'sb-shared-header__notification-icon');
-      iconBox.append(window.SportBookingIcons.createIcon(presentation.icon, 'sb-shared-header__icon'));
+      iconBox.append(window.SportBookingIcons.createIcon(style.icon, 'sb-shared-header__icon'));
       const content = element('span', 'sb-shared-header__notification-content');
       const heading = element('span', 'sb-shared-header__notification-item-heading');
-      heading.append(
-        element('span', 'sb-shared-header__notification-title', item.title),
-        element('time', 'sb-shared-header__notification-time',
-          relativeNotificationTime(item.created_at, notificationServerTime))
+      const title = element(
+        'span',
+        'sb-shared-header__notification-title',
+        window.SportBookingNotificationState.dedupeFacilityLabel(item.title)
       );
-      content.append(heading, element('span', 'sb-shared-header__notification-body', item.body));
+      const meta = element('span', 'sb-shared-header__notification-meta');
+      meta.append(element('time', 'sb-shared-header__notification-time',
+        relativeNotificationTime(item.created_at, notificationServerTime)));
+      if (!item.read_at) {
+        const unread = element('span', 'sb-shared-header__notification-unread');
+        unread.append(
+          element('span', 'sb-shared-header__notification-unread-dot'),
+          element('span', '', 'Chưa đọc')
+        );
+        unread.firstElementChild.setAttribute('aria-hidden', 'true');
+        meta.append(unread);
+      }
+      heading.append(title, meta);
+      content.append(
+        heading,
+        element(
+          'span',
+          'sb-shared-header__notification-body',
+          window.SportBookingNotificationState.dedupeFacilityLabel(item.body)
+        )
+      );
       row.append(iconBox, content);
-      if (!item.read_at) row.classList.add('is-unread');
       list.append(row);
     }
   }
@@ -250,18 +255,26 @@
   }
 
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) stopNotificationPolling();
+    if (document.hidden) {
+      stopNotificationPolling();
+      stopPendingHoldPolling();
+    }
     else {
       const header = document.querySelector('.sb-shared-header');
-      if (header) startNotificationPolling(header);
+      if (header) {
+        startNotificationPolling(header);
+        startPendingHoldPolling();
+      }
     }
   });
 
   let pendingHoldPollTimer = null;
   let pendingHoldCountdownTimer = null;
   let pendingHoldRequestActive = false;
+  let pendingHoldRefreshRequested = false;
   let notificationPollTimer = null;
   let notificationRequestActive = false;
+  let notificationRefreshRequested = false;
   let notificationServerTime = null;
   let notificationItems = [];
 
@@ -278,10 +291,15 @@
   }
 
   function formatPendingHoldDate(value) {
-    const date = new Date(`${String(value).slice(0, 10)}T12:00:00`);
+    const date = new Date(`${String(value).slice(0, 10)}T12:00:00+07:00`);
     return Number.isNaN(date.valueOf())
       ? String(value || '')
-      : new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
+      : new Intl.DateTimeFormat('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        timeZone: 'Asia/Ho_Chi_Minh'
+      }).format(date);
   }
 
   function renderPendingHoldBanner(booking) {
@@ -289,8 +307,12 @@
     const slots = Array.isArray(booking.slots) ? booking.slots : [];
     if (slots.length === 0 || Number(booking.remaining_seconds) <= 0) return;
     const first = slots[0];
-    const ranges = slots.map((slot) => `${String(slot.starts_at).slice(0, 5)}–${String(slot.ends_at).slice(0, 5)}`).join(', ');
-    const venue = [first.facility_name, first.court_name].filter(Boolean).join(' — ');
+    const last = slots[slots.length - 1];
+    const ranges = `${String(first.starts_at).slice(0, 5)}–${String(last.ends_at).slice(0, 5)}`;
+    const venue = window.SportBookingHeaderState.mergeVenueNames(
+      first.facility_name,
+      first.court_name
+    );
     const countdown = element('span', 'sb-pending-hold__countdown', formatPendingHoldTime(booking.remaining_seconds));
     const bar = element('div', 'sb-pending-hold');
     bar.dataset.pendingHoldBanner = '';
@@ -307,6 +329,7 @@
     const cancelButton = element('button', 'sb-pending-hold__cancel', 'Hủy giữ chỗ');
     cancelButton.type = 'button';
     cancelButton.addEventListener('click', async () => {
+      if (!window.confirm('Bạn muốn hủy giữ chỗ này?')) return;
       cancelButton.disabled = true;
       try {
         const response = await fetch(`/api/v1/bookings/${encodeURIComponent(booking.booking_id || booking.id)}/cancel`, {
@@ -316,7 +339,11 @@
           body: JSON.stringify({})
         });
         if (response.status === 401) { loginRedirect(); return; }
-        if (response.ok || response.status === 410) { clearPendingHoldBanner(); return; }
+        if (response.ok || response.status === 410) {
+          window.dispatchEvent(new Event('pending-booking-changed'));
+          clearPendingHoldBanner();
+          return;
+        }
         const result = await response.json().catch(() => null);
         throw new Error(result?.error?.message || 'Không thể hủy giữ chỗ. Hãy thử lại.');
       } catch (error) {
@@ -345,22 +372,20 @@
       remaining = Math.max(0, remaining - elapsed);
       countdown.textContent = formatPendingHoldTime(remaining);
       if (remaining === 0) clearPendingHoldBanner();
-    }, 250);
+    }, 1000);
   }
 
   async function refreshPendingHoldBanner() {
-    if ([
-      '/thanh-toan.html',
-      '/dat-san.html',
-      '/lich-su-dat-san.html',
-      '/chi-tiet-don-dat-san.html',
-      '/ve-dien-tu.html'
-    ].includes(window.location.pathname) || pendingHoldRequestActive) return;
+    if (!window.SportBookingHeaderState.shouldShowPendingBanner(window.location.pathname, true)) return;
+    if (pendingHoldRequestActive) {
+      pendingHoldRefreshRequested = true;
+      return;
+    }
     pendingHoldRequestActive = true;
     try {
       const response = await fetch('/api/v1/bookings/pending', { credentials: 'same-origin', cache: 'no-store' });
       if (response.status === 401) { loginRedirect(); return; }
-      if (!response.ok) return;
+      if (!response.ok) throw new Error('Không thể tải thông tin giữ chỗ.');
       const booking = await response.json();
       if (!booking || booking.status !== 'PENDING' || Number(booking.remaining_seconds) <= 0) {
         clearPendingHoldBanner();
@@ -368,10 +393,28 @@
       }
       renderPendingHoldBanner(booking);
     } catch {
-      // Keep the current banner if a background refresh briefly fails.
+      const header = document.querySelector('.sb-shared-header');
+      if (header) showNotificationError(header, 'Không thể cập nhật thông tin giữ chỗ.');
     } finally {
       pendingHoldRequestActive = false;
+      if (pendingHoldRefreshRequested) {
+        pendingHoldRefreshRequested = false;
+        refreshPendingHoldBanner();
+      }
     }
+  }
+
+  function startPendingHoldPolling() {
+    if (!window.SportBookingHeaderState.shouldShowPendingBanner(window.location.pathname, true)
+        || document.hidden
+        || pendingHoldPollTimer) return;
+    refreshPendingHoldBanner();
+    pendingHoldPollTimer = window.setInterval(refreshPendingHoldBanner, 10_000);
+  }
+
+  function stopPendingHoldPolling() {
+    window.clearInterval(pendingHoldPollTimer);
+    pendingHoldPollTimer = null;
   }
 
   window.addEventListener('pageshow', (event) => {
@@ -379,11 +422,13 @@
       refreshPendingHoldBanner();
       const header = document.querySelector('.sb-shared-header');
       if (header) {
+        startNotificationPolling(header);
         refreshHeaderNotifications(
           header,
           !document.querySelector('.sb-shared-header__popover')?.hidden,
           true
         );
+        startPendingHoldPolling();
       }
     }
   });
@@ -466,6 +511,9 @@
         });
         if (response.status === 401) { loginRedirect(); return; }
         if (!response.ok) throw new Error('Không thể đánh dấu tất cả đã đọc.');
+        window.dispatchEvent(new CustomEvent('notification-state-changed', {
+          detail: { readAll: true, readAt: new Date().toISOString() }
+        }));
         await refreshHeaderNotifications(header, true);
       } catch (error) {
         showNotificationError(header, error.message);
@@ -549,35 +597,62 @@
     header.append(inner);
     mount.replaceChildren(header);
     startNotificationPolling(header);
-    if (![
-      '/dat-san.html',
-      '/thanh-toan.html',
-      '/lich-su-dat-san.html',
-      '/chi-tiet-don-dat-san.html'
-    ].includes(window.location.pathname)) {
-      refreshPendingHoldBanner();
-      pendingHoldPollTimer = window.setInterval(refreshPendingHoldBanner, 5000);
+    if (window.SportBookingHeaderState.shouldShowPendingBanner(window.location.pathname, true)) {
+      startPendingHoldPolling();
     }
+    window.SportBookingHeaderState.subscribePendingBookingChanged(
+      window,
+      refreshPendingHoldBanner,
+      () => {
+        const currentHeader = document.querySelector('.sb-shared-header');
+        if (!currentHeader) return;
+        const currentPopover = document.querySelector('.sb-shared-header__popover');
+        refreshHeaderNotifications(
+          currentHeader,
+          Boolean(currentPopover && !currentPopover.hidden),
+          true
+        );
+      }
+    );
   }
 
-  window.SportBookingHeaderReady = fetch('/api/v1/auth/me', { credentials: 'same-origin' })
-    .then(async (response) => {
-      if (response.status === 401) {
-        loginRedirect();
+  function initializeHeader() {
+    return fetch('/api/v1/auth/me', { credentials: 'same-origin' })
+      .then(async (response) => {
+        if (response.status === 401) {
+          loginRedirect();
+          return null;
+        }
+        if (!response.ok) throw new Error('Không thể tải thông tin tài khoản.');
+        const result = await response.json();
+        if (!result?.user) throw new Error('Không thể tải thông tin tài khoản.');
+        render(result.user);
+        window.SportBookingCurrentUser = result.user;
+        window.dispatchEvent(new CustomEvent('sportbooking:user-ready', { detail: result.user }));
+        return result.user;
+      })
+      .catch(() => {
+        const message = element('p', 'sb-shared-header__error', 'Không thể tải thông tin tài khoản. Hãy tải lại trang.');
+        message.setAttribute('role', 'alert');
+        mount.replaceChildren(message);
         return null;
-      }
-      if (!response.ok) throw new Error('Không thể tải thông tin tài khoản.');
-      const result = await response.json();
-      if (!result?.user) throw new Error('Không thể tải thông tin tài khoản.');
-      render(result.user);
-      window.SportBookingCurrentUser = result.user;
-      window.dispatchEvent(new CustomEvent('sportbooking:user-ready', { detail: result.user }));
-      return result.user;
-    })
-    .catch(() => {
-      const message = element('p', 'sb-shared-header__error', 'Không thể tải thông tin tài khoản. Hãy tải lại trang.');
+      });
+  }
+
+  window.SportBookingHeaderReady = new Promise((resolve) => {
+    if (window.SportBookingNotificationState) {
+      initializeHeader().then(resolve);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = '/notifications/notifications-state.js';
+    script.onload = () => initializeHeader().then(resolve);
+    script.onerror = () => {
+      const message = element('p', 'sb-shared-header__error', 'Không thể tải thông báo. Hãy tải lại trang.');
       message.setAttribute('role', 'alert');
       mount.replaceChildren(message);
-      return null;
-    });
+      resolve(null);
+    };
+    document.head.append(script);
+  });
 })();
