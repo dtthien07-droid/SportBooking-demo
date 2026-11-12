@@ -217,7 +217,9 @@
 
   function showQueryNotice() {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('registered') === '1') {
+    if (params.get('accessDenied') === '1') {
+      showNotice('Bạn không có quyền truy cập');
+    } else if (params.get('registered') === '1') {
       showNotice('Tài khoản đã được tạo. Đăng nhập để tiếp tục.', 'success');
     } else if (params.get('loggedOut') === '1') {
       showNotice('Bạn đã đăng xuất thành công.', 'success');
@@ -250,7 +252,9 @@
         if (!result || !result.user) {
           throw new Error('Đăng nhập thành công nhưng máy chủ không trả thông tin tài khoản.');
         }
-        window.location.assign('/trangchu-user.html');
+        window.location.assign(
+          window.SportBookingAdminState.getPostLoginDestination(result.user.role)
+        );
       } catch (error) {
         setLoginErrors(form, error);
         setLoading(button, false);
