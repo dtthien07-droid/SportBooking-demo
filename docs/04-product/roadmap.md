@@ -16,7 +16,7 @@ Trạng thái: Chưa làm / Đang làm / Xong
 | 7 | Lịch sử đặt sân | FR-09 | Cốt lõi | Xong | Lịch sử/chi tiết, điều hướng quay lại an toàn, API tóm tắt theo user, tìm kiếm mã/cơ sở và lọc môn; thẻ khóa ảnh, giới hạn địa chỉ, nút Hủy nhanh theo trạng thái server, icon SVG và nhóm nút tự xuống dòng. Sau hủy, lấy lại chi tiết từ server, dựng lại riêng thẻ bằng renderer chung, cập nhật summary; thông báo nằm ngoài thẻ và tự ẩn. GET lịch phía frontend bỏ qua cache; HTTP create→SUCCESS→cancel→GET lịch trống→đặt lại đạt. Kiểm tra bằng trình duyệt: **Chờ người dùng xác nhận**. |
 | 8 | Thông báo trong app | FR-17 | Cốt lõi | Xong | API riêng theo user; các sự kiện thanh toán, hết hạn và hủy đơn được phân bổ đúng BOOKING_HOLD/PAYMENT trong transaction, không đổi schema. PAYMENT được ghi trước BOOKING_HOLD; API sắp `created_at DESC, id DESC`; tab lọc đúng category. Trang và popup chuông dùng chung kiểu SVG/màu theo loại, thẻ 3 vùng, nhãn/trạng thái chưa đọc, nút hành động và khử tên sân/cơ sở trùng; đọc một tin cập nhật số đếm tại chỗ. Kiểm tra trình duyệt: **Chờ người dùng xác nhận**. |
 | 9 | Đánh giá sân | FR-18 | Nâng cao | Chưa làm | |
-| 10 | Admin: dashboard, quản lý user, booking ngoại lệ | FR-10, FR-11, FR-19 | Cốt lõi | Chưa làm | |
+| 10 | Admin: dashboard, quản lý user, booking ngoại lệ | FR-10, FR-11, FR-19 | Cốt lõi | Chưa làm | Kế hoạch tại [plan-admin.md](../03-build/plan-admin.md) đã được đánh dấu duyệt và các quyết định đã chốt; chờ người dùng duyệt trước khi code. |
 | 11 | Tìm đối, ghép, nới lỏng | FR-13–15 | Nâng cao | Chưa làm | |
 | 12 | Realtime (polling 5 giây) | FR-16 | Nâng cao | Chưa làm | |
 | 13 | Quên mật khẩu, tin tức RSS, email, xuất Excel | | Tùy chọn | Chưa làm | Làm sau cùng |
