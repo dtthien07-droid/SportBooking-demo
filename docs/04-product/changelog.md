@@ -1,3 +1,15 @@
+## 2026-11-12 — Chỉnh giao diện thông báo và popup chuông
+- Dùng chung kiểu hiển thị theo loại thông báo cho trang và popup, gồm màu tương phản, icon SVG, nhãn chữ và trạng thái chưa đọc.
+- Sắp thẻ thông báo thành ba vùng; bỏ nút đọc riêng từng thẻ, cập nhật số chưa đọc ở chuông/tiêu đề/tab tại chỗ; hỗ trợ nút xem đơn, vé và chi tiết đơn hủy.
+- Khử tên cơ sở/sân bị lặp trong tiêu đề và nội dung. Kiểm tra trình duyệt: **Chờ người dùng xác nhận**.
+
+## 2026-11-12 — Phân bổ thông báo và thanh giữ chỗ dùng chung
+- Gom việc tạo notification vào event module dùng connection transaction; phân bổ thanh toán thành công/hủy đơn/hoàn tiền theo BOOKING_HOLD và PAYMENT, không ghi thông báo cho hủy PENDING hay thanh toán thất bại. Hủy sự cố có helper chưa gắn API; không thêm migration/schema.
+- Bộ lọc trang thông báo theo category; thông báo mới nhất dùng `created_at DESC, id DESC`.
+- Dựng thanh giữ chỗ từ hàm render header dùng chung, hiện trên mọi trang đăng nhập có header trừ `/thanh-toan.html`, `/dang-nhap.html`, `/dang-ky.html`; đồng bộ qua event, pageshow, visibilitychange và polling 10 giây khi tab hiển thị.
+- Tìm sân hiển thị điểm sao tối đa một chữ số và giờ mở cửa không có giây; 24 giờ ghi “Mở cửa 24/24”.
+- Kiểm tra trình duyệt: **Chờ người dùng xác nhận**.
+
 ## 2026-11-11 — Module 8: Thông báo trong app
 - Thêm migration 007 và API danh sách, unread-count, đánh dấu đọc/đọc tất cả; truy vấn giới hạn theo user, trả `Cache-Control: no-store`.
 - Ghi thông báo thanh toán thành công, hết hạn giữ chỗ, hủy đơn có/không hoàn và hủy giữ chỗ trong transaction nghiệp vụ; tác vụ hết hạn chạy lặp không tạo trùng.

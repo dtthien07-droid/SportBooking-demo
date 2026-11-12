@@ -8,3 +8,12 @@
 6. Thêm test HTTP trên database test và test Node cho trạng thái/định dạng frontend.
 7. Chạy kiểm tra cú pháp, toàn bộ frontend tests và `npm test` hai lượt trên `sportbooking_test`.
 8. Cập nhật roadmap/changelog; kiểm tra trình duyệt để người dùng xác nhận sau.
+
+## Phân bổ thông báo
+- Mọi ghi thông báo đi qua `backend/src/notifications/notification-events.js` trong transaction nghiệp vụ; không đổi schema hay thêm migration.
+- Thanh toán thành công: PAYMENT trước, BOOKING_HOLD sau; cả hai gắn resource BOOKING.
+- Hết hạn giữ chỗ: một BOOKING_HOLD, idempotent theo chuyển trạng thái.
+- User hủy đơn CONFIRMED: BOOKING_HOLD; thêm PAYMENT chỉ khi số hoàn > 0. Hủy PENDING không báo.
+- Hủy sự cố của Admin: helper chưa gắn API, tạo BOOKING_HOLD và PAYMENT hoàn 100%.
+- MATCH/SYSTEM chưa có sự kiện; không tạo thông báo cho thất bại thanh toán hay tạo/hủy giữ chỗ.
+- Tab lọc theo `category`; thứ tự mới nhất dùng `created_at DESC, id DESC`.
