@@ -19,6 +19,9 @@
   };
 
   function icon(name) {
+    if (name === 'notifications' && window.SportBookingIcons) {
+      return window.SportBookingIcons.createIcon(name, 'sb-shared-header__icon');
+    }
     const pathData = iconPaths[name];
     if (!pathData) throw new Error(`Unknown shared-header icon: ${name}`);
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -41,9 +44,226 @@
     window.location.assign(`/dang-nhap.html?returnTo=${encodeURIComponent(returnTo)}`);
   }
 
+  function headerNotificationTarget(notification) {
+    if (notification.resource_type !== 'BOOKING'
+        || !/^[1-9]\d*$/.test(String(notification.resource_id || ''))) {
+      return null;
+    }
+    const query = new URLSearchParams({
+      booking_id: String(notification.resource_id),
+      from: '/thong-bao.html'
+    });
+    return `/chi-tiet-don-dat-san.html?${query}`;
+  }
+
+  function notificationPresentation(notification) {
+    const text = `${notification.title || ''} ${notification.body || ''}`
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[đĐ]/g, 'd')
+      .toLowerCase();
+    if (notification.category === 'SYSTEM'
+        || text.includes('bao tri')
+        || text.includes('chinh sach')
+        || text.includes('he thong')) {
+      return { type: 'system', icon: 'notifications' };
+    }
+    if (notification.category === 'MATCH') {
+      return { type: 'match', icon: 'groups' };
+    }
+    if (text.includes('huy') || text.includes('cancel')) {
+      return { type: 'cancelled', icon: 'cancel' };
+    }
+    if (text.includes('sap het han') || text.includes('expires soon')) {
+      return { type: 'hold-expiring', icon: 'timer' };
+    }
+    if (text.includes('het han') || text.includes('het thoi han') || text.includes('expired')) {
+      return { type: 'hold-expired', icon: 'hourglass_top' };
+    }
+    if (text.includes('that bai') || text.includes('khong thanh cong') || text.includes('failed')) {
+      return { type: 'payment-failed', icon: 'close' };
+    }
+    if (text.includes('hoan tien') || text.includes('hoan coc') || text.includes('refund')) {
+      return { type: 'refund', icon: 'assignment_return' };
+    }
+    if (text.includes('thanh toan thanh cong') || text.includes('payment successful')) {
+      return { type: 'payment-success', icon: 'payments' };
+    }
+    if (text.includes('xac nhan')
+        || text.includes('dat san thanh cong')
+        || text.includes('confirmed')) {
+      return { type: 'confirmed', icon: 'check_circle' };
+    }
+    if (notification.category === 'PAYMENT') {
+      return { type: 'payment', icon: 'account_balance_wallet' };
+    }
+    return { type: 'booking', icon: 'event_available' };
+  }
+
+  function relativeNotificationTime(createdAt, serverTime) {
+    const created = new Date(createdAt);
+    const reference = new Date(serverTime || Date.now());
+    if (!Number.isFinite(created.getTime()) || !Number.isFinite(reference.getTime())) return '';
+    const minutes = Math.max(0, Math.floor((reference.getTime() - created.getTime()) / 60_000));
+    if (minutes < 1) return 'Vừa xong';
+    if (minutes < 60) return `${minutes} phút trước`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} giờ trước`;
+    return new Intl.DateTimeFormat('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Asia/Ho_Chi_Minh'
+    }).format(created);
+  }
+
+  function showNotificationError(header, message) {
+    let error = header.querySelector('.sb-shared-header__error');
+    if (!error) {
+      error = element('p', 'sb-shared-header__error');
+      error.setAttribute('role', 'alert');
+      header.append(error);
+    }
+    error.textContent = message;
+  }
+
+  async function markQuickNotification(notification, header) {
+    try {
+      if (!notification.read_at) {
+        const response = await fetch(
+          `/api/v1/notifications/${encodeURIComponent(notification.id)}/read`,
+          { method: 'PATCH', credentials: 'same-origin', cache: 'no-store' }
+        );
+        if (response.status === 401) { loginRedirect(); return; }
+        if (!response.ok) throw new Error('Không thể đánh dấu thông báo đã đọc.');
+      }
+      const target = headerNotificationTarget(notification);
+      if (target) {
+        window.location.assign(target);
+      } else {
+        notification.read_at = notification.read_at || new Date().toISOString();
+        await refreshHeaderNotifications(header, true);
+      }
+    } catch (error) {
+      showNotificationError(header, error.message);
+    }
+  }
+
+  async function refreshHeaderNotifications(header, includeList = false, force = false) {
+    if (notificationRequestActive || (document.hidden && !force)) return;
+    const notification = document.querySelector('.sb-shared-header__notification');
+    if (!notification) return;
+    notificationRequestActive = true;
+    try {
+      const countResponse = await fetch('/api/v1/notifications/unread-count', {
+        credentials: 'same-origin',
+        cache: 'no-store'
+      });
+      if (countResponse.status === 401) { loginRedirect(); return; }
+      if (!countResponse.ok) throw new Error('Không thể cập nhật số thông báo chưa đọc.');
+      const countResult = await countResponse.json();
+      const count = Number(countResult.count);
+      if (!Number.isSafeInteger(count) || count < 0) {
+        throw new Error('Dữ liệu số thông báo chưa đọc không hợp lệ.');
+      }
+      notificationServerTime = countResult.server_time;
+      const badge = notification.querySelector('.sb-shared-header__notification-badge');
+      badge.textContent = count > 9 ? '9+' : String(count);
+      badge.hidden = count === 0;
+      badge.setAttribute('aria-label', `${count} thông báo chưa đọc`);
+      const pageBadge = document.querySelector('[data-notifications-unread-count]');
+      if (pageBadge) {
+        pageBadge.textContent = `${count} chưa đọc`;
+        pageBadge.hidden = count === 0;
+      }
+      const unreadLabel = notification.querySelector('.sb-shared-header__popover-count');
+      unreadLabel.textContent = `${count} chưa đọc`;
+
+      if (includeList) {
+        const listResponse = await fetch('/api/v1/notifications?page=1&page_size=5', {
+          credentials: 'same-origin',
+          cache: 'no-store'
+        });
+        if (listResponse.status === 401) { loginRedirect(); return; }
+        if (!listResponse.ok) throw new Error('Không thể tải thông báo mới nhất.');
+        const result = await listResponse.json();
+        if (!Array.isArray(result.notifications)) {
+          throw new Error('Dữ liệu thông báo mới nhất không hợp lệ.');
+        }
+        notificationItems = result.notifications.slice(0, 5);
+        notificationServerTime = result.server_time || notificationServerTime;
+        renderQuickNotificationList(notification, header);
+      }
+      header.querySelector('.sb-shared-header__error')?.remove();
+    } catch (error) {
+      showNotificationError(header, error.message);
+      if (includeList) {
+        const list = notification.querySelector('.sb-shared-header__popover-list');
+        list.replaceChildren(element('p', 'sb-shared-header__popover-error', error.message));
+      }
+    } finally {
+      notificationRequestActive = false;
+    }
+  }
+
+  function renderQuickNotificationList(notification, header) {
+    const list = notification.querySelector('.sb-shared-header__popover-list');
+    list.replaceChildren();
+    if (notificationItems.length === 0) {
+      list.append(element('p', 'sb-shared-header__empty', 'Chưa có thông báo'));
+      return;
+    }
+    for (const item of notificationItems) {
+      const presentation = notificationPresentation(item);
+      const row = element('button', `sb-shared-header__notification-item sb-shared-header__notification-item--${presentation.type}`);
+      row.type = 'button';
+      row.addEventListener('click', () => markQuickNotification(item, header));
+      const iconBox = element('span', 'sb-shared-header__notification-icon');
+      iconBox.append(window.SportBookingIcons.createIcon(presentation.icon, 'sb-shared-header__icon'));
+      const content = element('span', 'sb-shared-header__notification-content');
+      const heading = element('span', 'sb-shared-header__notification-item-heading');
+      heading.append(
+        element('span', 'sb-shared-header__notification-title', item.title),
+        element('time', 'sb-shared-header__notification-time',
+          relativeNotificationTime(item.created_at, notificationServerTime))
+      );
+      content.append(heading, element('span', 'sb-shared-header__notification-body', item.body));
+      row.append(iconBox, content);
+      if (!item.read_at) row.classList.add('is-unread');
+      list.append(row);
+    }
+  }
+
+  function startNotificationPolling(header) {
+    if (document.hidden || notificationPollTimer) return;
+    refreshHeaderNotifications(header, !document.querySelector('.sb-shared-header__popover')?.hidden);
+    notificationPollTimer = window.setInterval(() => {
+      refreshHeaderNotifications(header, !document.querySelector('.sb-shared-header__popover')?.hidden);
+    }, 10_000);
+  }
+
+  function stopNotificationPolling() {
+    window.clearInterval(notificationPollTimer);
+    notificationPollTimer = null;
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) stopNotificationPolling();
+    else {
+      const header = document.querySelector('.sb-shared-header');
+      if (header) startNotificationPolling(header);
+    }
+  });
+
   let pendingHoldPollTimer = null;
   let pendingHoldCountdownTimer = null;
   let pendingHoldRequestActive = false;
+  let notificationPollTimer = null;
+  let notificationRequestActive = false;
+  let notificationServerTime = null;
+  let notificationItems = [];
 
   function clearPendingHoldBanner() {
     document.querySelector('[data-pending-hold-banner]')?.remove();
@@ -155,7 +375,17 @@
   }
 
   window.addEventListener('pageshow', (event) => {
-    if (event.persisted) refreshPendingHoldBanner();
+    if (event.persisted) {
+      refreshPendingHoldBanner();
+      const header = document.querySelector('.sb-shared-header');
+      if (header) {
+        refreshHeaderNotifications(
+          header,
+          !document.querySelector('.sb-shared-header__popover')?.hidden,
+          true
+        );
+      }
+    }
   });
 
   function render(user) {
@@ -216,18 +446,58 @@
     notificationButton.setAttribute('aria-label', 'Thông báo');
     notificationButton.setAttribute('aria-expanded', 'false');
     notificationButton.append(icon('notifications'));
+    const notificationBadge = element('span', 'sb-shared-header__notification-badge');
+    notificationBadge.hidden = true;
+    notificationButton.append(notificationBadge);
     const popover = element('div', 'sb-shared-header__popover');
     popover.hidden = true;
-    popover.setAttribute('role', 'status');
-    popover.append(element('p', 'sb-shared-header__empty', 'Chưa có thông báo'));
+    popover.setAttribute('aria-label', 'Thông báo mới nhất');
+    const popoverHeader = element('div', 'sb-shared-header__popover-header');
+    const popoverTitle = element('div', 'sb-shared-header__popover-title');
     const readAll = element('button', 'sb-shared-header__read-all', 'Đã đọc tất cả');
     readAll.type = 'button';
-    readAll.disabled = true;
-    readAll.setAttribute('aria-disabled', 'true');
-    popover.append(readAll);
-    notificationButton.addEventListener('click', () => {
+    readAll.addEventListener('click', async () => {
+      readAll.disabled = true;
+      try {
+        const response = await fetch('/api/v1/notifications/read-all', {
+          method: 'POST',
+          credentials: 'same-origin',
+          cache: 'no-store'
+        });
+        if (response.status === 401) { loginRedirect(); return; }
+        if (!response.ok) throw new Error('Không thể đánh dấu tất cả đã đọc.');
+        await refreshHeaderNotifications(header, true);
+      } catch (error) {
+        showNotificationError(header, error.message);
+      } finally {
+        readAll.disabled = false;
+      }
+    });
+    popoverHeader.append(
+      popoverTitle,
+      readAll
+    );
+    popoverTitle.append(
+      element('strong', '', 'Thông báo'),
+      element('span', 'sb-shared-header__popover-count', '0 chưa đọc')
+    );
+    const notificationList = element('div', 'sb-shared-header__popover-list');
+    const viewAll = element('a', 'sb-shared-header__view-all', 'Xem tất cả thông báo');
+    viewAll.href = '/thong-bao.html';
+    viewAll.append(window.SportBookingIcons.createIcon('chevron_right', 'sb-shared-header__view-all-icon'));
+    const popoverFooter = element('div', 'sb-shared-header__popover-footer');
+    popoverFooter.append(viewAll);
+    popover.append(popoverHeader, notificationList, popoverFooter);
+    notificationButton.addEventListener('click', async () => {
       popover.hidden = !popover.hidden;
       notificationButton.setAttribute('aria-expanded', String(!popover.hidden));
+      if (!popover.hidden) await refreshHeaderNotifications(header, true);
+    });
+    document.addEventListener('click', (event) => {
+      if (!notification.contains(event.target) && !popover.hidden) {
+        popover.hidden = true;
+        notificationButton.setAttribute('aria-expanded', 'false');
+      }
     });
     notification.append(notificationButton, popover);
 
@@ -278,6 +548,7 @@
     inner.append(brandGroup, controls);
     header.append(inner);
     mount.replaceChildren(header);
+    startNotificationPolling(header);
     if (![
       '/dat-san.html',
       '/thanh-toan.html',

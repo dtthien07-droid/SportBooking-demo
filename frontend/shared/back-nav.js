@@ -13,7 +13,8 @@
     '/ve-dien-tu.html',
     '/trangchu-user.html',
     '/thanh-toan.html',
-    '/tim-san.html'
+    '/tim-san.html',
+    '/thong-bao.html'
   ]);
   const labels = Object.freeze({
     '/lich-su-dat-san.html': 'Quay lại lịch sử đặt sân',
@@ -22,7 +23,8 @@
     '/ve-dien-tu.html': 'Quay lại vé điện tử',
     '/trangchu-user.html': 'Quay lại trang chủ',
     '/thanh-toan.html': 'Quay lại thanh toán',
-    '/tim-san.html': 'Quay lại tìm sân'
+    '/tim-san.html': 'Quay lại tìm sân',
+    '/thong-bao.html': 'Quay lại thông báo'
   });
 
   function getAllowedPath(value) {

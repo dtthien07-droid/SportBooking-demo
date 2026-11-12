@@ -33,7 +33,8 @@ test('resolves a valid from route', () => {
     '/ve-dien-tu.html',
     '/trangchu-user.html',
     '/thanh-toan.html',
-    '/tim-san.html'
+    '/tim-san.html',
+    '/thong-bao.html'
   ]) {
     assert.equal(
       resolveBackTarget(`?from=${encodeURIComponent(route)}`, '', origin),
@@ -91,7 +92,8 @@ test('returns the correct label for every allowed destination', () => {
       '/ve-dien-tu.html?booking_id=42',
       '/trangchu-user.html',
       '/thanh-toan.html?booking_id=42',
-      '/tim-san.html'
+      '/tim-san.html',
+      '/thong-bao.html'
     ].map(backLabel),
     [
       'Quay lại lịch sử đặt sân',
@@ -100,7 +102,8 @@ test('returns the correct label for every allowed destination', () => {
       'Quay lại vé điện tử',
       'Quay lại trang chủ',
       'Quay lại thanh toán',
-      'Quay lại tìm sân'
+      'Quay lại tìm sân',
+      'Quay lại thông báo'
     ]
   );
 });
