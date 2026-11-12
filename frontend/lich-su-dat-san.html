@@ -288,6 +288,7 @@
                                     <span data-paid-amount data-field="amount" class="text-lg font-bold text-primary">--</span>
                                 </div>
                                 <div data-booking-actions class="flex flex-wrap items-center gap-2">
+                                    <button data-cancel-action data-disabled-action class="px-4 py-2 rounded-xl text-error bg-red-50 hover:bg-red-100 text-xs font-bold transition-all cursor-pointer" type="button" hidden>Hủy đơn</button>
                                     <button data-primary-action class="px-5 py-2 rounded-xl bg-primary hover:bg-primary-container text-white text-xs font-bold transition-all shadow-sm cursor-pointer flex items-center gap-1.5" type="button" hidden>
                                         <span data-primary-action-label data-field="primary-action">Xem vé</span>
                                         <svg data-primary-action-icon data-field="action-icon" data-sb-icon="arrow_forward" class="text-sm"></svg>
@@ -296,6 +297,7 @@
                                         <span>Xem chi tiết</span>
                                         <svg data-detail-action-icon data-sb-icon="arrow_forward" class="text-sm"></svg>
                                     </button>
+                                    <button data-soon-action class="px-4 py-2 rounded-xl bg-surface-container text-xs font-bold text-on-surface transition-all cursor-not-allowed" type="button" disabled title="Sắp có" hidden></button>
                                 </div>
                             </div>
                         </div>
@@ -316,7 +318,7 @@
             </div>
         </div>
 
-        <p id="cancel-result-message" hidden></p>
+        <p id="cancel-result-message" class="mx-auto max-w-7xl px-4 pb-4 text-sm font-semibold text-primary" role="status" hidden></p>
 
         <!-- HỘP THOẠI MODAL XÁC NHẬN HỦY -->
         <div class="fixed inset-0 z-50 bg-inverse-surface/65 backdrop-blur-md hidden flex items-center justify-center p-4 transition-all duration-300" id="cancel-modal">

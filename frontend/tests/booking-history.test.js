@@ -486,7 +486,8 @@ test('cây phần tử của thẻ ở bốn trạng thái khớp mockup, sai kh
     assert.equal(difference, null, `${status}: ${difference}`);
   }
   assert.equal((template.match(/data-booking-image/g) || []).length, 1, 'Ảnh thẻ chỉ được xuất hiện một lần');
-  assert.doesNotMatch(template, /data-cancelled-note|data-cancel-action|data-review-action|Điều 5|Đánh giá/);
+  assert.doesNotMatch(template, /data-cancelled-note|data-review-action|Điều 5|Đánh giá/);
+  assert.match(template, /data-cancel-action[^>]*hidden/);
 
   const actionMarkup = [...templateArticle.matchAll(/<(button)\b([^>]*)>([\s\S]*?)<\/button>/g)]
     .filter(([, , attributes]) => /data-(?:primary-action|detail-link)/.test(attributes));
@@ -558,7 +559,9 @@ test('thẻ CANCELLED giữ cấu trúc, không có lời nhắn trong thẻ hay
   const template = /<template id="booking-card-template">([\s\S]*?)<\/template>/.exec(historyHtml)?.[1];
   assert.ok(template);
   assert.equal((template.match(/<article\b/g) || []).length, 1);
-  assert.doesNotMatch(template, /data-cancelled-note|data-cancel-action|Đã hủy đơn thành công|Điều 5/);
+  assert.doesNotMatch(template, /data-cancelled-note|Đã hủy đơn thành công|Điều 5/);
+  assert.match(template, /data-cancel-action[^>]*hidden/);
+  assert.equal(runtime.card.querySelector('[data-cancel-action]').hidden, true);
   assert.equal(runtime.card.dataset.status, 'CANCELLED');
   assert.equal(runtime.card.dataset.bookingId, '42');
   assert.equal(
@@ -700,7 +703,10 @@ test('dựng thẻ offline cho PENDING, CONFIRMED, CANCELLED và EXPIRED có ả
     assert.equal(card.querySelector('[data-primary-action]').hidden, item.primaryHidden);
     card.querySelector('[data-detail-link]').listeners.click();
     assert.deepEqual(assignedUrls, ['/chi-tiet-don-dat-san.html?booking_id=42']);
-    assert.doesNotMatch(historyHtml, /data-cancel-action|data-review-action|Đánh giá/);
+    assert.equal(
+      card.querySelector('[data-cancel-action]').hidden,
+      !canCancelBooking(record)
+    );
     assert.equal(image.alt, 'Sân mẫu');
     if (imageUrl) {
       assert.equal(image.src, imageUrl);
@@ -711,6 +717,20 @@ test('dựng thẻ offline cho PENDING, CONFIRMED, CANCELLED và EXPIRED có ả
     assert.equal(image.hidden, true);
     assert.equal(imageFrame.style.backgroundColor, '#9d4300');
   }
+});
+
+test('thông tin thẻ và các nút theo sát cấu trúc hàng ngang của mockup', () => {
+  const template = /<template id="booking-card-template">([\s\S]*?)<\/template>/.exec(historyHtml)?.[1];
+  assert.ok(template, 'Thiếu template thẻ lịch sử');
+  assert.match(template, /class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-on-surface-variant"/);
+  assert.match(template, /data-booking-footer class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t"/);
+  assert.match(template, /data-booking-actions class="flex flex-wrap items-center gap-2">[\s\S]*?data-cancel-action[\s\S]*?data-primary-action[\s\S]*?data-detail-link[\s\S]*?data-soon-action[\s\S]*?<\/div>/);
+  for (const selector of ['data-cancel-action', 'data-primary-action', 'data-detail-link', 'data-soon-action']) {
+    assert.ok(template.includes(selector), `Thiếu nút ${selector}`);
+  }
+  assert.match(template, /<span>Xem chi tiết<\/span>/);
+  assert.match(historyPage, /const label = booking\.display_status_code === 'COMPLETED' \? 'Đánh giá' : 'Đặt lại'/);
+  assert.match(historyPage, /detailAction\.classList\.replace\('py-2', 'py-2\.5'\)/);
 });
 
 test('thẻ chỉ dùng class xuất hiện trong mockup', () => {
@@ -726,7 +746,7 @@ test('thẻ chỉ dùng class xuất hiện trong mockup', () => {
   assert.deepEqual(extra, []);
 });
 
-test('không dựng nút Hủy trong thẻ ở lượt này', () => {
+test('nút Hủy chỉ hiện khi đơn đủ điều kiện', () => {
   const statuses = [
     ['CONFIRMED', 'UPCOMING', true],
     ['CONFIRMED', 'IN_PROGRESS', false],
@@ -738,8 +758,8 @@ test('không dựng nút Hủy trong thẻ ở lượt này', () => {
   for (const [status, displayStatusCode, expected] of statuses) {
     assert.equal(canCancelBooking({ status, display_status_code: displayStatusCode }), expected);
   }
-  assert.doesNotMatch(historyHtml, /data-cancel-action|data-review-action|Đánh giá/);
-  assert.doesNotMatch(historyPage, /data-cancel-action/);
+  assert.match(historyHtml, /data-cancel-action[^>]*hidden/);
+  assert.match(historyPage, /cancelAction\.hidden = !state\.canCancelBooking\(booking\)/);
 });
 
 test('PENDING còn hạn hiển thị nhãn, đồng hồ và nút tiếp tục thanh toán', () => {

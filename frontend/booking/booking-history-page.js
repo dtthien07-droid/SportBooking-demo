@@ -40,7 +40,7 @@
     upcomingCount: document.getElementById('stat-upcoming-count'),
     completedCount: document.getElementById('stat-completed-count'),
     totalSpent: document.getElementById('stat-total-spent'),
-    cancelResult: null,
+    cancelResult: document.getElementById('cancel-result-message'),
     counts: {
       all: document.getElementById('count-all'),
       upcoming: document.getElementById('count-upcoming'),
@@ -65,7 +65,6 @@
     requestSequence: 0,
     loading: false
   };
-
   function initializeCancelResultToast() {
     const toast = document.createElement('div');
     toast.id = 'cancel-result-message';
@@ -100,7 +99,7 @@
     }, 6000);
   }
 
-  window.SportBookingCancellationDialog.initialize({
+  const cancellationDialog = window.SportBookingCancellationDialog.initialize({
     onCancelled: async (result, message, context) => {
       if (!result) {
         if (message) showCancelResult(message);
@@ -309,6 +308,8 @@
     const primaryActionIcon = card.querySelector('[data-primary-action-icon]');
     const detailActionIcon = card.querySelector('[data-detail-action-icon]');
     const facilityAddressIcon = card.querySelector('[data-facility-address-icon]');
+    const soonAction = card.querySelector('[data-soon-action]');
+    const cancelAction = card.querySelector('[data-cancel-action]');
     const facility = facilityData?.facility;
     const facilityName = facility?.name || firstSlot.facility_name || '--';
     const courtName = firstSlot.court_name || '--';
@@ -341,6 +342,7 @@
     card.querySelector('[data-sport-icon]').classList.add(sport.color);
     window.SportBookingIcons.setIcon(timeIcon, 'schedule');
     window.SportBookingIcons.setIcon(facilityAddressIcon, 'location_on');
+    window.SportBookingIcons.setIcon(detailActionIcon, 'arrow_forward');
     card.querySelector('[data-sport-label]').textContent = sport.label;
 
     imageFrame.style.backgroundColor = sport.fallbackColor;
@@ -382,9 +384,13 @@
     statusIcon.classList.add(statusIconColor);
     window.SportBookingIcons.setIcon(statusIcon, statusIconName);
     const detailAction = card.querySelector('[data-detail-link]');
-    window.SportBookingIcons.setIcon(detailActionIcon, 'arrow_forward');
-    detailAction.addEventListener('click', () => window.location.assign(detailUrl));
-    imageFrame.addEventListener('click', () => window.location.assign(detailUrl));
+    for (const link of [detailAction, imageFrame]) {
+      link.href = detailUrl;
+      link.addEventListener('click', (event) => {
+        event?.preventDefault?.();
+        window.location.assign(detailUrl);
+      });
+    }
     imageFrame.addEventListener('keydown', (event) => {
       if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
@@ -409,12 +415,26 @@
     };
     if (actionLabels[presentation.action]) {
       const [label, href] = actionLabels[presentation.action];
-      primaryAction.addEventListener('click', () => window.location.assign(href));
+      primaryAction.href = href;
+      primaryAction.addEventListener('click', (event) => {
+        event?.preventDefault?.();
+        window.location.assign(href);
+      });
       primaryAction.querySelector('[data-primary-action-label]').textContent = label;
       window.SportBookingIcons.setIcon(primaryActionIcon, 'arrow_forward');
+      if (booking.status === 'PENDING') {
+        primaryAction.classList.remove('py-2', 'bg-primary', 'hover:bg-primary-container', 'shadow-sm');
+        primaryAction.classList.add('py-2.5', 'bg-secondary-container', 'hover:bg-secondary', 'shadow-md');
+        detailAction.classList.replace('py-2', 'py-2.5');
+      }
       primaryAction.hidden = false;
+      soonAction.hidden = true;
     } else {
       primaryAction.hidden = true;
+      const label = booking.display_status_code === 'COMPLETED' ? 'Đánh giá' : 'Đặt lại';
+      soonAction.textContent = `${label} · Sắp có`;
+      soonAction.hidden = false;
+      soonAction.title = 'Sắp có';
     }
     const refundedAmount = booking.refunded_amount;
     const hasRefund = refundedAmount !== null && refundedAmount !== undefined
@@ -432,6 +452,11 @@
     } else if (booking.display_status_code === 'PENDING') {
       amount.classList.remove('text-primary');
       amount.classList.add('text-secondary');
+    }
+    cancelAction.hidden = !state.canCancelBooking(booking);
+    if (!cancelAction.hidden) {
+      cancelAction.dataset.bookingId = booking.booking_id;
+      cancelAction.disabled = false;
     }
 
     const countdown = card.querySelector('[data-countdown]');
@@ -547,6 +572,12 @@
     loadBookings();
   });
   elements.retry.addEventListener('click', () => loadBookings());
+  elements.list.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-cancel-action]');
+    if (!button || button.hidden) return;
+    event.preventDefault();
+    cancellationDialog.open(button.dataset.bookingId);
+  });
   elements.previous.addEventListener('click', () => {
     if (current.page > 1) {
       current.page -= 1;
