@@ -14,9 +14,17 @@ const createRequireAuth = require('./auth/middleware/require-auth');
 const createBookingRepository = require('./bookings/bookings.repository');
 const { createBookingsService } = require('./bookings/bookings.service');
 const createBookingsRouter = require('./bookings/bookings.routes');
+const createAdminRepository = require('./admin/admin.repository');
+const { createAdminService } = require('./admin/admin.service');
+const createAdminRouter = require('./admin/admin.routes');
+const createRequireAdmin = require('./auth/middleware/require-admin');
 const { createNotificationsRepository } = require('./notifications/notifications.repository');
 const { createNotificationsService } = require('./notifications/notifications.service');
 const createNotificationsRouter = require('./notifications/notifications.routes');
+const {
+  notifyIncidentCancellation,
+  notifyPendingIncidentCancellation
+} = require('./notifications/notification-events');
 const { getCookieName, getSecureCookieSetting } = require('./auth/session.cookie');
 const { createSessionService } = require('./auth/session.service');
 const createSessionRepository = require('./auth/repositories/session.repository');
@@ -40,12 +48,20 @@ function createApp({ pool, env = process.env } = {}) {
   const facilitiesService = createFacilitiesService(facilitiesRepository);
   const bookingsRepository = createBookingRepository(pool);
   const bookingsService = createBookingsService(bookingsRepository);
+  const adminRepository = createAdminRepository(pool);
+  const adminService = createAdminService({
+    adminRepository,
+    bookingsRepository,
+    notifyIncidentCancellation,
+    notifyPendingIncidentCancellation
+  });
   const notificationsRepository = createNotificationsRepository(pool);
   const notificationsService = createNotificationsService(notificationsRepository);
   const sessionService = createSessionService({ sessionRepository });
   const cookieName = getCookieName(env);
   const secureCookie = getSecureCookieSetting(env);
   const requireAuth = createRequireAuth({ sessionRepository, cookieName, secureCookie });
+  const requireAdmin = createRequireAdmin();
   const app = express();
 
   app.disable('x-powered-by');
@@ -65,6 +81,11 @@ function createApp({ pool, env = process.env } = {}) {
   app.use('/api/v1/users', createProfileRouter({ profileService, requireAuth }));
   app.use('/api/v1/notifications', createNotificationsRouter({ notificationsService, requireAuth }));
   app.use('/api/v1/bookings', createBookingsRouter({ bookingsService, requireAuth }));
+  app.use('/api/v1/admin', createAdminRouter({
+    adminService,
+    requireAuth,
+    requireAdmin
+  }));
   app.use('/api/v1', createFacilitiesRouter({ facilitiesService, requireAuth }));
   app.get('/', (request, response) => {
     response.redirect(302, '/dang-nhap.html');

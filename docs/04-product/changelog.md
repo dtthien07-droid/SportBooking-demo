@@ -1,3 +1,10 @@
+## 2026-11-12 — Module 10A: API Admin và hủy sự cố
+- Thêm API Admin liệt kê booking có lọc/truy vấn/phân trang, dashboard 4 chỉ số theo today/7d/30d và hủy sự cố.
+- Bảo vệ mọi route Admin bằng `requireAuth` rồi `requireAdmin`; user thường nhận `403`.
+- Hủy `CONFIRMED` kể cả đang diễn ra hoàn tiền 100%, nhả slot và gửi thông báo hủy/hoàn trong cùng transaction; hủy `PENDING` hoàn 0 và chỉ tạo thông báo hủy. Lệnh hủy user và test hiện có giữ nguyên.
+- Thêm integration tests có tự dọn dữ liệu trên `sportbooking_test`. `npm test` với `APP_ENV=test`, `DB_NAME=sportbooking_test`: 71/71 đạt hai lượt liên tiếp; fail 0.
+- Cụm 10B (giao diện) chưa triển khai.
+
 ## 2026-11-12 — Chỉnh giao diện thông báo và popup chuông
 - Dùng chung kiểu hiển thị theo loại thông báo cho trang và popup, gồm màu tương phản, icon SVG, nhãn chữ và trạng thái chưa đọc.
 - Sắp thẻ thông báo thành ba vùng; bỏ nút đọc riêng từng thẻ, cập nhật số chưa đọc ở chuông/tiêu đề/tab tại chỗ; hỗ trợ nút xem đơn, vé và chi tiết đơn hủy.

@@ -346,6 +346,25 @@ function createBookingRepository(pool) {
       return result.affectedRows === 1;
     },
 
+    async updateAdminBookingCancellation(connection, {
+      bookingId,
+      cancellationReason
+    }) {
+      const [result] = await connection.execute(
+        `UPDATE bookings
+         SET status = 'CANCELLED',
+             cancelled_by = ?,
+             cancelled_at = UTC_TIMESTAMP(3),
+             cancellation_reason = ?,
+             match_preference = NULL,
+             updated_at = UTC_TIMESTAMP(3)
+         WHERE id = ?
+           AND status IN (?, ?)`,
+        ['ADMIN', cancellationReason, bookingId, 'PENDING', 'CONFIRMED']
+      );
+      return result.affectedRows === 1;
+    },
+
     async refundPaymentForBooking(connection, paymentId, refundAmount) {
       if (BigInt(refundAmount) === 0n) {
         await connection.execute(

@@ -115,9 +115,20 @@ async function notifyIncidentCancellation(connection, booking, refundedAmount) {
   });
 }
 
+async function notifyPendingIncidentCancellation(connection, booking) {
+  await insertNotification(connection, {
+    userId: booking.user_id,
+    category: 'BOOKING_HOLD',
+    title: 'Đơn đã bị hủy do sự cố',
+    body: `${bookingDetails(booking)}. Đơn đã bị hủy do sự cố.`,
+    booking
+  });
+}
+
 module.exports = {
   notifyHoldExpired,
   notifyIncidentCancellation,
+  notifyPendingIncidentCancellation,
   notifyPaymentSucceeded,
   notifyUserCancellation
 };

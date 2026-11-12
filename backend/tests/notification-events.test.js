@@ -2,7 +2,10 @@
 
 const assert = require('node:assert/strict');
 const test = require('node:test');
-const { notifyIncidentCancellation } = require('../src/notifications/notification-events');
+const {
+  notifyIncidentCancellation,
+  notifyPendingIncidentCancellation
+} = require('../src/notifications/notification-events');
 
 test('incident cancellation writes booking and full-refund notifications through its transaction connection', async () => {
   const inserts = [];
@@ -36,4 +39,27 @@ test('incident cancellation writes booking and full-refund notifications through
     assert.equal(values[0], '25');
     assert.equal(values[4], '874');
   }
+});
+
+test('pending incident cancellation writes only one booking notification through its transaction connection', async () => {
+  const inserts = [];
+  const connection = {
+    async execute(sql, values) {
+      assert.match(sql, /INSERT INTO notifications/);
+      inserts.push(values);
+    }
+  };
+  await notifyPendingIncidentCancellation(connection, {
+    id: '875',
+    user_id: '26',
+    booking_code: 'SPB-20261112-ABC124',
+    slots: []
+  });
+
+  assert.equal(inserts.length, 1);
+  assert.equal(inserts[0][0], '26');
+  assert.equal(inserts[0][1], 'BOOKING_HOLD');
+  assert.equal(inserts[0][2], 'Đơn đã bị hủy do sự cố');
+  assert.match(inserts[0][3], /Đơn đã bị hủy do sự cố/);
+  assert.equal(inserts[0][4], '875');
 });
