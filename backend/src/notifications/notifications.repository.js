@@ -1,21 +1,5 @@
 'use strict';
 
-async function insertNotification(connection, {
-  userId,
-  category,
-  title,
-  body,
-  resourceType = null,
-  resourceId = null
-}) {
-  await connection.execute(
-    `INSERT INTO notifications
-       (user_id, category, title, body, resource_type, resource_id, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, UTC_TIMESTAMP(3))`,
-    [userId, category, title, body, resourceType, resourceId]
-  );
-}
-
 function createNotificationsRepository(pool) {
   if (!pool || typeof pool.execute !== 'function') {
     throw new TypeError('A MySQL-compatible pool is required.');
@@ -84,4 +68,4 @@ function createNotificationsRepository(pool) {
   };
 }
 
-module.exports = { createNotificationsRepository, insertNotification };
+module.exports = { createNotificationsRepository };

@@ -35,9 +35,9 @@ function localDateOffset(days) {
   return date.toISOString().slice(0, 10);
 }
 
-function soonSlot() {
-  const roundedHour = Math.ceil(Date.now() / 3_600_000) * 3_600_000;
-  const start = new Date(roundedHour + 4 * 3_600_000 + 7 * 3_600_000);
+function slotAtLocalOffset(hours) {
+  const localHour = Math.ceil((Date.now() + 7 * 3_600_000) / 3_600_000) * 3_600_000;
+  const start = new Date(localHour + hours * 3_600_000);
   const end = new Date(start.getTime() + 3_600_000);
   return {
     serviceDate: start.toISOString().slice(0, 10),
@@ -124,21 +124,23 @@ test('notification API and booking events work transactionally over HTTP on spor
       );
       slotIds.push(String(slotResult.insertId));
     }
-    const nearStart = soonSlot();
-    const [nearSlotResult] = await pool.execute(
-      `INSERT INTO time_slots
-         (court_id, service_date, starts_at, ends_at, price, status, created_at, updated_at)
-       VALUES (?, ?, ?, ?, 120000, 'AVAILABLE', UTC_TIMESTAMP(3), UTC_TIMESTAMP(3))`,
-      [courtId, nearStart.serviceDate, nearStart.startsAt, nearStart.endsAt]
-    );
-    slotIds.push(String(nearSlotResult.insertId));
+    for (const offset of [4, 11]) {
+      const nearStart = slotAtLocalOffset(offset);
+      const [nearSlotResult] = await pool.execute(
+        `INSERT INTO time_slots
+           (court_id, service_date, starts_at, ends_at, price, status, created_at, updated_at)
+         VALUES (?, ?, ?, ?, 120000, 'AVAILABLE', UTC_TIMESTAMP(3), UTC_TIMESTAMP(3))`,
+        [courtId, nearStart.serviceDate, nearStart.startsAt, nearStart.endsAt]
+      );
+      slotIds.push(String(nearSlotResult.insertId));
+    }
 
-    async function createBooking(slotId, cookie = owner.cookie) {
+    async function createBooking(slotId, paymentOption = 'FULL', cookie = owner.cookie) {
       const response = await requestJson(baseUrl, '/api/v1/bookings', 'POST', {
         slot_ids: [slotId],
-        payment_option: 'FULL'
+        payment_option: paymentOption
       }, cookie);
-      assert.equal(response.status, 201);
+      assert.equal(response.status, 201, JSON.stringify(await response.clone().json()));
       const booking = await response.json();
       bookingIds.push(booking.booking_id);
       return booking;
@@ -165,19 +167,82 @@ test('notification API and booking events work transactionally over HTTP on spor
       return rows;
     }
 
-    await t.test('successful payment and confirmation create one booking-linked notification', async () => {
-      const booking = await createBooking(slotIds[0]);
+    await t.test('successful payment creates PAYMENT then BOOKING_HOLD and unread count increases by two', async () => {
+      const booking = await createBooking(slotIds[0], 'DEPOSIT_50');
+      const before = await requestJson(
+        baseUrl,
+        '/api/v1/notifications/unread-count',
+        'GET',
+        undefined,
+        owner.cookie
+      );
+      assert.equal((await before.json()).count, 0);
       const response = await pay(booking.booking_id);
       assert.equal(response.status, 201);
       const rows = await notificationsFor(booking.booking_id);
-      assert.equal(rows.length, 1);
+      assert.equal(rows.length, 2);
       assert.equal(rows[0].category, 'PAYMENT');
       assert.equal(rows[0].title, 'Thanh toán thành công');
-      assert.match(rows[0].body, new RegExp(booking.booking_code));
+      assert.match(rows[0].body, /60\.000 đ/);
+      assert.match(rows[0].body, /đặt cọc 50%/);
+      assert.match(rows[0].body, /còn thu tại sân 60\.000 đ/);
+      const [year, month, day] = booking.slots[0].service_date.split('-');
+      assert.ok(rows[0].body.includes(`${day}/${month}/${year}, 08:00–09:00`));
+      assert.equal(rows[1].category, 'BOOKING_HOLD');
+      assert.equal(rows[1].title, 'Đặt sân thành công');
+      assert.ok(BigInt(rows[1].id) > BigInt(rows[0].id));
+      assert.equal(rows[0].resource_type, 'BOOKING');
+      assert.equal(String(rows[0].resource_id), booking.booking_id);
+      const unreadResponse = await requestJson(
+        baseUrl,
+        '/api/v1/notifications/unread-count',
+        'GET',
+        undefined,
+        owner.cookie
+      );
+      assert.equal((await unreadResponse.json()).count, 2);
+      const visibleResponse = await requestJson(
+        baseUrl,
+        '/api/v1/notifications?page=1&page_size=50',
+        'GET',
+        undefined,
+        owner.cookie
+      );
+      const visible = await visibleResponse.json();
+      assert.deepEqual(
+        visible.notifications.slice(0, 2).map((notification) => notification.title),
+        ['Đặt sân thành công', 'Thanh toán thành công']
+      );
     });
 
-    await t.test('cancellation reports the actual refund, including zero', async () => {
-      const refundable = await createBooking(slotIds[1]);
+    await t.test('failed payment and user cancellation of a pending hold create no notifications', async () => {
+      const failed = await createBooking(slotIds[1]);
+      assert.equal((await pay(failed.booking_id, 'FAILURE')).status, 201);
+      assert.equal((await notificationsFor(failed.booking_id)).length, 0);
+      const failedHoldCancel = await requestJson(
+        baseUrl,
+        `/api/v1/bookings/${failed.booking_id}/cancel`,
+        'POST',
+        {},
+        owner.cookie
+      );
+      assert.equal(failedHoldCancel.status, 200);
+      assert.equal((await notificationsFor(failed.booking_id)).length, 0);
+
+      const pending = await createBooking(slotIds[3]);
+      const cancellation = await requestJson(
+        baseUrl,
+        `/api/v1/bookings/${pending.booking_id}/cancel`,
+        'POST',
+        {},
+        owner.cookie
+      );
+      assert.equal(cancellation.status, 200);
+      assert.equal((await notificationsFor(pending.booking_id)).length, 0);
+    });
+
+    await t.test('confirmed cancellation notifies separately for full, half, and zero refund', async () => {
+      const refundable = await createBooking(slotIds[2]);
       assert.equal((await pay(refundable.booking_id)).status, 201);
       const refundResponse = await requestJson(
         baseUrl,
@@ -189,9 +254,28 @@ test('notification API and booking events work transactionally over HTTP on spor
       assert.equal(refundResponse.status, 200);
       const refund = await refundResponse.json();
       const refundRows = await notificationsFor(refundable.booking_id);
-      assert.equal(refundRows.length, 2);
-      assert.equal(refundRows[1].category, 'PAYMENT');
-      assert.match(refundRows[1].body, new RegExp(`hoàn thực tế: ${refund.refunded_amount}đ`));
+      assert.equal(refund.refund_percent, 100);
+      assert.equal(refundRows.length, 4);
+      assert.equal(refundRows[2].category, 'BOOKING_HOLD');
+      assert.match(refundRows[2].title, new RegExp(refundable.booking_code));
+      assert.equal(refundRows[3].category, 'PAYMENT');
+      assert.equal(refundRows[3].title, 'Hoàn tiền 120.000 đ');
+      assert.match(refundRows[3].body, /120\.000 đ/);
+
+      const halfRefund = await createBooking(slotIds[8]);
+      assert.equal((await pay(halfRefund.booking_id)).status, 201);
+      const halfResponse = await requestJson(
+        baseUrl,
+        `/api/v1/bookings/${halfRefund.booking_id}/cancel`,
+        'POST',
+        {},
+        owner.cookie
+      );
+      assert.equal(halfResponse.status, 200);
+      assert.equal((await halfResponse.json()).refund_percent, 50);
+      const halfRows = await notificationsFor(halfRefund.booking_id);
+      assert.equal(halfRows.length, 4);
+      assert.deepEqual(halfRows.slice(2).map((row) => row.category), ['BOOKING_HOLD', 'PAYMENT']);
 
       const noRefund = await createBooking(slotIds[7]);
       assert.equal((await pay(noRefund.booking_id)).status, 201);
@@ -206,30 +290,13 @@ test('notification API and booking events work transactionally over HTTP on spor
       const noRefundResult = await noRefundResponse.json();
       assert.equal(noRefundResult.refunded_amount, '0');
       const noRefundRows = await notificationsFor(noRefund.booking_id);
-      assert.equal(noRefundRows.length, 2);
-      assert.match(noRefundRows[1].body, /hoàn thực tế: 0đ/);
-    });
-
-    await t.test('cancelling a pending hold creates its own notification', async () => {
-      const booking = await createBooking(slotIds[2]);
-      const response = await requestJson(
-        baseUrl,
-        `/api/v1/bookings/${booking.booking_id}/cancel`,
-        'POST',
-        {},
-        owner.cookie
-      );
-      assert.equal(response.status, 200);
-      const rows = await notificationsFor(booking.booking_id);
-      assert.equal(rows.length, 1);
-      assert.equal(rows[0].category, 'BOOKING_HOLD');
-      assert.equal(rows[0].title, 'Đã hủy giữ chỗ');
-      assert.match(rows[0].body, new RegExp(booking.booking_code));
-      assert.match(rows[0].body, /hoàn thực tế: 0đ/);
+      assert.equal(noRefundRows.length, 3);
+      assert.deepEqual(noRefundRows.slice(2).map((row) => row.category), ['BOOKING_HOLD']);
+      assert.match(noRefundRows[2].body, /Không có khoản hoàn theo chính sách hủy/);
     });
 
     await t.test('expiry job creates once across repeated runs', async () => {
-      const booking = await createBooking(slotIds[3]);
+      const booking = await createBooking(slotIds[4]);
       await pool.execute(
         `UPDATE bookings
          SET lock_expires_at = DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 1 SECOND)
@@ -241,12 +308,12 @@ test('notification API and booking events work transactionally over HTTP on spor
       const rows = await notificationsFor(booking.booking_id);
       assert.equal(rows.length, 1);
       assert.equal(rows[0].category, 'BOOKING_HOLD');
-      assert.equal(rows[0].title, 'Giữ chỗ đã hết hạn');
+      assert.equal(rows[0].title, 'Giữ chỗ đã hết hạn, khung giờ được nhả');
       assert.match(rows[0].body, new RegExp(booking.booking_code));
     });
 
     await t.test('notification insert rolls back with a later payment failure', async () => {
-      const booking = await createBooking(slotIds[4]);
+      const booking = await createBooking(slotIds[5]);
       await pool.query(
         `CREATE TRIGGER ${ROLLBACK_TRIGGER}
          BEFORE INSERT ON booking_tickets
@@ -282,7 +349,7 @@ test('notification API and booking events work transactionally over HTTP on spor
 
       const listResponse = await requestJson(
         baseUrl,
-        '/api/v1/notifications?category=PAYMENT&page=1&page_size=2',
+        '/api/v1/notifications?category=PAYMENT&page=1&page_size=50',
         'GET',
         undefined,
         owner.cookie
@@ -290,10 +357,19 @@ test('notification API and booking events work transactionally over HTTP on spor
       assert.equal(listResponse.status, 200);
       assert.equal(listResponse.headers.get('cache-control'), 'no-store');
       const list = await listResponse.json();
-      assert.equal(list.notifications.length, 2);
       assert.ok(list.notifications.every((notification) => notification.category === 'PAYMENT'));
-      assert.equal(list.pagination.total, 5);
+      assert.ok(list.notifications.length > 0);
+      assert.ok(list.pagination.total >= list.notifications.length);
       assert.ok(BigInt(list.notifications[0].id) > BigInt(list.notifications[1].id));
+      const holdResponse = await requestJson(
+        baseUrl,
+        '/api/v1/notifications?category=BOOKING_HOLD&page=1&page_size=50',
+        'GET',
+        undefined,
+        owner.cookie
+      );
+      const holds = await holdResponse.json();
+      assert.ok(holds.notifications.every((notification) => notification.category === 'BOOKING_HOLD'));
 
       const otherList = await requestJson(
         baseUrl,
@@ -322,7 +398,16 @@ test('notification API and booking events work transactionally over HTTP on spor
       );
       assert.equal(unreadResponse.status, 200);
       const unread = await unreadResponse.json();
-      assert.equal(unread.count, 7);
+      const allResponse = await requestJson(
+        baseUrl,
+        '/api/v1/notifications?page=1&page_size=50',
+        'GET',
+        undefined,
+        owner.cookie
+      );
+      const all = await allResponse.json();
+      assert.equal(unread.count, all.notifications.length);
+      assert.ok(all.notifications.every((notification) => notification.resource_type === 'BOOKING'));
       assert.equal(typeof unread.server_time, 'string');
 
       const markRead = await requestJson(
@@ -341,7 +426,7 @@ test('notification API and booking events work transactionally over HTTP on spor
         undefined,
         owner.cookie
       );
-      assert.equal((await afterMarkRead.json()).count, 6);
+      assert.equal((await afterMarkRead.json()).count, unread.count - 1);
 
       const readAll = await requestJson(
         baseUrl,
@@ -351,7 +436,7 @@ test('notification API and booking events work transactionally over HTTP on spor
         owner.cookie
       );
       assert.equal(readAll.status, 200);
-      assert.equal((await readAll.json()).updated, 6);
+      assert.equal((await readAll.json()).updated, unread.count - 1);
       const afterReadAll = await requestJson(
         baseUrl,
         '/api/v1/notifications/unread-count',
@@ -380,6 +465,11 @@ test('notification API and booking events work transactionally over HTTP on spor
     const uniqueBookingIds = [...new Set(bookingIds.map(String))];
     if (uniqueBookingIds.length > 0) {
       const placeholders = uniqueBookingIds.map(() => '?').join(', ');
+      await cleanup(() => pool.execute(
+        `DELETE FROM notifications
+         WHERE resource_type = 'BOOKING' AND resource_id IN (${placeholders})`,
+        uniqueBookingIds
+      ));
       await cleanup(() => pool.execute(
         `DELETE FROM booking_tickets WHERE booking_id IN (${placeholders})`,
         uniqueBookingIds

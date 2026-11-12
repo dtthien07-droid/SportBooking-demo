@@ -1,7 +1,7 @@
 'use strict';
 
 const crypto = require('node:crypto');
-const { insertNotification } = require('../notifications/notifications.repository');
+const { notifyHoldExpired } = require('../notifications/notification-events');
 
 function createBookingRepository(pool) {
   if (!pool || typeof pool.execute !== 'function') {
@@ -294,14 +294,37 @@ function createBookingRepository(pool) {
 
     async lockPaymentForBooking(connection, bookingId) {
       const [rows] = await connection.execute(
-        `SELECT id, status, amount_due, paid_amount
-         FROM payments
-         WHERE booking_id = ?
+        `SELECT p.id, p.status, p.amount_due, p.paid_amount, p.payment_option,
+                CASE
+                  WHEN p.payment_option = 'DEPOSIT_50'
+                  THEN CAST(b.total_amount - p.amount_due AS CHAR)
+                  ELSE '0'
+                END AS amount_due_at_venue
+         FROM payments AS p
+         INNER JOIN bookings AS b ON b.id = p.booking_id
+         WHERE p.booking_id = ?
          LIMIT 1
          FOR UPDATE`,
         [bookingId]
       );
       return rows[0] || null;
+    },
+
+    async findNotificationSlots(connection, bookingId) {
+      const [rows] = await connection.execute(
+        `SELECT DATE_FORMAT(ts.service_date, '%Y-%m-%d') AS service_date,
+                TIME_FORMAT(ts.starts_at, '%H:%i:%s') AS starts_at,
+                TIME_FORMAT(ts.ends_at, '%H:%i:%s') AS ends_at,
+                c.name AS court_name, f.name AS facility_name
+         FROM booking_slots AS bs
+         INNER JOIN time_slots AS ts ON ts.id = bs.time_slot_id
+         INNER JOIN courts AS c ON c.id = bs.court_id
+         INNER JOIN facilities AS f ON f.id = c.facility_id
+         WHERE bs.booking_id = ?
+         ORDER BY ts.service_date ASC, ts.starts_at ASC, ts.id ASC`,
+        [bookingId]
+      );
+      return rows;
     },
 
     async updateBookingCancellation(connection, {
@@ -478,8 +501,6 @@ function createBookingRepository(pool) {
         [status, bookingId]
       );
     },
-
-    insertNotification,
 
     async releaseBookingSlots(connection, bookingId) {
       await connection.execute(
@@ -780,14 +801,8 @@ function createBookingRepository(pool) {
         await this.lockTimeSlots(connection, slotIds);
         await this.updateBookingStatus(connection, bookingId, 'EXPIRED');
         await this.releaseBookingSlots(connection, bookingId);
-        await this.insertNotification(connection, {
-          userId: booking.user_id,
-          category: 'BOOKING_HOLD',
-          title: 'Giữ chỗ đã hết hạn',
-          body: `Đơn ${booking.booking_code} đã hết thời hạn giữ chỗ.`,
-          resourceType: 'BOOKING',
-          resourceId: booking.id
-        });
+        const slots = await this.findNotificationSlots(connection, bookingId);
+        await notifyHoldExpired(connection, { ...booking, slots });
         return true;
       });
     }
