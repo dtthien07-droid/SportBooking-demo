@@ -14,7 +14,12 @@
     '/trangchu-user.html',
     '/thanh-toan.html',
     '/tim-san.html',
-    '/thong-bao.html'
+    '/thong-bao.html',
+    '/quan-tri.html',
+    '/quan-tri-tong-quan.html',
+    '/quan-tri-nguoi-dung.html',
+    '/quan-tri-san.html',
+    '/quan-tri-khung-gio-gia.html'
   ]);
   const labels = Object.freeze({
     '/lich-su-dat-san.html': 'Quay lại lịch sử đặt sân',
@@ -24,7 +29,12 @@
     '/trangchu-user.html': 'Quay lại trang chủ',
     '/thanh-toan.html': 'Quay lại thanh toán',
     '/tim-san.html': 'Quay lại tìm sân',
-    '/thong-bao.html': 'Quay lại thông báo'
+    '/thong-bao.html': 'Quay lại thông báo',
+    '/quan-tri.html': 'Quay lại trang quản trị',
+    '/quan-tri-tong-quan.html': 'Quay lại trang tổng quan',
+    '/quan-tri-nguoi-dung.html': 'Quay lại quản lý người dùng',
+    '/quan-tri-san.html': 'Quay lại quản lý cơ sở và sân',
+    '/quan-tri-khung-gio-gia.html': 'Quay lại quản lý khung giờ và giá'
   });
 
   function getAllowedPath(value) {

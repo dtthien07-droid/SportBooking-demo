@@ -203,9 +203,17 @@ Endpoint giả lập không gọi ngân hàng/ví thật. Kết quả mô phỏn
 
 | API | Vai trò | Input | Output thành công | Lỗi chính |
 |---|---|---|---|---|
-| `GET /admin/dashboard` | Admin | Khoảng thời gian | Chỉ số theo nghiệp vụ đã chốt | `401`; `403` |
-| `GET /admin/users`, `PATCH /admin/users/{id}/lock`, `PATCH /admin/users/{id}/unlock` | Admin | Bộ lọc hoặc thao tác khóa/mở | Danh sách/ trạng thái user | `400`; `401`; `403`; `404`; `409` tự khóa |
-| `POST/PATCH /admin/facilities`, `/admin/courts`, `/admin/time-slots` | Admin | Trường được phép của đối tượng tương ứng | Bản ghi đã tạo/cập nhật | `400`; `401`; `403`; `404`; `409` trùng khung/đang có booking |
+| `GET /admin/dashboard?range=today\|7d\|30d` (tương thích `period`) | Admin | Khoảng thời gian | Range, KPIs, doanh thu/ngày, trạng thái booking, top sân, đơn gần nhất, `server_time`; weak ETag | `400`; `401`; `403`; `304` |
+| `GET /admin/bookings` | Admin | Bộ lọc/phân trang | Danh sách booking và metadata; `server_time`; weak ETag | `400`; `401`; `403`; `304` |
+| `GET /admin/users` | Admin | `q`, `status`, `page`, `page_size` | Danh sách không gồm hash/token/thông tin đăng nhập nhạy cảm; thống kê; `server_time`; weak ETag | `400`; `401`; `403`; `304` |
+| `PATCH /admin/users/{id}/lock`, `PATCH /admin/users/{id}/unlock` | Admin | Lý do khóa tùy chọn | Trạng thái tài khoản; khóa thu hồi phiên | `400`; `401`; `403`; `404`; `409` |
+| `GET /admin/facilities` | Admin | `q`, `district`, `is_active`, `page`, `page_size` | Cơ sở, số sân, số đơn hiệu lực, phân trang; `server_time`; weak ETag | `400`; `401`; `403`; `304` |
+| `GET /admin/facilities/{id}` | Admin | ID cơ sở | Thông tin cơ sở, danh sách sân và số đơn hiệu lực; `server_time`; weak ETag | `401`; `403`; `404`; `304` |
+| `POST /admin/facilities`, `PATCH /admin/facilities/{id}` | Admin | Thông tin cơ sở; PATCH gồm `expected_updated_at` | Cơ sở được tạo/cập nhật; ghi audit trong transaction | `400`; `401`; `403`; `404`; `409` dữ liệu cũ/đơn hiệu lực |
+| `POST /admin/courts`, `PATCH /admin/courts/{id}` | Admin | `facility_id` khi tạo; PATCH gồm `expected_updated_at` | Sân được tạo/cập nhật; không đổi môn/ngừng sân có đơn hiệu lực; ghi audit | `400`; `401`; `403`; `404`; `409` dữ liệu cũ/trùng tên/đơn hiệu lực |
+| `GET /admin/courts/{id}/time-slots?date=&from_date=` | Admin | Ngày xem; ngày bắt đầu đếm khung trống tùy chọn | Khung giờ với trạng thái hiệu lực, mã booking khi bận, số khung trống sắp áp giá; `server_time`; weak ETag | `400`; `401`; `403`; `404`; `304` |
+| `POST /admin/courts/{id}/generate-slots` | Admin | `from_date`, `to_date` (tối đa 31 ngày) | Chỉ chèn khung còn thiếu; số `inserted`/`existing`; audit trong transaction | `400`; `401`; `403`; `404`; `409` sân ngừng hoạt động |
+| `PATCH /admin/courts/{id}/prices` | Admin | `price_normal`, `price_peak`, `expected_updated_at` | Cập nhật giá sân và các khung `AVAILABLE` từ hôm nay; không đổi `LOCKED`, `BOOKED` hay giá booking đã chốt; audit | `400`; `401`; `403`; `404`; `409` dữ liệu cũ |
 | `POST /admin/bookings/{id}/incident-cancellation` | Admin | Lý do sự cố bắt buộc | Booking hủy; hoàn 100% tức thời; thông báo khách | `400`; `401`; `403`; `404`; `409` trạng thái đã kết thúc hoặc thao tác lặp |
 | `GET /health` | Public/monitoring | Không | Trạng thái dịch vụ, không tiết lộ secret/chi tiết kết nối | `503` nếu dịch vụ không sẵn sàng |
 

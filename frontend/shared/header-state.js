@@ -9,12 +9,21 @@
   const HIDDEN_PENDING_BANNER_PATHS = Object.freeze([
     '/thanh-toan.html',
     '/dang-nhap.html',
-    '/dang-ky.html'
+    '/dang-ky.html',
+    '/quan-tri.html',
+    '/quan-tri-tong-quan.html',
+    '/quan-tri-nguoi-dung.html',
+    '/quan-tri-san.html',
+    '/quan-tri-khung-gio-gia.html'
   ]);
 
   function shouldShowPendingBanner(pathname, authenticated) {
     return Boolean(authenticated)
       && !HIDDEN_PENDING_BANNER_PATHS.includes(String(pathname || ''));
+  }
+
+  function shouldShowNavigation(role) {
+    return role !== 'ADMIN';
   }
 
   function mergeVenueNames(facilityName, courtName) {
@@ -44,6 +53,7 @@
   return {
     HIDDEN_PENDING_BANNER_PATHS,
     mergeVenueNames,
+    shouldShowNavigation,
     shouldShowPendingBanner,
     subscribePendingBookingChanged
   };

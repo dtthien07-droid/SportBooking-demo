@@ -74,11 +74,15 @@ test('API data is rendered without innerHTML and admin does not load Google font
 });
 
 test('login redirects by role and protected admin page returns non-admins to the appropriate page', () => {
-  assert.equal(adminState.getPostLoginDestination('ADMIN'), '/admin-bookings.html');
+  assert.equal(adminState.getPostLoginDestination('ADMIN'), '/quan-tri-tong-quan.html');
   assert.equal(adminState.getPostLoginDestination('USER'), '/trangchu-user.html');
   assert.equal(
     adminState.getAdminAccessDestination(true),
-    '/trangchu-user.html?accessDenied=1'
+    '/trangchu-user.html'
+  );
+  assert.equal(
+    adminState.getAdminAccessDestination(false),
+    '/dang-nhap.html?returnTo=%2Fquan-tri-tong-quan.html'
   );
   assert.match(loginScript, /SportBookingAdminState\.getPostLoginDestination\(result\.user\.role\)/);
   assert.match(loginScript, /Bạn không có quyền truy cập/);

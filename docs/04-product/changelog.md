@@ -1,3 +1,22 @@
+## 2026-11-13 — Module 10, GĐ5–6: polling đơn và tổng kiểm
+- Trang đơn đặt sân cập nhật bảng, số đếm tab và KPI tại chỗ mỗi 5 giây; giữ bộ lọc/trang/scroll, làm nổi đơn mới 5 giây và làm mới ngay sau thao tác admin.
+- Trang tổng quan dùng lại phiên xác thực từ header chung, chỉ gọi `/auth/me` dự phòng khi header không có user.
+- Thêm test polling và xác thực dashboard; toàn bộ 28 file frontend test đạt, backend `npm test` đạt 75/75 hai lượt với `APP_ENV=test`, `DB_NAME=sportbooking_test`.
+- Quét 5 trang Admin: không dùng `innerHTML`, `localStorage`, icon font hay nội dung ngoài nghiệp vụ; các trang dùng admin shell và nằm trong allowlist. Migration 008 chỉ có một file.
+- Kiểm tra giao diện bằng trình duyệt: **Chờ người dùng xác nhận**. Mockup nguồn người dùng/khung giờ rỗng; dashboard/cơ sở chưa chép nguyên nội dung mockup.
+- Lệnh chạy migration trên dev từ thư mục gốc khi được phép: `node infra\database\migrate-bookings.js --database sportbooking_dev`.
+
+## 2026-11-12 — Module 10B: Giao diện Quản trị
+- Chép khung trang từ `docs/02-design/mockups/danh-sach-dat-san-admin.html`; giữ bố cục số liệu, tab, bộ lọc, bảng, hàng mẫu và phân trang. Thay header bằng header dùng chung, font nạp qua stylesheet dùng chung và biểu tượng bằng SVG đã đăng ký.
+- Xóa dữ liệu mẫu cố định, nối lại dữ liệu hiện có qua API và template hàng; giữ 7 tab nghiệp vụ, phân trang và các trạng thái tải/lỗi/rỗng. Header ADMIN chỉ còn logo, thông tin quản trị viên và đăng xuất.
+- Bổ sung thanh điều hướng trái theo ảnh đã duyệt với sáu mục; Tổng quan và Danh sách đặt sân liên kết tới các khối hiện có, bốn mục chưa triển khai hiển thị “Sắp có” và không có đích giả. Ở màn hình hẹp, thanh bên chuyển thành dải ngang có thể cuộn.
+- Thêm bộ lọc nháp/đã áp dụng, tìm theo mã đặt sân, ngày chơi và cơ sở lấy từ API (phân trang, gom theo quận và sắp xếp tiếng Việt); thêm Tìm kiếm/Đặt lại, phục hồi và đồng bộ applied lên URL. Tab và số đếm dùng bộ lọc applied. Dashboard API không hỗ trợ các bộ lọc này nên các thẻ số liệu giữ phạm vi toàn hệ thống và trang ghi rõ điều đó.
+- GET `/api/v1/admin/bookings` bổ sung hai tham số chỉ đọc `facility_id` và `date`, có validate 400, kết hợp được với status, tìm mã và phân trang; integration test HTTP kiểm tra lọc và quyền truy cập.
+- Mockup không có popup; giữ nguyên popup hủy do sự cố hiện tại, gồm focus trap, Esc, xác thực lý do, hoàn 100% số đã trả và xử lý lỗi API.
+- API admin chỉ trả trạng thái gốc, không có `display_status_code`; frontend dùng thời gian slot theo quy tắc UTC+7 half-open của backend để phân loại “Sắp tới”, “Đang trong trận” và booking CONFIRMED đã tới giờ kết thúc trong tab “Hoàn thành”. API danh sách cũng không trả cờ hết hạn lock của PENDING; nút có thể hiện với PENDING hết hạn, còn backend từ chối yêu cầu bằng `409 BOOKING_EXPIRED`.
+- Giữ nguyên điều hướng trang chủ USER, ẩn chuông và thanh giữ chỗ trên trang admin.
+- Test từng file frontend trước đó: 157/157 đạt; test Quản trị sau khi thêm thanh bên: 19/19 đạt; `node --check frontend/admin/admin-page.js`: đạt. `npm test` với `APP_ENV=test`, `DB_NAME=sportbooking_test`: 72/72 đạt hai lượt liên tiếp trước thay đổi thanh bên. Kiểm tra trình duyệt: **Chờ người dùng xác nhận** (trang yêu cầu phiên ADMIN).
+
 ## 2026-11-12 — Module 10A: API Admin và hủy sự cố
 - Thêm API Admin liệt kê booking có lọc/truy vấn/phân trang, dashboard 4 chỉ số theo today/7d/30d và hủy sự cố.
 - Bảo vệ mọi route Admin bằng `requireAuth` rồi `requireAdmin`; user thường nhận `403`.
@@ -169,3 +188,22 @@
 - Browser smoke test với API giả xác nhận hiển thị tổng tiền, tạo hold và đồng hồ `10:00`, hủy giữ chỗ, tải lại đơn còn hạn, chuyển login với 401 và thông báo 409.
 - `npm test` chạy với `APP_ENV=test`, `DB_NAME=sportbooking_test`: 14/17 đạt; 3 integration test không thể kết nối do `sportbooking_app` bị từ chối quyền vào `sportbooking_test`. Chưa chạy GRANT vì môi trường hiện không có kết nối quản trị DB được cấu hình.
 - **Chờ xác nhận:** cấp quyền DB test bằng tài khoản quản trị cục bộ rồi chạy lại `npm test` để xác nhận integration thật; không sử dụng `sportbooking_system` và không sửa mockups.
+## 2026-11-13 — Module 10, GĐ0–2: nền tảng, tổng quan và người dùng
+- Thêm migration 008 `admin_audit_logs` và runner idempotent; áp dụng/xác minh chỉ trên `sportbooking_test`. Hủy sự cố và khóa/mở khóa user ghi audit cùng transaction.
+- GET admin bookings/dashboard/users hỗ trợ weak ETag, `If-None-Match`/304, `Cache-Control: no-cache`, `server_time`; dashboard có range UTC+7, KPIs, chart data, top sân và đơn gần nhất.
+- Thêm trang tổng quan và người dùng, admin shell dùng chung, polling 5 giây có xử lý tab ẩn, abort và backoff; ADMIN đăng nhập vào dashboard.
+- User API loại trường nhạy cảm; khóa thu hồi mọi phiên, không hủy booking, chống tự khóa và thao tác trùng đồng thời. HTTP tests kiểm tra khóa/đăng nhập/mở khóa/audit.
+- Kiểm tra: admin HTTP integration 11/11; service 1/1; frontend admin/navigation 42/42; syntax và `git diff --check` đạt. Toàn bộ suite chưa chạy; kiểm tra bằng trình duyệt: **Chờ người dùng xác nhận**.
+- GĐ5–6 chưa làm; dashboard/users/facilities/slots dùng layout theo design system, chưa chép nguyên markup mockup.
+
+## 2026-11-13 — Module 10, GĐ3: quản lý cơ sở và sân
+- Thêm API Admin danh sách/chi tiết/tạo/sửa cơ sở và sân; lọc, phân trang, weak ETag/304, kiểm tra đầu vào, `expected_updated_at`, tên sân duy nhất trong cơ sở và chặn ngừng hoạt động/đổi môn khi còn đơn hiệu lực.
+- Mọi thay đổi cơ sở/sân ghi audit trong transaction; cập nhật dùng khóa theo thứ tự cơ sở rồi sân, `is_seed=false`, không xóa dữ liệu vật lý.
+- Thêm trang `quan-tri-san.html` theo bộ khung Admin dùng chung, bộ lọc, form cơ sở, danh sách/form sân và xác nhận ngừng hoạt động; không hỗ trợ xóa hay xuất báo cáo.
+- HTTP integration Admin GĐ0–3 đạt; kiểm tra trực quan bằng trình duyệt: **Chờ người dùng xác nhận**. GĐ4–6 còn lại.
+
+## 2026-11-13 — Module 10, GĐ4: khung giờ và giá
+- Thêm API Admin xem khung theo ngày, xem trước số khung trống, sinh khung tối đa 31 ngày bằng slot generator dùng chung, và cập nhật giá cho các khung `AVAILABLE` từ ngày Việt Nam hiện tại.
+- Khung `LOCKED`/`BOOKED` và `booking_slots.price_at_booking` không bị đổi; sinh khung lặp lại chỉ báo số đã có. Mọi lần sinh/cập nhật giá ghi audit cùng transaction; GET khung hỗ trợ weak ETag/304.
+- Thêm trang `quan-tri-khung-gio-gia.html` với chọn cơ sở/sân/ngày, trạng thái bằng chữ, xem trước giá và tạo khoảng ngày; polling qua admin shell.
+- HTTP integration GĐ0–4 đạt; kiểm tra trình duyệt: **Chờ người dùng xác nhận**. GĐ5–6 còn lại.

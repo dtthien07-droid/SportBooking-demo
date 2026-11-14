@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+
+<html lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="web_blank" name="shell-type"/>
+<title>Chi tiết đơn đặt sân - SportBooking Admin</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ["Be Vietnam Pro", "Inter", "sans-serif"],
+            mono: ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "monospace"]
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-100 font-sans text-slate-800 antialiased min-h-screen relative overflow-hidden select-none">
+<!-- Realistic Admin Workspace Dashboard Background -->
+<div class="w-full min-h-screen flex flex-col bg-slate-100 pointer-events-none filter blur-[2px] opacity-40">
+<!-- Top Admin Bar -->
+<header class="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="w-9 h-9 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-bold text-lg shadow-sm">
+          SB
+        </div>
+<div>
+<h1 class="font-bold text-slate-800 text-base leading-tight">SportBooking Manager</h1>
+<span class="text-xs text-slate-500">Cơ sở: CLB Cầu Lông Ngôi Sao Cầu Giấy</span>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="h-8 px-3 rounded-lg bg-slate-100 border border-slate-200 flex items-center gap-2 text-xs text-slate-600">
+<span class="material-symbols-outlined text-[16px]">calendar_today</span>
+<span>Hôm nay: 24/10/2026</span>
+</div>
+<div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center font-bold text-xs text-slate-700">
+          AD
+        </div>
+</div>
+</header>
+<!-- Main Table View Simulation -->
+<div class="p-6 max-w-7xl mx-auto w-full space-y-4">
+<div class="flex items-center justify-between">
+<div>
+<h2 class="text-xl font-bold text-slate-900">Danh sách đơn đặt sân</h2>
+<p class="text-sm text-slate-500">Quản lý các lượt đặt chỗ, kiểm soát lịch thi đấu và doanh thu trong ngày</p>
+</div>
+<div class="flex gap-2">
+<div class="h-9 px-4 rounded-lg bg-emerald-600 text-white text-sm font-medium flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[18px]">add</span> Đặt sân mới
+          </div>
+</div>
+</div>
+<!-- Simulated Table -->
+<div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+<div class="border-b border-slate-200 bg-slate-50 px-6 py-3 grid grid-cols-6 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+<span>Mã đơn</span>
+<span>Khách hàng</span>
+<span>Sân thi đấu</span>
+<span>Thời gian</span>
+<span>Trạng thái</span>
+<span class="text-right">Hành động</span>
+</div>
+<div class="divide-y divide-slate-100">
+<div class="px-6 py-4 grid grid-cols-6 items-center text-sm bg-emerald-50/40">
+<span class="font-mono font-bold text-emerald-800">#SB-89241</span>
+<span class="font-medium text-slate-900">Nguyễn Tuấn Anh</span>
+<span>Sân cầu lông #02</span>
+<span>17:30 - 19:30</span>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 w-fit">Đã xác nhận</span>
+<span class="text-right text-emerald-700 font-semibold text-xs cursor-pointer">Xem chi tiết</span>
+</div>
+<div class="px-6 py-4 grid grid-cols-6 items-center text-sm">
+<span class="font-mono font-bold text-slate-600">#SB-89240</span>
+<span class="font-medium text-slate-900">Trần Hoàng Nam</span>
+<span>Sân cầu lông #01</span>
+<span>16:00 - 17:30</span>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 w-fit">Hoàn thành</span>
+<span class="text-right text-slate-500 text-xs">Chi tiết</span>
+</div>
+<div class="px-6 py-4 grid grid-cols-6 items-center text-sm">
+<span class="font-mono font-bold text-slate-600">#SB-89239</span>
+<span class="font-medium text-slate-900">Lê Thuỳ Trang</span>
+<span>Sân Pickleball #01</span>
+<span>18:00 - 20:00</span>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 w-fit">Chờ xác nhận</span>
+<span class="text-right text-slate-500 text-xs">Chi tiết</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Dark semi-transparent overlay backdrop -->
+<div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 transition-opacity" id="modalBackdrop"></div>
+<!-- Centered Modal Dialog Window -->
+<div class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 sm:p-6" id="modalWrapper">
+<div aria-labelledby="modalTitle" aria-modal="true" class="relative w-full max-w-2xl sm:max-w-3xl max-h-[90vh] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col my-auto transition-all animate-in fade-in zoom-in-95 duration-200" role="dialog">
+<!-- Subtle top brand accent line -->
+<div class="h-1.5 w-full bg-emerald-600"></div>
+<!-- 1. HEADER POPUP -->
+<div class="px-6 py-5 border-b border-slate-200 flex items-start justify-between gap-4 bg-white sticky top-0 z-10">
+<div class="space-y-1.5">
+<div class="flex items-center flex-wrap gap-2.5">
+<h2 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight" id="modalTitle">
+              Chi tiết đơn đặt sân
+            </h2>
+<!-- Booking code badge -->
+<span class="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-800 font-mono font-bold text-sm border border-slate-200">
+              #SB-89241
+            </span>
+<!-- Status badge: Đã xác nhận (CONFIRMED) -->
+<span class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              Đã xác nhận
+            </span>
+</div>
+<!-- Creation time -->
+<div class="flex items-center gap-1.5 text-xs text-slate-500">
+<span class="material-symbols-outlined text-[15px] text-slate-400">schedule</span>
+<span>Thời điểm tạo: 14:32:10 24/10/2026 (GMT+7)</span>
+</div>
+</div>
+<!-- Close button (X icon) -->
+<button aria-label="Đóng popup" class="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors border border-transparent hover:border-slate-200" onclick="closeModal()" type="button">
+<span class="material-symbols-outlined text-[22px]">close</span>
+</button>
+</div>
+<!-- Scrollable Content Area -->
+<div class="px-6 py-5 overflow-y-auto space-y-4">
+<!-- Two Column Layout: Customer & Venue -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- 2. KHÁCH ĐẶT (Customer Info Card) -->
+<div class="rounded-xl border border-slate-200 bg-slate-50/70 p-4 flex flex-col justify-between">
+<div>
+<div class="flex items-center gap-2 pb-3 mb-3 border-b border-slate-200/80">
+<span class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">person</span>
+</span>
+<h3 class="font-bold text-sm uppercase tracking-wide text-slate-800">Khách đặt</h3>
+</div>
+<div class="space-y-3 text-sm">
+<div>
+<span class="text-xs text-slate-500 uppercase font-semibold block">Họ và tên</span>
+<span class="font-bold text-slate-900 text-base">Nguyễn Tuấn Anh</span>
+</div>
+<div>
+<span class="text-xs text-slate-500 uppercase font-semibold block">Số điện thoại</span>
+<div class="flex items-center gap-2 mt-0.5">
+<span class="font-mono font-semibold text-slate-900">0912 879 456</span>
+<a class="p-1 rounded-md bg-white border border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 text-slate-600 transition-colors inline-flex items-center" href="tel:0912879456" title="Gọi khách hàng">
+<span class="material-symbols-outlined text-[14px]">call</span>
+</a>
+</div>
+</div>
+<div>
+<span class="text-xs text-slate-500 uppercase font-semibold block">Email</span>
+<span class="text-slate-800 font-mono text-xs sm:text-sm break-all">tuananh.sport@gmail.com</span>
+</div>
+</div>
+</div>
+</div>
+<!-- 3. SÂN VÀ GIỜ (Venue & Slots Card) -->
+<div class="rounded-xl border border-slate-200 bg-slate-50/70 p-4 flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-200/80">
+<div class="flex items-center gap-2">
+<span class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">sports_tennis</span>
+</span>
+<h3 class="font-bold text-sm uppercase tracking-wide text-slate-800">Sân và giờ</h3>
+</div>
+<!-- Allowed Sport: Cầu lông -->
+<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  Cầu lông
+                </span>
+</div>
+<div class="space-y-3 text-sm">
+<div>
+<span class="text-xs text-slate-500 uppercase font-semibold block">Cơ sở</span>
+<span class="font-semibold text-slate-900 block leading-snug">CLB Cầu Lông Ngôi Sao Cầu Giấy</span>
+</div>
+<div>
+<span class="text-xs text-slate-500 uppercase font-semibold block">Sân con</span>
+<div class="font-medium text-slate-900">
+<span class="font-bold text-emerald-800">Sân cầu lông #02</span>
+<span class="text-xs text-slate-500 block">(Thảm PVC thi đấu BWF)</span>
+</div>
+</div>
+<div>
+<span class="text-xs text-slate-500 uppercase font-semibold block">Ngày chơi</span>
+<span class="font-medium text-slate-900">Thứ Bảy, 24/10/2026</span>
+</div>
+</div>
+</div>
+<!-- Merged Time Slot -->
+<div class="mt-3 pt-3 border-t border-slate-200/80 flex items-center justify-between bg-white px-3 py-2 rounded-lg border border-slate-200">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-emerald-600 text-[18px]">schedule</span>
+<span class="font-mono font-bold text-slate-900 text-base">17:30 - 19:30</span>
+</div>
+<span class="px-2 py-0.5 rounded-md text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                Giờ cao điểm
+              </span>
+</div>
+</div>
+</div>
+<!-- 4. THANH TOÁN (Payment Card) -->
+<div class="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3 mb-3 border-b border-slate-200/80 gap-2">
+<div class="flex items-center gap-2">
+<span class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">payments</span>
+</span>
+<h3 class="font-bold text-sm uppercase tracking-wide text-slate-800">Thanh toán</h3>
+</div>
+<!-- Tình trạng thanh toán -->
+<span class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+<span class="material-symbols-outlined text-[15px]">check_circle</span>
+              Đã thanh toán (Napas 247 / VietQR)
+            </span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+<div class="bg-white p-3 rounded-xl border border-slate-200 shadow-xs">
+<span class="text-xs font-medium text-slate-500 block">Tổng giá</span>
+<span class="text-xl font-bold font-mono text-slate-900 mt-0.5 block">280.000đ</span>
+<span class="text-[11px] text-slate-400 block mt-0.5">140.000đ/giờ × 2 giờ</span>
+</div>
+<div class="bg-white p-3 rounded-xl border border-slate-200 shadow-xs">
+<span class="text-xs font-medium text-slate-500 block">Đã trả</span>
+<span class="text-xl font-bold font-mono text-emerald-700 mt-0.5 block">280.000đ</span>
+<span class="text-[11px] text-emerald-600 block mt-0.5">100% thanh toán trước</span>
+</div>
+<div class="bg-white p-3 rounded-xl border border-slate-200 shadow-xs">
+<span class="text-xs font-medium text-slate-500 block">Đã hoàn</span>
+<span class="text-xl font-bold font-mono text-slate-600 mt-0.5 block">0đ</span>
+<span class="text-[11px] text-slate-400 block mt-0.5">Không phát sinh hoàn</span>
+</div>
+</div>
+<!-- Transaction details bar -->
+<div class="mt-3 pt-3 border-t border-slate-200/80 flex flex-wrap items-center justify-between text-xs text-slate-600 gap-2">
+<div class="flex items-center gap-2">
+<span class="text-slate-500 uppercase font-semibold">Mã giao dịch:</span>
+<span class="font-mono font-medium text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200 select-all">
+                NAPAS-241026-89241
+              </span>
+</div>
+<div class="text-slate-500">
+              Phương thức: <span class="font-medium text-slate-800">VietQR Napas 247 Tự động</span>
+</div>
+</div>
+</div>
+<!-- Incident Notification Confirmation Box (Hidden initially, triggered if requested) -->
+<div class="hidden p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 text-sm space-y-2" id="incidentPrompt">
+<div class="flex items-center gap-2 font-bold text-rose-700">
+<span class="material-symbols-outlined text-[18px]">warning</span>
+<span>Xác nhận Hủy do sự cố khẩn cấp</span>
+</div>
+<p class="text-xs text-rose-800 leading-relaxed">
+            Hệ thống sẽ chuyển trạng thái đơn sang ĐÃ HỦY và phát lệnh hoàn 100% số tiền (280.000đ) về tài khoản khách hàng qua Napas 247.
+          </p>
+<div class="flex items-center justify-end gap-2 pt-1">
+<button class="px-3 py-1.5 text-xs font-medium bg-white text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-100" onclick="cancelIncidentPrompt()" type="button">
+              Quay lại
+            </button>
+<button class="px-3 py-1.5 text-xs font-semibold bg-rose-600 text-white rounded-lg hover:bg-rose-700 shadow-sm" onclick="confirmIncidentCancel()" type="button">
+              Đồng ý hoàn tiền &amp; Hủy
+            </button>
+</div>
+</div>
+</div>
+<!-- 5. THAO TÁC (Action Footer) -->
+<div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-col gap-2.5">
+<div class="flex flex-col-reverse sm:flex-row items-stretch sm:items-center sm:justify-end gap-3 w-full">
+<!-- Button 'Đóng' (Neutral secondary button) -->
+<button class="border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 px-5 py-2.5 rounded-xl font-medium text-sm transition-colors text-center shadow-xs" onclick="closeModal()" type="button">
+            Đóng
+          </button>
+<!-- Button 'Hủy do sự cố' (Red button for PENDING & CONFIRMED) -->
+<button class="bg-rose-600 hover:bg-rose-700 text-white font-medium px-4 py-2.5 rounded-xl shadow-sm text-sm transition-colors flex items-center justify-center gap-1.5" id="btnIncidentCancel" onclick="promptIncidentCancel()" type="button">
+<span class="material-symbols-outlined text-[18px]">report_problem</span>
+<span>Hủy do sự cố</span>
+</button>
+</div>
+<!-- Quick note at bottom -->
+<p class="text-[12px] text-slate-400 text-center sm:text-right select-none">
+          Nhấn Esc hoặc click bên ngoài để đóng popup
+        </p>
+</div>
+</div>
+</div>
+<!-- Interactive behavior script -->
+<script>
+    function closeModal() {
+      const modal = document.getElementById('modalWrapper');
+      const backdrop = document.getElementById('modalBackdrop');
+      if (modal && backdrop) {
+        modal.classList.add('opacity-0', 'pointer-events-none');
+        backdrop.classList.add('opacity-0', 'pointer-events-none');
+      }
+    }
+
+    function promptIncidentCancel() {
+      const prompt = document.getElementById('incidentPrompt');
+      if (prompt) {
+        prompt.classList.remove('hidden');
+        prompt.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    function cancelIncidentPrompt() {
+      const prompt = document.getElementById('incidentPrompt');
+      if (prompt) {
+        prompt.classList.add('hidden');
+      }
+    }
+
+    function confirmIncidentCancel() {
+      alert('Đã xác nhận hủy đơn do sự cố khẩn cấp.\nLệnh hoàn trả 280.000đ đã gửi thành công qua cổng Napas 247 tới khách hàng Nguyễn Tuấn Anh.');
+      const btn = document.getElementById('btnIncidentCancel');
+      if (btn) {
+        btn.disabled = true;
+        btn.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+      cancelIncidentPrompt();
+      closeModal();
+    }
+
+    // Keyboard and click outside listeners
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Escape') {
+        closeModal();
+      }
+    });
+
+    document.getElementById('modalWrapper')?.addEventListener('click', function(event) {
+      if (event.target === this) {
+        closeModal();
+      }
+    });
+  </script>
+</body></html>

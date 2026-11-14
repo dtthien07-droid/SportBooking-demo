@@ -1,0 +1,931 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Quản lý cơ sở và sân SportBooking">
+  <title>Cơ sở &amp; Sân | SportBooking</title>
+  <link rel="stylesheet" href="/shared/header.css">
+  <link rel="stylesheet" href="/admin/admin.css">
+  <script src="/shared/icons.js" defer></script>
+  <script src="/booking/admin-state.js" defer></script>
+  <script src="/admin/admin-shell.js" defer></script>
+  <script src="/admin/admin-api.js" defer></script>
+  <script src="/admin/facilities-state.js" defer></script>
+  <script src="/shared/header-state.js" defer></script>
+  <script src="/shared/header.js" defer></script>
+  <script src="/admin/facilities-page.js" defer></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+  <style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script id="tailwind-config">tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      "colors": {
+        "primary-container": "#00873a",
+        "surface-container-lowest": "#ffffff",
+        "tertiary-fixed-dim": "#b4c5ff",
+        "on-secondary-fixed": "#341100",
+        "on-tertiary-fixed-variant": "#003ea8",
+        "on-secondary-fixed-variant": "#783200",
+        "on-primary": "#ffffff",
+        "tertiary-fixed": "#dbe1ff",
+        "inverse-surface": "#293040",
+        "on-error": "#ffffff",
+        "error": "#ba1a1a",
+        "on-secondary-container": "#5c2400",
+        "on-surface-variant": "#3e4a3d",
+        "outline-variant": "#bdcaba",
+        "tertiary-container": "#316bf3",
+        "on-primary-fixed-variant": "#005320",
+        "on-error-container": "#93000a",
+        "on-primary-container": "#f7fff2",
+        "secondary-fixed-dim": "#ffb690",
+        "surface": "#f9f9ff",
+        "inverse-primary": "#62df7d",
+        "secondary-container": "#fd761a",
+        "primary": "#006b2c",
+        "on-secondary": "#ffffff",
+        "secondary-fixed": "#ffdbca",
+        "tertiary": "#0051d5",
+        "on-tertiary-container": "#fefcff",
+        "secondary": "#9d4300",
+        "on-surface": "#141b2b",
+        "primary-fixed": "#7ffc97",
+        "surface-bright": "#f9f9ff",
+        "surface-container-low": "#f1f3ff",
+        "outline": "#6e7b6c",
+        "inverse-on-surface": "#edf0ff",
+        "surface-variant": "#dce2f7",
+        "surface-container-high": "#e1e8fd",
+        "on-tertiary-fixed": "#00174b",
+        "surface-dim": "#d3daef",
+        "surface-container-highest": "#dce2f7",
+        "on-primary-fixed": "#002109",
+        "on-tertiary": "#ffffff",
+        "error-container": "#ffdad6",
+        "surface-container": "#e9edff",
+        "surface-tint": "#006e2d",
+        "background": "#f9f9ff",
+        "on-background": "#141b2b",
+        "primary-fixed-dim": "#62df7d"
+      },
+      "borderRadius": {
+        "DEFAULT": "0.25rem",
+        "lg": "0.5rem",
+        "xl": "0.75rem",
+        "full": "9999px"
+      },
+      "spacing": {
+        "space-xl": "2rem",
+        "margin": "1.25rem",
+        "space-xs": "0.25rem",
+        "space-lg": "1.5rem",
+        "gutter": "1rem",
+        "space-md": "1rem",
+        "space-sm": "0.5rem"
+      },
+      "fontFamily": {
+        "display-lg-mobile": [
+          "Be Vietnam Pro"
+        ],
+        "headline-sm": [
+          "Be Vietnam Pro"
+        ],
+        "body-lg": [
+          "Be Vietnam Pro"
+        ],
+        "headline-lg": [
+          "Be Vietnam Pro"
+        ],
+        "label-lg": [
+          "Inter"
+        ],
+        "body-sm": [
+          "Be Vietnam Pro"
+        ],
+        "label-sm": [
+          "Inter"
+        ],
+        "label-md": [
+          "Inter"
+        ],
+        "headline-md": [
+          "Be Vietnam Pro"
+        ],
+        "display-lg": [
+          "Be Vietnam Pro"
+        ],
+        "body-md": [
+          "Be Vietnam Pro"
+        ]
+      },
+      "fontSize": {
+        "display-lg-mobile": [
+          "30px",
+          {
+            "lineHeight": "38px",
+            "fontWeight": "700"
+          }
+        ],
+        "headline-sm": [
+          "18px",
+          {
+            "lineHeight": "26px",
+            "fontWeight": "600"
+          }
+        ],
+        "body-lg": [
+          "16px",
+          {
+            "lineHeight": "26px",
+            "fontWeight": "400"
+          }
+        ],
+        "headline-lg": [
+          "28px",
+          {
+            "lineHeight": "36px",
+            "fontWeight": "700"
+          }
+        ],
+        "label-lg": [
+          "15px",
+          {
+            "lineHeight": "20px",
+            "fontWeight": "600"
+          }
+        ],
+        "body-sm": [
+          "12px",
+          {
+            "lineHeight": "18px",
+            "fontWeight": "400"
+          }
+        ],
+        "label-sm": [
+          "11px",
+          {
+            "lineHeight": "14px",
+            "fontWeight": "600"
+          }
+        ],
+        "label-md": [
+          "13px",
+          {
+            "lineHeight": "18px",
+            "fontWeight": "500"
+          }
+        ],
+        "headline-md": [
+          "22px",
+          {
+            "lineHeight": "30px",
+            "fontWeight": "600"
+          }
+        ],
+        "display-lg": [
+          "40px",
+          {
+            "lineHeight": "48px",
+            "fontWeight": "700"
+          }
+        ],
+        "body-md": [
+          "14px",
+          {
+            "lineHeight": "22px",
+            "fontWeight": "400"
+          }
+        ]
+      }
+    }
+  }
+};</script>
+
+</head>
+<body class="admin-body" data-page="admin">
+  <section id="adminGuard" class="admin-guard" role="status" aria-live="polite">
+    <p id="adminGuardMessage">Đang kiểm tra quyền truy cập...</p>
+    <button id="adminGuardRetry" class="admin-button admin-button--quiet" type="button" hidden>Thử lại</button>
+  </section>
+  <div id="adminHeaderMount" data-shared-header></div>
+  <div id="adminApp" class="admin-shell" data-admin-mockup="true" hidden>
+    <aside class="admin-sidebar">
+      <nav class="admin-sidebar__nav" aria-label="Điều hướng quản trị" data-admin-sidebar></nav>
+    </aside>
+    <div class="admin-main admin-main--mockup"><main class="w-full pt-16 bg-surface px-space-lg py-space-lg flex-1"><div class="flex flex-col w-full gap-space-lg relative">
+<!-- Top Stat Highlights Bar -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-gutter w-full">
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Tổng số cơ sở</span>
+<span class="font-headline-lg text-headline-lg text-on-surface mt-1" data-admin-facility-total>—</span>
+<span class="font-body-sm text-body-sm text-primary flex items-center gap-1 mt-1 font-semibold">
+<span class="material-symbols-outlined text-[16px]">trending_up</span>Tổng cơ sở theo API
+        </span>
+</div>
+<div class="w-12 h-12 rounded-xl bg-surface-container-high text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[26px]">stadium</span>
+</div>
+</div>
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Sân con đang mở</span>
+<span class="font-headline-lg text-headline-lg text-on-surface mt-1" data-admin-facility-metric>—</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-1">Không có thống kê tổng hợp</span>
+</div>
+<div class="w-12 h-12 rounded-xl bg-surface-container-high text-secondary flex items-center justify-center">
+<span class="material-symbols-outlined text-[26px]">sports_tennis</span>
+</div>
+</div>
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Đang bảo trì</span>
+<span class="font-headline-lg text-headline-lg text-secondary-container mt-1" data-admin-facility-metric>—</span>
+<span class="font-body-sm text-body-sm text-secondary flex items-center gap-1 mt-1 font-semibold">
+<span class="material-symbols-outlined text-[16px]">build</span>Không có thống kê tổng hợp
+        </span>
+</div>
+<div class="w-12 h-12 rounded-xl bg-surface-container-high text-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-[26px]">handyman</span>
+</div>
+</div>
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Tỷ lệ lấp đầy TB</span>
+<span class="font-headline-lg text-headline-lg text-primary mt-1" data-admin-facility-metric>—</span>
+<span class="font-body-sm text-body-sm text-primary flex items-center gap-1 mt-1 font-semibold">
+<span class="material-symbols-outlined text-[16px]">bolt</span>Không có thống kê tổng hợp
+        </span>
+</div>
+<div class="w-12 h-12 rounded-xl bg-surface-container-high text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[26px]">speed</span>
+</div>
+</div>
+</div>
+<!-- Header Action & Filter Panel -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col gap-space-md">
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
+<div>
+<h1 class="font-headline-md text-headline-md text-on-surface tracking-tight">Quản lý cơ sở &amp; sân bãi</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5" id="facilitiesStatus" role="status" aria-live="polite">Giám sát hệ thống cụm sân, thiết lập tiện ích, trạng thái hoạt động và cấu hình chi tiết theo khu vực.</p>
+</div>
+<div class="flex items-center gap-space-sm flex-wrap">
+<button class="px-space-md py-2.5 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md flex items-center gap-2 shadow-sm transition-all cursor-pointer" id="open-drawer-btn" type="button">
+<span class="material-symbols-outlined text-[20px]">add_circle</span>
+<span>Thêm cơ sở / Sân mới</span>
+</button>
+<button class="px-space-md py-2.5 rounded-xl bg-surface-container-high text-on-surface font-label-md text-label-md hover:bg-surface-variant flex items-center gap-2 transition-all" type="button" disabled aria-label="Xuất báo cáo, sắp có">
+<span class="material-symbols-outlined text-[20px]">file_download</span>
+<span>Xuất báo cáo <span class="admin-mockup-soon">Sắp có</span></span>
+</button>
+</div>
+</div>
+<!-- Filter Toolset -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-space-sm pt-space-xs">
+<!-- Search Input -->
+<div class="md:col-span-5 relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+<input class="w-full pl-10 pr-4 py-2.5 bg-surface rounded-xl text-on-surface placeholder:text-on-surface-variant font-body-sm text-body-sm focus:outline-none focus:bg-surface-container-lowest shadow-sm transition-all" id="mockupFacilitySearch" placeholder="Tìm theo tên cơ sở, mã sân, hoặc địa chỉ chi tiết..." type="search" maxlength="100" autocomplete="off" value="">
+</div>
+<!-- Sport Filter -->
+<div class="md:col-span-3">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">sports</span>
+<select class="w-full pl-10 pr-8 py-2.5 bg-surface text-on-surface font-body-sm text-body-sm rounded-xl focus:outline-none appearance-none cursor-pointer shadow-sm" id="mockupFacilitySport" disabled>
+<option value="all">Môn thể thao: Tất cả</option>
+<option selected="" value="badminton">Cầu lông</option>
+<option value="football">Bóng đá mini</option>
+<option value="tennis">Quần vợt / Tennis</option>
+<option value="pickleball">Pickleball</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px] pointer-events-none">expand_more</span>
+</div>
+</div>
+<!-- District Filter -->
+<div class="md:col-span-2">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">location_on</span>
+<input class="w-full pl-10 pr-4 py-2.5 bg-surface text-on-surface placeholder:text-on-surface-variant font-body-sm text-body-sm rounded-xl focus:outline-none appearance-none shadow-sm" id="mockupFacilityDistrict" placeholder="Quận / Huyện">
+</div>
+</div>
+<!-- Status Filter -->
+<div class="md:col-span-2">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">tune</span>
+<select class="w-full pl-10 pr-8 py-2.5 bg-surface text-on-surface font-body-sm text-body-sm rounded-xl focus:outline-none appearance-none cursor-pointer shadow-sm" id="mockupFacilityActive">
+<option value="all">Tất cả trạng thái</option>
+<option selected="" value="active">Đang hoạt động</option>
+<option value="inactive">Ngừng hoạt động</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px] pointer-events-none">expand_more</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Facilities Data Table -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-high/60 font-label-md text-label-md text-on-surface-variant">
+<th class="py-3.5 px-space-md">Mã sân</th>
+<th class="py-3.5 px-space-md min-w-[280px]">Cơ sở &amp; Hình ảnh</th>
+<th class="py-3.5 px-space-md">Môn thể thao</th>
+<th class="py-3.5 px-space-md min-w-[220px]">Địa chỉ</th>
+<th class="py-3.5 px-space-md">Giờ hoạt động</th>
+<th class="py-3.5 px-space-md text-center">Sân con</th>
+<th class="py-3.5 px-space-md">Hotline</th>
+<th class="py-3.5 px-space-md">Đơn giá TB</th>
+<th class="py-3.5 px-space-md text-center">Trạng thái</th>
+<th class="py-3.5 px-space-md text-right">Thao tác</th>
+</tr>
+</thead>
+<tbody class="divide-y-0 font-body-sm text-body-sm" id="mockupFacilityRows">
+<!-- Row 1: Selected / Highlighted Facility -->
+<tr class="hover:bg-surface-container-low transition-colors bg-surface-container-low/40">
+<td class="py-4 px-space-md font-label-sm text-label-sm font-semibold text-primary">FAC-091</td>
+<td class="py-4 px-space-md">
+<div class="flex items-center gap-3">
+<div class="w-14 h-14 rounded-xl overflow-hidden shrink-0 shadow-sm relative">
+<img class="w-full h-full object-cover" data-alt="High quality vibrant indoor badminton court facility with professional green turf PVC floor, crisp white boundary lines, high ceiling 300 lux LED floodlights, badminton nets taut and pristine sports equipment in Vietnam." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAB_ztous70h9EOlA1kaloej6K50jHNzzlE0oKioJna0e2s4Y5MsrZXESXWO5o5NX7RFJBIrt3UeE2-VoOc90MVwhXSURnlhBFdNR1Rbd4mclmBbhcRmTPuVT6zA6R8eAFhsDfaejBx0CoPnSiVsAfHmk0kc3OWOovJpM-mRm6SnQkZG0LEqmiWvDnFYWlfWm1JjU1zAMsk-m2fdQuQzxu-hF8KKkI_17oZtWDQfmc8MOBG3otU9Qel">
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-lg text-label-lg text-on-surface font-semibold truncate">CLB Cầu Lông Ngôi Sao Cầu Giấy</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">3 Sân: Yonex Pro, Victor, Kumpoo Court</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-space-md">
+<span class="px-2.5 py-1 rounded-full bg-primary/10 text-primary font-label-sm text-label-sm font-semibold inline-flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span> Cầu lông
+              </span>
+</td>
+<td class="py-4 px-space-md text-on-surface-variant">
+<div class="flex items-start gap-1">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant shrink-0 mt-0.5">place</span>
+<span class="line-clamp-2">Số 35 Phố Dịch Vọng Hậu, Q. Cầu Giấy, Hà Nội</span>
+</div>
+</td>
+<td class="py-4 px-space-md">
+<span class="font-label-md text-label-md text-on-surface">06:00 - 22:00</span>
+<span class="block text-primary font-body-sm text-body-sm">Mở cửa tuần</span>
+</td>
+<td class="py-4 px-space-md text-center">
+<span class="inline-flex items-center justify-center px-2.5 py-1 rounded-xl bg-surface-container-high text-on-surface font-label-md text-label-md font-semibold">3/3</span>
+</td>
+<td class="py-4 px-space-md font-label-md text-label-md text-on-surface">0982 668 998</td>
+<td class="py-4 px-space-md">
+<span class="font-label-md text-label-md font-semibold text-secondary">120.000đ</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant block">/giờ</span>
+</td>
+<td class="py-4 px-space-md text-center">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox">
+<div class="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-surface peer-checked:bg-primary after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface-container-lowest after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+</label>
+</td>
+<td class="py-4 px-space-md text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="w-8 h-8 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface flex items-center justify-center transition-all" title="Chỉnh sửa chi tiết" type="button">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container hover:bg-surface-container-high text-primary flex items-center justify-center transition-all" title="Xem sơ đồ khung giờ &amp; bảng giá" type="button">
+<span class="material-symbols-outlined text-[18px]">calendar_view_week</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container hover:bg-error-container text-error flex items-center justify-center transition-all" title="Xóa cơ sở" type="button">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-4 px-space-md font-label-sm text-label-sm font-semibold text-primary">FAC-104</td>
+<td class="py-4 px-space-md">
+<div class="flex items-center gap-3">
+<div class="w-14 h-14 rounded-xl overflow-hidden shrink-0 shadow-sm relative">
+<img class="w-full h-full object-cover" data-alt="Lush green artificial turf mini football pitch outdoors under clear blue daytime skies with bright white touchlines, sturdy goalposts, spectator safety netting and perimeter lighting towers in an athletic sports complex." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAI2RmzxbDSQ46Vjlh1Snc5TWjSbkMO5ynqbP3F_orUBlt9pNAWN6KgQSuMHoURAerzL8LY0_11rh9uNkM1mHT_GjdECcDaJT1NyP-ySRoXwa48TB7ZwZyKPGaOsjcqNZeFOyOPzvKUB9zSJM7lFEuPAUB95fmIq7Ek0Gqy5EOnPxxInK2z-DrM0sJViwg8ZnwekJfx7y1tjwvDIwWQRR31q0q1jurZ9FMjfU-uCTSbpEHRTHZSaJ4K">
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-lg text-label-lg text-on-surface font-semibold truncate">Sân Cỏ Nhân Tạo PVV Sports Park</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">4 Sân 7 người tiêu chuẩn FIFA 2 sao</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-space-md">
+<span class="px-2.5 py-1 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm font-semibold inline-flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary-container"></span> Bóng đá mini
+              </span>
+</td>
+<td class="py-4 px-space-md text-on-surface-variant">
+<div class="flex items-start gap-1">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant shrink-0 mt-0.5">place</span>
+<span class="line-clamp-2">Ngõ 72 Trần Thái Tông, Cầu Giấy, Hà Nội</span>
+</div>
+</td>
+<td class="py-4 px-space-md">
+<span class="font-label-md text-label-md text-on-surface">05:30 - 23:00</span>
+<span class="block text-primary font-body-sm text-body-sm">Đèn cao áp đêm</span>
+</td>
+<td class="py-4 px-space-md text-center">
+<span class="inline-flex items-center justify-center px-2.5 py-1 rounded-xl bg-surface-container-high text-on-surface font-label-md text-label-md font-semibold">4/4</span>
+</td>
+<td class="py-4 px-space-md font-label-md text-label-md text-on-surface">0912 345 678</td>
+<td class="py-4 px-space-md">
+<span class="font-label-md text-label-md font-semibold text-secondary">350.000đ</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant block">/giờ</span>
+</td>
+<td class="py-4 px-space-md text-center">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox">
+<div class="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-surface peer-checked:bg-primary after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface-container-lowest after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+</label>
+</td>
+<td class="py-4 px-space-md text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="w-8 h-8 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface flex items-center justify-center transition-all" title="Chỉnh sửa chi tiết" type="button">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container hover:bg-surface-container-high text-primary flex items-center justify-center transition-all" title="Xem sơ đồ khung giờ &amp; bảng giá" type="button">
+<span class="material-symbols-outlined text-[18px]">calendar_view_week</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container hover:bg-error-container text-error flex items-center justify-center transition-all" title="Xóa cơ sở" type="button">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-4 px-space-md font-label-sm text-label-sm font-semibold text-primary">FAC-082</td>
+<td class="py-4 px-space-md">
+<div class="flex items-center gap-3">
+<div class="w-14 h-14 rounded-xl overflow-hidden shrink-0 shadow-sm relative">
+<img class="w-full h-full object-cover" data-alt="Championship outdoor hard tennis court with pristine blue and deep green acrylic hard court surfacing, white baselines, heavy duty tennis net, spectator seating stands in Hanoi Vietnam university sports ground." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQshjzn4SR0DIJ3UEFRFq1jqIPa8Q7RQCNfgvzoh6ejmuShSoZyKHeSQaJmuiQYVNIPW3_5P_ETrr9QaIQoP7OnzqEEmCYm5zGScMKyrNeuDFODE_qvIWgwuplEv_2PJm4LP84NtpzPfujSalcO3m_bytmzNKdm6VOxcHYxKcPeosKijOSQHNK6qQVffCnZIQTEhfWc_FpoQjwWrmWoJLbmcS8X9vzfxWMnEVsOES5hDXalJAYVrTV">
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-lg text-label-lg text-on-surface font-semibold truncate">Cụm Tennis Bách Khoa Center</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">2 Sân mặt cứng US Open Pro</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-space-md">
+<span class="px-2.5 py-1 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm font-semibold inline-flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary-container"></span> Tennis
+              </span>
+</td>
+<td class="py-4 px-space-md text-on-surface-variant">
+<div class="flex items-start gap-1">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant shrink-0 mt-0.5">place</span>
+<span class="line-clamp-2">Ký Túc Xá ĐHBK, P. Bách Khoa, Q. Hai Bà Trưng</span>
+</div>
+</td>
+<td class="py-4 px-space-md">
+<span class="font-label-md text-label-md text-on-surface">06:00 - 21:30</span>
+<span class="block text-on-surface-variant font-body-sm text-body-sm">Nghỉ trưa 12h-13h</span>
+</td>
+<td class="py-4 px-space-md text-center">
+<span class="inline-flex items-center justify-center px-2.5 py-1 rounded-xl bg-surface-container-high text-on-surface font-label-md text-label-md font-semibold">2/2</span>
+</td>
+<td class="py-4 px-space-md font-label-md text-label-md text-on-surface">024 3869 2212</td>
+<td class="py-4 px-space-md">
+<span class="font-label-md text-label-md font-semibold text-secondary">220.000đ</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant block">/giờ</span>
+</td>
+<td class="py-4 px-space-md text-center">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox">
+<div class="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-surface peer-checked:bg-primary after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface-container-lowest after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+</label>
+</td>
+<td class="py-4 px-space-md text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="w-8 h-8 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface flex items-center justify-center transition-all" title="Chỉnh sửa chi tiết" type="button">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container hover:bg-surface-container-high text-primary flex items-center justify-center transition-all" title="Xem sơ đồ khung giờ &amp; bảng giá" type="button">
+<span class="material-symbols-outlined text-[18px]">calendar_view_week</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container hover:bg-error-container text-error flex items-center justify-center transition-all" title="Xóa cơ sở" type="button">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-4 px-space-md font-label-sm text-label-sm font-semibold text-primary">FAC-077</td>
+<td class="py-4 px-space-md">
+<div class="flex items-center gap-3">
+<div class="w-14 h-14 rounded-xl overflow-hidden shrink-0 shadow-sm relative">
+<img class="w-full h-full object-cover" data-alt="Modern indoor pickleball club with bright teal and navy multi-surface court, neon LED ceiling lights, yellow pickleball balls on floor, high tech clean stadium interior." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCDAORt04tDWOo2YJKEHh27P8CACGnt61ZsZ8q5C8FPkX-PKS1-13Xb2zLUMpY45jD6ka5jf7AqFWOfpe-cnuNPVpukMYbocdXTn6hgg5O5GvX2mt51uU8kCxny0fjVBX02A6Df4RxO_KeZJHlOK2JdjocqzhQxX2uSbcN6v6A8DiAYfiL3YxYciE9HYHgLHfoqYUPyka4V0LJVx31RdDKeMab6nPT0BRkPYjSXyoMdJfo4cGg1JUpB">
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-lg text-label-lg text-on-surface font-semibold truncate">Pickleball Arena Tây Hồ</span>
+<span class="font-body-sm text-body-sm text-secondary-container font-semibold truncate">Bảo trì mặt sân số 2</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-space-md">
+<span class="px-2.5 py-1 rounded-full bg-secondary-fixed-dim/40 text-on-secondary-fixed-variant font-label-sm text-label-sm font-semibold inline-flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> Pickleball
+              </span>
+</td>
+<td class="py-4 px-space-md text-on-surface-variant">
+<div class="flex items-start gap-1">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant shrink-0 mt-0.5">place</span>
+<span class="line-clamp-2">Số 12 Phố Đặng Thai Mai, Q. Tây Hồ, Hà Nội</span>
+</div>
+</td>
+<td class="py-4 px-space-md">
+<span class="font-label-md text-label-md text-on-surface">06:00 - 22:30</span>
+<span class="block text-secondary font-body-sm text-body-sm">Đang bảo trì 1 phần</span>
+</td>
+<td class="py-4 px-space-md text-center">
+<span class="inline-flex items-center justify-center px-2.5 py-1 rounded-xl bg-secondary-fixed/50 text-secondary font-label-md text-label-md font-semibold">1/2</span>
+</td>
+<td class="py-4 px-space-md font-label-md text-label-md text-on-surface">0977 888 123</td>
+<td class="py-4 px-space-md">
+<span class="font-label-md text-label-md font-semibold text-secondary">160.000đ</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant block">/giờ</span>
+</td>
+<td class="py-4 px-space-md text-center">
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox">
+<div class="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-surface peer-checked:bg-primary after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface-container-lowest after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+</label>
+</td>
+<td class="py-4 px-space-md text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="w-8 h-8 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface flex items-center justify-center transition-all" title="Chỉnh sửa chi tiết" type="button">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container hover:bg-surface-container-high text-primary flex items-center justify-center transition-all" title="Xem sơ đồ khung giờ &amp; bảng giá" type="button">
+<span class="material-symbols-outlined text-[18px]">calendar_view_week</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container hover:bg-error-container text-error flex items-center justify-center transition-all" title="Xóa cơ sở" type="button">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination Footer -->
+<div class="p-space-md bg-surface-container-low flex flex-col sm:flex-row items-center justify-between gap-space-sm font-body-sm text-body-sm text-on-surface-variant">
+<span>Đang hiển thị <strong data-admin-facility-pagination-range>—</strong> trong tổng số <strong data-admin-facility-pagination-total>—</strong> cơ sở thể thao</span>
+<div class="flex items-center gap-1">
+<button class="w-8 h-8 rounded-lg bg-surface-container-lowest hover:bg-surface-container-high text-on-surface-variant flex items-center justify-center transition-all disabled:opacity-50" disabled data-admin-page="previous" type="button">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-primary text-on-primary font-semibold flex items-center justify-center shadow-sm" data-admin-page-number="1" type="button">1</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container-lowest hover:bg-surface-container-high text-on-surface flex items-center justify-center transition-all" data-admin-page-number="2" type="button">2</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container-lowest hover:bg-surface-container-high text-on-surface flex items-center justify-center transition-all" data-admin-page-number="3" type="button">3</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container-lowest hover:bg-surface-container-high text-on-surface-variant flex items-center justify-center transition-all" data-admin-page="next" type="button">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- ========================================================================= -->
+<!-- SLIDE-OVER DRAWER MODAL: CHỈNH SỬA / THÊM CƠ SỞ THỂ THAO -->
+<!-- Hiển thị nổi bật theo yêu cầu (Open by default for inspection & preview) -->
+<!-- ========================================================================= -->
+<div class="fixed inset-0 bg-inverse-surface/40 backdrop-blur-xs z-50 flex justify-end transition-opacity" id="facility-drawer-backdrop" hidden>
+<div class="w-full max-w-2xl bg-surface-container-lowest h-full shadow-2xl flex flex-col justify-between overflow-hidden animate-in slide-in-from-right duration-300" id="facility-drawer">
+<!-- Drawer Header -->
+<div class="px-space-lg py-4 bg-surface-container-low flex items-center justify-between shrink-0">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-primary text-on-primary flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-[24px]">sports_tennis</span>
+</div>
+<div class="flex flex-col">
+<h2 class="font-headline-sm text-headline-sm text-on-surface tracking-tight">Thêm / Chỉnh sửa cơ sở thể thao</h2>
+<span class="font-body-sm text-body-sm text-primary font-semibold">Cấu hình thông tin chi tiết &amp; tiện ích cụm sân</span>
+</div>
+</div>
+<button class="w-9 h-9 rounded-xl bg-surface-container-high hover:bg-surface-variant text-on-surface-variant hover:text-on-surface flex items-center justify-center transition-all cursor-pointer" id="close-drawer-btn" type="button">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<!-- Drawer Scrollable Body Form -->
+<div class="flex-1 overflow-y-auto px-space-lg py-space-md space-y-space-md">
+<!-- Field 1: Facility Name -->
+<div class="space-y-1.5">
+<label class="block font-label-md text-label-md text-on-surface">
+            Tên cơ sở thể thao <span class="text-error">*</span>
+</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">badge</span>
+<input class="w-full pl-10 pr-4 py-2.5 bg-surface text-on-surface font-body-sm text-body-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-sm" data-facility-field="name" placeholder="Nhập tên trung tâm/cụm sân..." type="text" value="">
+</div>
+</div>
+<!-- Field 2: Sport Category & Contact Hotline -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+<div class="space-y-1.5">
+<label class="block font-label-md text-label-md text-on-surface">
+              Quận / Huyện <span class="text-error">*</span>
+</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">category</span>
+<input class="w-full pl-10 pr-4 py-2.5 bg-surface text-on-surface placeholder:text-on-surface-variant font-body-sm text-body-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-sm" data-facility-field="district" placeholder="Nhập quận / huyện..." required type="text" value="">
+</div>
+</div>
+<div class="space-y-1.5">
+<label class="block font-label-md text-label-md text-on-surface">
+              Hotline liên hệ / Đặt sân <span class="text-error">*</span>
+</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">call</span>
+<input class="w-full pl-10 pr-4 py-2.5 bg-surface text-on-surface font-body-sm text-body-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-sm" data-facility-field="hotline" placeholder="Số điện thoại lễ tân..." type="tel" value="">
+</div>
+</div>
+</div>
+<!-- Field 3: Detailed Address -->
+<div class="space-y-1.5">
+<label class="block font-label-md text-label-md text-on-surface">
+            Địa chỉ chi tiết <span class="text-error">*</span>
+</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">location_on</span>
+<input class="w-full pl-10 pr-4 py-2.5 bg-surface text-on-surface font-body-sm text-body-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-sm" data-facility-field="address" placeholder="Địa chỉ chính xác..." type="text" value="">
+</div>
+</div>
+<!-- Field 4: Opening & Closing Hours -->
+<div class="space-y-1.5">
+<label class="block font-label-md text-label-md text-on-surface">
+            Thời gian hoạt động hàng ngày <span class="text-error">*</span>
+</label>
+<div class="grid grid-cols-2 gap-space-md">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">wb_twilight</span>
+<input class="w-full pl-10 pr-3 py-2.5 bg-surface text-on-surface font-body-sm text-body-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-sm" data-facility-field="opening_time" type="time" value="">
+</div>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">bedtime</span>
+<input class="w-full pl-10 pr-3 py-2.5 bg-surface text-on-surface font-body-sm text-body-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-sm" data-facility-field="closing_time" type="time" value="">
+</div>
+</div>
+</div>
+<!-- Field 5: Facility Amenities (Checkboxes with Icons) -->
+<div class="space-y-2">
+<label class="block font-label-md text-label-md text-on-surface">
+            Tiện ích cơ sở vật chất
+          </label>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+<!-- Item 1 -->
+<label class="flex items-center gap-3 p-3 rounded-xl bg-surface hover:bg-surface-container-high transition-colors cursor-pointer shadow-xs">
+<input class="w-4 h-4 rounded text-primary accent-primary" data-facility-amenity type="checkbox">
+<div class="flex items-center gap-2 text-on-surface font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-primary text-[20px]">local_parking</span>
+<span>Chỗ để xe ô tô/xe máy free</span>
+</div>
+</label>
+<!-- Item 2 -->
+<label class="flex items-center gap-3 p-3 rounded-xl bg-surface hover:bg-surface-container-high transition-colors cursor-pointer shadow-xs">
+<input class="w-4 h-4 rounded text-primary accent-primary" data-facility-amenity type="checkbox">
+<div class="flex items-center gap-2 text-on-surface font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-primary text-[20px]">local_cafe</span>
+<span>Nước đóng chai &amp; giải khát</span>
+</div>
+</label>
+<!-- Item 3 -->
+<label class="flex items-center gap-3 p-3 rounded-xl bg-surface hover:bg-surface-container-high transition-colors cursor-pointer shadow-xs">
+<input class="w-4 h-4 rounded text-primary accent-primary" data-facility-amenity type="checkbox">
+<div class="flex items-center gap-2 text-on-surface font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-primary text-[20px]">shower</span>
+<span>Phòng thay đồ &amp; tắm nóng lạnh</span>
+</div>
+</label>
+<!-- Item 4 -->
+<label class="flex items-center gap-3 p-3 rounded-xl bg-surface hover:bg-surface-container-high transition-colors cursor-pointer shadow-xs">
+<input class="w-4 h-4 rounded text-primary accent-primary" data-facility-amenity type="checkbox">
+<div class="flex items-center gap-2 text-on-surface font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-primary text-[20px]">wc</span>
+<span>Nhà vệ sinh riêng sạch sẽ</span>
+</div>
+</label>
+<!-- Item 5 -->
+<label class="flex items-center gap-3 p-3 rounded-xl bg-surface hover:bg-surface-container-high transition-colors cursor-pointer shadow-xs">
+<input class="w-4 h-4 rounded text-primary accent-primary" data-facility-amenity type="checkbox">
+<div class="flex items-center gap-2 text-on-surface font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-primary text-[20px]">sports_tennis</span>
+<span>Cho thuê vợt &amp; bóng thi đấu</span>
+</div>
+</label>
+<!-- Item 6 -->
+<label class="flex items-center gap-3 p-3 rounded-xl bg-surface hover:bg-surface-container-high transition-colors cursor-pointer shadow-xs">
+<input class="w-4 h-4 rounded text-primary accent-primary" data-facility-amenity type="checkbox">
+<div class="flex items-center gap-2 text-on-surface font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-primary text-[20px]">lightbulb</span>
+<span>Đèn chiếu sáng chuẩn 300 Lux</span>
+</div>
+</label>
+</div>
+</div>
+<!-- Field 6: Cancellation Policy -->
+<div class="space-y-1.5">
+<div class="flex items-center justify-between">
+<label class="block font-label-md text-label-md text-on-surface">Chính sách hủy sân &amp; hoàn tiền</label>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Quy tắc chuẩn áp dụng tự động</span>
+</div>
+<div class="p-3 bg-surface rounded-xl space-y-2">
+<div class="flex items-center gap-2 text-body-sm font-body-sm text-on-surface">
+<span class="material-symbols-outlined text-primary text-[18px]">verified</span>
+<span><strong>Trước 24 giờ:</strong> Hoàn trả 100% số tiền đặt cọc</span>
+</div>
+<div class="flex items-center gap-2 text-body-sm font-body-sm text-on-surface">
+<span class="material-symbols-outlined text-secondary text-[18px]">info</span>
+<span><strong>Trước 6h - 24 giờ:</strong> Hoàn trả 50% số tiền đặt cọc</span>
+</div>
+<div class="flex items-center gap-2 text-body-sm font-body-sm text-on-surface">
+<span class="material-symbols-outlined text-error text-[18px]">cancel</span>
+<span><strong>Dưới 6 giờ:</strong> Không hoàn cọc để bảo vệ lịch vận hành</span>
+</div>
+</div>
+<textarea class="w-full p-3 bg-surface text-on-surface font-body-sm text-body-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-sm" data-facility-field="cancellation_policy" placeholder="Ghi chú thêm về điều kiện đổi lịch hoặc hoàn tiền theo thỏa thuận riêng..." rows="2"></textarea>
+</div>
+<!-- Field 7: Photo Gallery & Upload Area -->
+<div class="space-y-2">
+<label class="block font-label-md text-label-md text-on-surface">
+            Hình ảnh cơ sở &amp; Sân thi đấu (Tối đa 6 ảnh)
+          </label>
+<!-- Dropzone -->
+<div class="border-2 border-dashed border-outline-variant hover:border-primary rounded-xl p-4 bg-surface flex flex-col items-center justify-center text-center cursor-pointer transition-colors group">
+<div class="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-1 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[24px]">cloud_upload</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface font-semibold">Kéo và thả ảnh tại đây, hoặc bấm để chọn tệp</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Hỗ trợ JPG, PNG, WEBP (Tối đa 5MB mỗi ảnh)</span>
+</div>
+<!-- Existing Thumbnails -->
+<div class="grid grid-cols-3 gap-space-sm pt-1">
+<div class="relative rounded-xl overflow-hidden aspect-video shadow-sm group">
+<img class="w-full h-full object-cover" data-alt="Badminton court hall showing Yonex tournament certified green mat with clear boundaries, white shuttles on court, sports hall interior lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTMK-lok-_FQtSf8A1qs315iYfBf4EMMqj56nVLfDdnwEOZ4ydfdK_IqgcHBLjiE6kEYq8cbzEYNIrHyClYB3f_5dxhq9qg5PLIGULDxUaGA2PiADttR-n8bQPDkwJ9VWq5lPrDPsIqEzMA3oYJ6Gb8rFmz6_sLrZIEmkxGWd4a9s5Pp84zGvKjsfLSpupBRuQPvL74eDy1s_JlMGSRbGhh-RO4doRkTxTypGJ7VINW7MPBj0g5uVd">
+<div class="absolute inset-0 bg-inverse-surface/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
+<button class="w-7 h-7 rounded-lg bg-surface text-on-surface flex items-center justify-center hover:bg-error-container hover:text-error transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">delete</span>
+</button>
+</div>
+<span class="absolute bottom-1 left-1 px-1.5 py-0.5 bg-inverse-surface/75 text-on-primary text-[10px] font-semibold rounded">Ảnh bìa</span>
+</div>
+<div class="relative rounded-xl overflow-hidden aspect-video shadow-sm group">
+<img class="w-full h-full object-cover" data-alt="Wide perspective of indoor sports court showing modern changing room entrance, beverage vending machine, and spectator rest benches." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD6EkHbWLqSQPl9oK5uHcCgeXciY3GAo3vdIrEuIBVMGIkicgQX8cgZH0lkHlJfNfXT2_Wgvi3BFnGy997k85liGYKxYAzSf3ifbAQWMIq71MtgPRVGrJ2usGcJmIhmZtIC3345ztjSu3YOTyVghHMMnA6vrSvZ8sd6-NkYJUDxiQvCZ6x5T2CFOI4JUlQLESIU4w2btS1PVNQQ9-LjahFi_3wqibMzuPeOQHqqF86bWeReVd6k1nos">
+<div class="absolute inset-0 bg-inverse-surface/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
+<button class="w-7 h-7 rounded-lg bg-surface text-on-surface flex items-center justify-center hover:bg-error-container hover:text-error transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">delete</span>
+</button>
+</div>
+</div>
+<div class="relative rounded-xl overflow-hidden aspect-video shadow-sm group">
+<img class="w-full h-full object-cover" data-alt="Spacious clean parking area outside a sports hall facility with scooters and cars parked under sunshade canopy in Hanoi." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCgL19YRLW8LTKihT67TQE_Jfih2JNmrvJBLNm9mnc4oWNL-j7WRYxrbZcdPsJxmHI39vnbRDo6zQvrNcESCeaI5pZ5lG4O1ZWfpadImdbVD4_Ox4ON192fgHQ7aPjTTFc29813_y32AlIxfcv4XiLeVBAuGKD015XXGs0a5oRjA_9u944WFmqefXiH1LBK9OhnydXOS6Dvo6-KUtwrd50rzFRlI1mgBqhpxAH9ujwwDZ-NyPsRWRxc">
+<div class="absolute inset-0 bg-inverse-surface/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
+<button class="w-7 h-7 rounded-lg bg-surface text-on-surface flex items-center justify-center hover:bg-error-container hover:text-error transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Drawer Footer Actions -->
+<p id="facilityDrawerError" class="px-space-lg text-body-sm text-error" role="alert" hidden></p>
+<div class="px-space-lg py-4 bg-surface-container-low flex items-center justify-between shrink-0">
+<button class="px-space-md py-2.5 rounded-xl bg-surface-container-high hover:bg-surface-variant text-on-surface font-label-md text-label-md transition-all cursor-pointer" id="cancel-drawer-btn" type="button">
+          Hủy bỏ
+        </button>
+<div class="flex items-center gap-space-sm">
+<button class="px-space-md py-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md flex items-center gap-1.5 transition-all" type="button" disabled aria-label="Xem trước, sắp có">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+<span>Xem trước <span class="admin-mockup-soon">Sắp có</span></span>
+</button>
+<button class="px-space-lg py-2.5 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md flex items-center gap-2 shadow-sm transition-all cursor-pointer" id="save-facility-drawer-btn" type="button">
+<span class="material-symbols-outlined text-[20px]">save</span>
+<span>Lưu thông tin cơ sở</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main></div><main hidden class="admin-main admin-legacy-bindings">
+      <section class="admin-section" aria-labelledby="facilitiesTitle">
+        <div class="admin-section__heading">
+          <div>
+            <p class="admin-eyebrow">Quản trị hệ thống</p>
+            <h1 id="facilitiesTitle">Quản lý cơ sở &amp; sân</h1>
+            <p>Thiết lập thông tin, tiện ích, trạng thái hoạt động và danh sách sân.</p>
+          </div>
+          <button id="addFacility" class="admin-button admin-button--primary" type="button">Thêm cơ sở</button>
+        </div>
+        <form id="facilityFilters" class="admin-facility-filters">
+          <label for="facilitySearch">Tìm cơ sở hoặc địa chỉ</label>
+          <input id="facilitySearch" type="search" maxlength="120" autocomplete="off">
+          <label for="facilityDistrict">Quận/huyện</label>
+          <select id="facilityDistrict"><option value="">Tất cả</option></select>
+          <label for="facilityActive">Trạng thái</label>
+          <select id="facilityActive">
+            <option value="">Tất cả</option>
+            <option value="true">Đang hoạt động</option>
+            <option value="false">Ngừng hoạt động</option>
+          </select>
+          <button class="admin-button admin-button--primary" type="submit">Tìm kiếm</button>
+          <button id="resetFacilityFilters" class="admin-button admin-button--quiet" type="button">Đặt lại</button>
+        </form>
+        <p id="facilitiesStatus" class="admin-dashboard-message" role="status" aria-live="polite">Đang tải cơ sở...</p>
+        <div class="admin-table-scroll">
+          <table class="admin-facility-table">
+            <thead><tr>
+              <th scope="col">Cơ sở &amp; địa chỉ</th><th scope="col">Giờ hoạt động</th>
+              <th scope="col">Sân con</th><th scope="col">Đơn hiệu lực</th>
+              <th scope="col">Trạng thái</th><th scope="col">Thao tác</th>
+            </tr></thead>
+            <tbody id="facilityRows"></tbody>
+          </table>
+        </div>
+        <div class="admin-user-pagination">
+          <span id="facilityPaginationSummary"></span>
+          <button id="previousFacilitiesPage" class="admin-button admin-button--quiet" type="button" disabled>Trước</button>
+          <button id="nextFacilitiesPage" class="admin-button admin-button--quiet" type="button" disabled>Tiếp</button>
+        </div>
+      </section>
+    </main>
+  </div>
+  <div id="facilityDialog" class="admin-modal" hidden>
+    <section class="admin-dialog admin-facility-dialog" role="dialog" aria-modal="true" aria-labelledby="facilityDialogTitle" tabindex="-1">
+      <header class="admin-dialog__header">
+        <div><p class="admin-eyebrow">Cơ sở &amp; sân</p><h2 id="facilityDialogTitle">Thông tin cơ sở</h2></div>
+        <button class="admin-dialog__close" type="button" data-facility-dialog-close aria-label="Đóng">Đóng</button>
+      </header>
+      <div class="admin-dialog__body admin-facility-dialog__body">
+        <form id="facilityForm" class="admin-facility-form">
+          <label for="facilityName">Tên cơ sở</label>
+          <input id="facilityName" name="name" required minlength="2" maxlength="160">
+          <label for="facilityAddress">Địa chỉ chi tiết</label>
+          <input id="facilityAddress" name="address" required maxlength="500">
+          <label for="facilityDistrictEdit">Quận/huyện</label>
+          <input id="facilityDistrictEdit" name="district" required maxlength="120">
+          <div class="admin-facility-form__row">
+            <div><label for="facilityOpening">Giờ mở cửa</label><input id="facilityOpening" name="opening_time" type="time" required></div>
+            <div><label for="facilityClosing">Giờ đóng cửa</label><input id="facilityClosing" name="closing_time" type="text" placeholder="HH:MM hoặc 24:00" required></div>
+          </div>
+          <label for="facilityHotline">Hotline</label>
+          <input id="facilityHotline" name="hotline" type="tel" maxlength="30">
+          <label for="facilityMapUrl">Đường dẫn bản đồ (HTTPS hoặc /assets/)</label>
+          <input id="facilityMapUrl" name="map_url" type="text">
+          <label for="facilityImageUrl">Đường dẫn ảnh (HTTPS hoặc /assets/)</label>
+          <input id="facilityImageUrl" name="image_url" type="text">
+          <label for="facilityAmenities">Tiện ích (mỗi dòng một mục, tối đa 20)</label>
+          <textarea id="facilityAmenities" name="amenities" rows="3"></textarea>
+          <label for="facilityDescription">Mô tả</label>
+          <textarea id="facilityDescription" name="description" rows="3"></textarea>
+          <label for="facilityRules">Quy định</label>
+          <textarea id="facilityRules" name="rules" rows="3"></textarea>
+          <label for="facilityPolicy">Chính sách hủy</label>
+          <textarea id="facilityPolicy" name="cancellation_policy" rows="3"></textarea>
+          <label class="admin-facility-active"><input id="facilityIsActive" name="is_active" type="checkbox"> Đang hoạt động</label>
+          <p id="facilityFormError" class="admin-dialog__error" role="alert" hidden></p>
+          <button class="admin-button admin-button--primary" type="submit">Lưu thông tin cơ sở</button>
+        </form>
+        <section id="facilityCourts" class="admin-facility-courts" aria-labelledby="facilityCourtsTitle" hidden>
+          <div class="admin-section__heading">
+            <div><h3 id="facilityCourtsTitle">Danh sách sân</h3><p>Thêm hoặc cập nhật cấu hình từng sân.</p></div>
+            <button id="addCourt" class="admin-button admin-button--quiet" type="button">Thêm sân</button>
+          </div>
+          <div id="courtRows" class="admin-facility-court-list"></div>
+          <form id="courtForm" class="admin-facility-form admin-court-form" hidden>
+            <h3 id="courtFormTitle">Thêm sân</h3>
+            <label for="courtName">Tên sân</label><input id="courtName" name="name" required minlength="2" maxlength="120">
+            <label for="courtSport">Môn thể thao</label>
+            <select id="courtSport" name="sport_type" required>
+              <option value="FOOTBALL_MINI">Bóng đá mini</option>
+              <option value="BADMINTON">Cầu lông</option>
+              <option value="PICKLEBALL">Pickleball</option>
+            </select>
+            <div class="admin-facility-form__row">
+              <div><label for="courtNormalPrice">Giá thường (VND)</label><input id="courtNormalPrice" name="price_normal" type="number" min="0" step="1" required></div>
+              <div><label for="courtPeakPrice">Giá giờ vàng (VND)</label><input id="courtPeakPrice" name="price_peak" type="number" min="0" step="1" required></div>
+            </div>
+            <label for="courtDescription">Mô tả sân</label><textarea id="courtDescription" name="description" rows="2"></textarea>
+            <label class="admin-facility-active"><input id="courtIsActive" name="is_active" type="checkbox" checked> Đang hoạt động</label>
+            <p id="courtFormError" class="admin-dialog__error" role="alert" hidden></p>
+            <div class="admin-facility-form__actions">
+              <button id="cancelCourtEdit" class="admin-button admin-button--quiet" type="button">Hủy</button>
+              <button class="admin-button admin-button--primary" type="submit">Lưu sân</button>
+            </div>
+          </form>
+        </section>
+      </div>
+      <footer class="admin-dialog__footer">
+        <button class="admin-button admin-button--quiet" type="button" data-facility-dialog-close>Đóng</button>
+      </footer>
+    </section>
+  </div>
+</body>
+</html>

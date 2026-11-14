@@ -16,7 +16,10 @@ const { createBookingsService } = require('./bookings/bookings.service');
 const createBookingsRouter = require('./bookings/bookings.routes');
 const createAdminRepository = require('./admin/admin.repository');
 const { createAdminService } = require('./admin/admin.service');
+const { createAdminFacilitiesService } = require('./admin/facilities.service');
+const { createAdminSlotsService } = require('./admin/slots.service');
 const createAdminRouter = require('./admin/admin.routes');
+const { writeAudit } = require('./admin/admin-audit');
 const createRequireAdmin = require('./auth/middleware/require-admin');
 const { createNotificationsRepository } = require('./notifications/notifications.repository');
 const { createNotificationsService } = require('./notifications/notifications.service');
@@ -49,11 +52,14 @@ function createApp({ pool, env = process.env } = {}) {
   const bookingsRepository = createBookingRepository(pool);
   const bookingsService = createBookingsService(bookingsRepository);
   const adminRepository = createAdminRepository(pool);
+  const adminFacilitiesService = createAdminFacilitiesService(pool);
+  const adminSlotsService = createAdminSlotsService(pool);
   const adminService = createAdminService({
     adminRepository,
     bookingsRepository,
     notifyIncidentCancellation,
-    notifyPendingIncidentCancellation
+    notifyPendingIncidentCancellation,
+    writeAudit
   });
   const notificationsRepository = createNotificationsRepository(pool);
   const notificationsService = createNotificationsService(notificationsRepository);
@@ -83,6 +89,8 @@ function createApp({ pool, env = process.env } = {}) {
   app.use('/api/v1/bookings', createBookingsRouter({ bookingsService, requireAuth }));
   app.use('/api/v1/admin', createAdminRouter({
     adminService,
+    adminFacilitiesService,
+    adminSlotsService,
     requireAuth,
     requireAdmin
   }));

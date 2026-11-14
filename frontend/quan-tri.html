@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Trang quản trị đơn đặt sân SportBooking">
+  <title>Quản trị | SportBooking</title>
+  <link rel="stylesheet" href="/shared/header.css">
+  <link rel="stylesheet" href="/admin/admin.css">
+  <style>
+    @layer base {
+      body { font-family: 'Inter', 'Be Vietnam Pro', sans-serif; }
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 9999px; }
+    ::-webkit-scrollbar-track { background: #F1F5F9; }
+  </style>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              DEFAULT: "#087A45",
+              hover: "#066337",
+              light: "#ECFDF5",
+              dark: "#054D2B"
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <script src="/shared/icons.js" defer></script>
+  <script src="/admin/admin-shell.js" defer></script>
+  <script src="/booking/admin-state.js" defer></script>
+  <script src="/admin/admin-state.js" defer></script>
+  <script src="/admin/admin-api.js" defer></script>
+  <script src="/admin/admin-page.js" defer></script>
+</head>
+<body class="bg-[#F8FAFC] text-[#1E293B] admin-body antialiased" data-page="admin">
+  <section id="adminGuard" class="admin-guard" role="status" aria-live="polite">
+    <p id="adminGuardMessage">Đang kiểm tra quyền truy cập...</p>
+    <button id="adminGuardRetry" class="admin-button admin-button--quiet" type="button" hidden>Thử lại</button>
+  </section>
+
+  <div id="adminHeaderMount" data-shared-header></div>
+
+  <div id="adminApp" class="min-h-screen" hidden>
+    <div class="admin-shell">
+      <aside class="admin-sidebar">
+        <nav class="admin-sidebar__nav" aria-label="Điều hướng quản trị" data-admin-sidebar></nav>
+      </aside>
+      <main class="admin-main p-6 space-y-5">
+        <div id="adminOverview" class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 class="text-2xl font-bold text-[#0F172A] tracking-tight">Danh sách đặt sân</h1>
+            <p class="text-[13px] text-[#64748B] mt-0.5">Theo dõi đơn đặt sân và xử lý hủy do sự cố vận hành.</p>
+          </div>
+          <div class="flex items-center gap-3 self-start md:self-auto shrink-0">
+            <button id="refreshBookings" class="h-10 px-4 rounded-lg bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#1E293B] text-[13px] font-medium flex items-center gap-2 shadow-sm transition" type="button">
+              <svg class="w-[18px] h-[18px] text-[#64748B]" data-sb-icon="sync"></svg><span>Tải lại dữ liệu</span>
+            </button>
+            <div class="h-6 w-px bg-[#E2E8F0]" aria-hidden="true"></div>
+            <button id="focusBookingSearch" class="h-10 px-4 rounded-lg bg-[#087A45] hover:bg-[#066337] text-white text-[13px] font-semibold flex items-center gap-2 shadow-sm transition" type="button">
+              <svg class="w-[18px] h-[18px]" data-sb-icon="search"></svg><span>Tìm đơn đặt sân</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" aria-label="Thống kê quản trị">
+          <article class="bg-white p-4 rounded-xl border border-[#E2E8F0] shadow-sm flex flex-col justify-between h-[106px]">
+            <div class="flex items-center justify-between">
+              <span class="text-[12px] font-medium text-[#64748B]">Đơn mới trong kỳ</span>
+              <div class="w-7 h-7 rounded-lg bg-emerald-50 text-[#087A45] flex items-center justify-center"><svg class="w-[18px] h-[18px]" data-sb-icon="event_available"></svg></div>
+            </div>
+            <div class="flex items-baseline gap-2 mt-1">
+              <span class="text-2xl font-bold text-[#0F172A] tracking-tight" data-metric="new_bookings" data-field="metric-new-bookings">0</span>
+              <span class="text-[11px] font-semibold text-[#087A45] bg-emerald-50 px-1.5 py-0.5 rounded">đơn</span>
+            </div>
+          </article>
+          <article class="bg-white p-4 rounded-xl border border-[#E2E8F0] shadow-sm flex flex-col justify-between h-[106px]">
+            <div class="flex items-center justify-between">
+              <span class="text-[12px] font-medium text-[#64748B]">Doanh thu thực thu</span>
+              <div class="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center"><svg class="w-[18px] h-[18px]" data-sb-icon="payments"></svg></div>
+            </div>
+            <div class="mt-1">
+              <div class="text-2xl font-bold text-[#0F172A] tracking-tight" data-metric="net_revenue" data-field="metric-net-revenue">0 đ</div>
+              <div class="text-[11px] text-[#64748B] mt-0.5">Đã thu trừ hoàn tiền</div>
+            </div>
+          </article>
+          <article class="bg-white p-4 rounded-xl border border-[#E2E8F0] shadow-sm flex flex-col justify-between h-[106px]">
+            <div class="flex items-center justify-between">
+              <span class="text-[12px] font-medium text-[#64748B]">Đơn đã hủy</span>
+              <div class="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center"><svg class="w-[18px] h-[18px]" data-sb-icon="close"></svg></div>
+            </div>
+            <div class="mt-1">
+              <div class="text-2xl font-bold text-rose-600 tracking-tight"><span data-metric="cancelled_bookings" data-field="metric-cancelled-bookings">0</span> đơn</div>
+              <div class="text-[11px] text-rose-600 font-medium mt-0.5">Số liệu trong kỳ đã chọn</div>
+            </div>
+          </article>
+          <article class="bg-white p-4 rounded-xl border border-[#E2E8F0] shadow-sm flex flex-col justify-between h-[106px]">
+            <div class="flex items-center justify-between">
+              <span class="text-[12px] font-medium text-[#64748B]">Đơn hoàn thành</span>
+              <div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center"><svg class="w-[18px] h-[18px]" data-sb-icon="check_circle"></svg></div>
+            </div>
+            <div class="mt-1">
+              <div class="text-2xl font-bold text-[#0F172A] tracking-tight"><span data-metric="completed_bookings" data-field="metric-completed-bookings">0</span> đơn</div>
+              <div class="text-[11px] text-[#64748B] mt-0.5">Số liệu trong kỳ đã chọn</div>
+            </div>
+          </article>
+        </div>
+        <p id="dashboardMessage" class="text-[12px] text-[#64748B]" role="status" aria-live="polite">Đang tải số liệu...</p>
+        <div class="flex items-center gap-2 border-b border-[#E2E8F0] pb-2 overflow-x-auto text-[13px]" role="tablist" aria-label="Lọc đơn theo trạng thái">
+          <button class="px-3.5 py-1.5 rounded-lg bg-white border border-[#E2E8F0] font-semibold text-[#0F172A] shadow-sm flex items-center gap-2 whitespace-nowrap" type="button" role="tab" aria-selected="true" data-filter="">
+            <span>Tất cả</span><span class="px-1.5 py-0.2 rounded-full bg-[#F1F5F9] text-[#475569] text-[11px] font-bold" data-count="all">0</span>
+          </button>
+          <button class="px-3.5 py-1.5 rounded-lg text-[#64748B] hover:text-[#0F172A] hover:bg-white/80 font-medium flex items-center gap-2 whitespace-nowrap transition" type="button" role="tab" aria-selected="false" data-filter="PENDING">
+            <span>Chờ thanh toán</span><span class="px-1.5 py-0.2 rounded-full bg-amber-50 text-amber-700 text-[11px] font-bold" data-count="pending">0</span>
+          </button>
+          <button class="px-3.5 py-1.5 rounded-lg text-[#64748B] hover:text-[#0F172A] hover:bg-white/80 font-medium flex items-center gap-2 whitespace-nowrap transition" type="button" role="tab" aria-selected="false" data-filter="UPCOMING">
+            <span>Sắp tới</span><span class="px-1.5 py-0.2 rounded-full bg-emerald-50 text-[#087A45] text-[11px] font-bold" data-count="upcoming">0</span>
+          </button>
+          <button class="px-3.5 py-1.5 rounded-lg text-[#64748B] hover:text-[#0F172A] hover:bg-white/80 font-medium flex items-center gap-2 whitespace-nowrap transition" type="button" role="tab" aria-selected="false" data-filter="IN_PROGRESS">
+            <span>Đang diễn ra</span><span class="px-1.5 py-0.2 rounded-full bg-blue-50 text-blue-600 text-[11px] font-bold" data-count="in-progress">0</span>
+          </button>
+          <button class="px-3.5 py-1.5 rounded-lg text-[#64748B] hover:text-[#0F172A] hover:bg-white/80 font-medium flex items-center gap-2 whitespace-nowrap transition" type="button" role="tab" aria-selected="false" data-filter="COMPLETED">
+            <span>Hoàn thành</span><span class="px-1.5 py-0.2 rounded-full bg-[#F1F5F9] text-[#475569] text-[11px] font-bold" data-count="completed">0</span>
+          </button>
+          <button class="px-3.5 py-1.5 rounded-lg text-[#64748B] hover:text-[#0F172A] hover:bg-white/80 font-medium flex items-center gap-2 whitespace-nowrap transition" type="button" role="tab" aria-selected="false" data-filter="CANCELLED">
+            <span>Đã hủy</span><span class="px-1.5 py-0.2 rounded-full bg-[#F1F5F9] text-[#64748B] text-[11px]" data-count="cancelled">0</span>
+          </button>
+          <button class="px-3.5 py-1.5 rounded-lg text-[#64748B] hover:text-[#0F172A] hover:bg-white/80 font-medium flex items-center gap-2 whitespace-nowrap transition" type="button" role="tab" aria-selected="false" data-filter="EXPIRED">
+            <span>Hết hạn</span><span class="px-1.5 py-0.2 rounded-full bg-[#F1F5F9] text-[#64748B] text-[11px]" data-count="expired">0</span>
+          </button>
+        </div>
+
+        <div id="adminNotice" class="admin-notice rounded-lg border border-[#E2E8F0] bg-white px-4 py-3 text-[13px] text-[#1E293B]" role="status" aria-live="polite" hidden></div>
+        <form id="bookingFilters" class="bg-white p-3 rounded-xl border border-[#E2E8F0] shadow-sm flex flex-col xl:flex-row items-stretch xl:items-center gap-3">
+          <label class="relative flex-1">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-[#94A3B8] pointer-events-none" data-sb-icon="search"></svg>
+            <span class="sr-only">Tìm theo mã đặt sân</span>
+            <input id="bookingSearch" class="w-full h-10 pl-9 pr-4 bg-[#F8FAFC] border border-[#E2E8F0] text-[#1E293B] placeholder:text-[#94A3B8] text-[13px] rounded-lg focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#087A45] focus:border-[#087A45] transition" type="search" maxlength="100" placeholder="Tìm theo mã đặt sân..." autocomplete="off">
+          </label>
+          <label class="min-w-[200px] flex flex-col gap-1">
+            <span class="text-[11px] font-medium text-[#64748B]">Ngày chơi</span>
+            <input id="bookingDate" class="w-full h-10 px-3 bg-[#F8FAFC] border border-[#E2E8F0] text-[#1E293B] text-[13px] rounded-lg focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#087A45] focus:border-[#087A45] transition font-medium" type="date">
+          </label>
+          <div class="relative min-w-[240px]">
+            <label class="flex flex-col gap-1" for="facilityFilter">
+              <span class="text-[11px] font-medium text-[#64748B]">Cơ sở</span>
+              <select id="facilityFilter" class="w-full h-10 px-3 pr-8 bg-[#F8FAFC] border border-[#E2E8F0] text-[#1E293B] text-[13px] rounded-lg focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#087A45] focus:border-[#087A45] transition font-medium appearance-none cursor-pointer">
+                <option value="">Đang tải danh sách cơ sở...</option>
+              </select>
+            </label>
+            <button id="retryFacilities" class="mt-1 text-[11px] font-semibold text-[#087A45] underline" type="button" hidden>Thử lại</button>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 shrink-0">
+            <button class="h-10 px-3.5 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] text-[#64748B] text-[13px] font-medium flex items-center gap-1.5 transition cursor-not-allowed" type="button" disabled>
+              <svg class="w-[18px] h-[18px]" data-sb-icon="tune"></svg><span>Bộ lọc nâng cao</span><span class="text-[10px]">Sắp có</span>
+            </button>
+            <button id="resetBookingFilters" class="h-10 px-3.5 rounded-lg bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#1E293B] text-[13px] font-medium transition" type="button">
+              Đặt lại
+            </button>
+            <button id="applyBookingFilters" class="admin-filter-apply h-10 px-3.5 rounded-lg bg-[#087A45] hover:bg-[#066337] text-white text-[13px] font-semibold flex items-center gap-2 shadow-sm transition" type="submit" data-dirty="false">
+              <svg class="w-[18px] h-[18px]" data-sb-icon="search"></svg><span>Tìm kiếm</span><span id="filterDraftStatus" class="text-[11px] font-medium" hidden>Chưa áp dụng</span><span class="admin-filter-apply__dirty" aria-hidden="true"></span>
+            </button>
+          </div>
+        </form>
+
+        <div id="bookingTable" class="bg-white rounded-xl border border-[#E2E8F0] shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-[13px]">
+              <thead>
+                <tr class="bg-[#F8FAFC] border-b border-[#E2E8F0] text-[#64748B] text-[11px] font-semibold uppercase tracking-wider">
+                  <th class="py-3 px-4" scope="col">Mã đặt sân</th>
+                  <th class="py-3 px-4" scope="col">Khách hàng</th>
+                  <th class="py-3 px-4" scope="col">Cơ sở &amp; Sân con</th>
+                  <th class="py-3 px-4" scope="col">Thời gian chơi</th>
+                  <th class="py-3 px-4" scope="col">Đã trả / Hoàn</th>
+                  <th class="py-3 px-4" scope="col">Trạng thái</th>
+                  <th class="py-3 px-4 text-right" scope="col">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="bookingRows" class="divide-y divide-[#F1F5F9]"></tbody>
+            </table>
+          </div>
+          <div class="p-3 bg-[#F8FAFC] border-t border-[#E2E8F0] flex flex-col sm:flex-row items-center justify-between gap-3 text-[13px]">
+            <span id="paginationSummary" class="text-[#64748B]" aria-live="polite">Đang tải danh sách...</span>
+            <div class="flex items-center gap-1">
+              <button id="previousPage" class="w-8 h-8 rounded-lg bg-white border border-[#E2E8F0] text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] flex items-center justify-center transition" type="button" aria-label="Trang trước" disabled>
+                <svg class="w-[18px] h-[18px]" data-sb-icon="arrow_back"></svg>
+              </button>
+              <div id="paginationPages" class="flex items-center gap-1" aria-label="Các trang"></div>
+              <button id="nextPage" class="w-8 h-8 rounded-lg bg-white border border-[#E2E8F0] text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] flex items-center justify-center transition" type="button" aria-label="Trang tiếp" disabled>
+                <svg class="w-[18px] h-[18px]" data-sb-icon="arrow_forward"></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <template id="bookingRowTemplate">
+          <tr class="hover:bg-[#F8FAFC] transition-colors bg-rose-50/30 hover:bg-rose-50/50" data-booking-row>
+            <td class="py-3.5 px-4 align-middle">
+              <div class="flex flex-col">
+                <span class="font-semibold text-[#0F172A] hover:text-[#087A45] cursor-pointer" data-field="booking-code"></span>
+                <span class="text-[11px] text-[#64748B]" data-field="created-at"></span>
+              </div>
+            </td>
+            <td class="py-3.5 px-4 align-middle">
+              <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-full bg-emerald-50 text-[#087A45] font-semibold flex items-center justify-center text-[12px] border border-emerald-100 shrink-0 bg-amber-50 text-amber-700 border-amber-200 bg-blue-50 text-blue-600 border-blue-100 bg-slate-100 text-[#475569] border-slate-200 bg-rose-50 text-rose-600 border-rose-100" data-field="owner-initials"></div>
+                <div class="flex flex-col min-w-0">
+                  <span class="font-semibold text-[#0F172A] truncate" data-field="owner-name"></span>
+                  <span class="text-[11px] text-[#64748B] truncate" data-field="owner-contact"></span>
+                </div>
+              </div>
+            </td>
+            <td class="py-3.5 px-4 align-middle">
+              <div class="flex flex-col">
+                <span class="font-medium text-[#0F172A]" data-field="venue"></span>
+                <span class="text-[11px] text-[#64748B]" data-field="court"></span>
+              </div>
+            </td>
+            <td class="py-3.5 px-4 align-middle">
+              <div class="flex flex-col">
+                <span class="font-medium text-[#0F172A]" data-field="schedule"></span>
+                <span class="text-[11px] text-[#64748B]" data-field="schedule-extra"></span>
+              </div>
+            </td>
+            <td class="py-3.5 px-4 align-middle">
+              <div class="flex flex-col">
+                <span class="font-bold text-[#0F172A]" data-field="paid-amount"></span>
+                <span class="text-[11px] text-[#087A45] font-medium flex items-center gap-0.5" data-field="refunded-amount">
+                  <svg class="w-[13px] h-[13px]" data-sb-icon="check_circle"></svg><span data-field="refunded-label"></span>
+                </span>
+              </div>
+            </td>
+            <td class="py-3.5 px-4 align-middle">
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-[#087A45] border border-emerald-200 text-[11px] font-semibold w-fit bg-amber-50 text-amber-700 border-amber-200 bg-blue-50 text-blue-600 border-blue-100 bg-[#F1F5F9] text-[#475569] border-slate-200 bg-rose-50 text-rose-700 border-rose-200" data-field="status">
+                <span class="w-1.5 h-1.5 rounded-full bg-[#087A45] bg-amber-500 bg-blue-600 bg-rose-500" data-field="status-dot"></span>
+                <span data-field="status-label"></span>
+              </span>
+            </td>
+            <td class="py-3.5 px-4 align-middle text-right">
+              <div class="flex items-center justify-end gap-1.5">
+                <button class="h-8 px-2.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-[12px] font-medium shadow-sm transition" type="button" data-action="cancel" hidden>
+                  Hủy do sự cố
+                </button>
+                <span class="text-[11px] text-[#64748B]" data-field="action-empty"></span>
+              </div>
+            </td>
+          </tr>
+        </template>
+        <template id="paginationPageTemplate">
+          <button class="w-8 h-8 rounded-lg bg-white border border-[#E2E8F0] text-[#1E293B] hover:bg-[#F1F5F9] flex items-center justify-center transition" type="button" data-page></button>
+        </template>
+        <template id="paginationEllipsisTemplate">
+          <span class="px-1 text-[#94A3B8] font-bold">...</span>
+        </template>
+      </main>
+    </div>
+  </div>
+
+  <div id="cancellationModal" class="admin-modal" hidden>
+    <section
+      id="cancellationDialog"
+      class="admin-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="cancellationTitle"
+      aria-describedby="cancellationDescription"
+      tabindex="-1"
+    >
+      <header class="admin-dialog__header">
+        <div>
+          <p class="admin-eyebrow">Xử lý ngoại lệ</p>
+          <h2 id="cancellationTitle">Hủy do sự cố</h2>
+        </div>
+        <button class="admin-dialog__close" type="button" data-modal-close aria-label="Đóng hộp thoại">
+          <svg data-sb-icon="close"></svg>
+        </button>
+      </header>
+      <div class="admin-dialog__body">
+        <p id="cancellationDescription" class="admin-dialog__description">
+          Kiểm tra thông tin đơn trước khi xác nhận hủy.
+        </p>
+        <dl class="admin-dialog__details">
+          <div><dt>Mã đơn</dt><dd id="modalBookingCode">Chưa có dữ liệu</dd></div>
+          <div><dt>Khách</dt><dd id="modalOwner">Chưa có dữ liệu</dd></div>
+          <div><dt>Cơ sở / sân</dt><dd id="modalVenue">Chưa có dữ liệu</dd></div>
+          <div><dt>Khung giờ</dt><dd id="modalSchedule">Chưa có dữ liệu</dd></div>
+          <div><dt>Đã trả</dt><dd id="modalPaidAmount">0 đ</dd></div>
+        </dl>
+        <p id="cancellationRefund" class="admin-refund-note"></p>
+        <form id="cancellationForm" novalidate>
+          <label class="admin-reason-label" for="cancellationReason">Lý do (bắt buộc)</label>
+          <textarea
+            id="cancellationReason"
+            class="admin-reason"
+            name="cancellation_reason"
+            rows="4"
+            minlength="3"
+            maxlength="500"
+            required
+            aria-describedby="cancellationReasonHint cancellationReasonCount cancellationError"
+          ></textarea>
+          <p id="cancellationReasonHint" class="admin-reason-hint">Nhập từ 3 đến 500 ký tự.</p>
+          <div class="admin-reason__meta">
+            <p id="cancellationError" class="admin-dialog__error" role="alert" hidden></p>
+            <p id="cancellationReasonCount" class="admin-reason-count">0/500 ký tự</p>
+          </div>
+        </form>
+      </div>
+      <footer class="admin-dialog__footer">
+        <button class="admin-button admin-button--quiet" type="button" data-modal-close>Giữ nguyên</button>
+        <button id="confirmCancellation" class="admin-button admin-button--danger" type="submit" form="cancellationForm" disabled>
+          Xác nhận hủy do sự cố
+        </button>
+      </footer>
+    </section>
+  </div>
+</body>
+</html>

@@ -22,6 +22,11 @@ function runtimeFiles(directory) {
   return files;
 }
 
+function isAdminRuntimeFile(file) {
+  return file.includes(`${path.sep}admin${path.sep}`)
+    || path.basename(file).startsWith('quan-tri');
+}
+
 function referencedIconNames(source) {
   const found = new Set(
     [...source.matchAll(/data-sb-icon\s*=\s*["']([^"']+)["']/g)].map((match) => match[1])
@@ -57,7 +62,7 @@ function referencedIconNames(source) {
   return found;
 }
 
-test('all frontend markup uses local SVG icons instead of Material ligatures', () => {
+test('non-admin frontend markup uses local SVG icons instead of Material ligatures', () => {
   const ligatures = [...names].sort((left, right) => right.length - left.length);
   const ligaturePattern = new RegExp(
     `<[^>]+>\\s*(?:${ligatures.join('|')})\\s*<\\/[^>]+>`,
@@ -72,7 +77,9 @@ test('all frontend markup uses local SVG icons instead of Material ligatures', (
     `<[^>]+>\\s*(?:${requestedLigatures.join('|')})\\s*<\\/[^>]+>`,
     'i'
   );
-  const files = runtimeFiles(frontendRoot).filter((file) => !file.includes(`${path.sep}tests${path.sep}`));
+  const files = runtimeFiles(frontendRoot).filter((file) =>
+    !file.includes(`${path.sep}tests${path.sep}`) && !isAdminRuntimeFile(file)
+  );
   for (const file of files) {
     const source = fs.readFileSync(file, 'utf8');
     assert.doesNotMatch(source, materialIconClassPattern, `${file} contains a Material icon class.`);

@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+
+<html lang="vi"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><title>Danh sách đặt sân &amp; Giao dịch - SportBooking Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<style>
+  @layer base {
+    body { font-family: 'Inter', 'Be Vietnam Pro', sans-serif; }
+  }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 9999px; }
+  ::-webkit-scrollbar-track { background: #F1F5F9; }
+</style>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          brand: {
+            DEFAULT: "#087A45",
+            hover: "#066337",
+            light: "#ECFDF5",
+            dark: "#054D2B"
+          }
+        }
+      }
+    }
+  }
+</script>
+</head>
+<body class="bg-[#F8FAFC] text-[#1E293B] antialiased flex min-h-screen">
+<!-- 2. SIDEBAR CỐ ĐỊNH 218PX -->
+<aside class="fixed left-0 top-0 h-screen w-[218px] bg-white border-r border-[#E2E8F0] z-40 flex flex-col justify-between select-none">
+<div class="flex flex-col">
+<!-- Logo Header -->
+<div class="h-16 px-4 flex items-center gap-2.5 border-b border-[#F1F5F9]">
+<div class="w-9 h-9 rounded-xl bg-[#087A45] flex items-center justify-center text-white shadow-sm shrink-0">
+<span class="material-symbols-outlined text-[20px]">sports_soccer</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-bold text-[16px] text-[#0F172A] leading-tight tracking-tight">SportBooking</span>
+<span class="text-[10px] font-bold text-[#087A45] uppercase tracking-wider">Admin Portal</span>
+</div>
+</div>
+<!-- Navigation Links -->
+<nav class="p-3 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#64748B] hover:text-[#0F172A] hover:bg-[#F8FAFC] font-medium text-[13px] transition-colors" href="#">
+<span class="material-symbols-outlined text-[19px]">space_dashboard</span>
+<span>Tổng quan</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#64748B] hover:text-[#0F172A] hover:bg-[#F8FAFC] font-medium text-[13px] transition-colors" href="#">
+<span class="material-symbols-outlined text-[19px]">stadium</span>
+<span>Quản lý sân</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#64748B] hover:text-[#0F172A] hover:bg-[#F8FAFC] font-medium text-[13px] transition-colors" href="#">
+<span class="material-symbols-outlined text-[19px]">schedule</span>
+<span>Khung giờ &amp; giá</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-[#087A45] text-white font-semibold text-[13px] shadow-sm" href="#">
+<span class="material-symbols-outlined text-[19px]">event_available</span>
+<span>Danh sách đặt sân</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#64748B] hover:text-[#0F172A] hover:bg-[#F8FAFC] font-medium text-[13px] transition-colors" href="#">
+<span class="material-symbols-outlined text-[19px]">group</span>
+<span>Quản lý người dùng</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#64748B] hover:text-[#0F172A] hover:bg-[#F8FAFC] font-medium text-[13px] transition-colors" href="#">
+<span class="material-symbols-outlined text-[19px]">tune</span>
+<span>Cài đặt hệ thống</span>
+</a>
+</nav>
+</div>
+<!-- Sidebar Footer -->
+<div class="p-3 border-t border-[#F1F5F9]">
+<div class="px-3 py-2.5 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+<span class="text-[11px] font-medium text-[#64748B]">Máy chủ: Hoạt động</span>
+</div>
+<span class="text-[11px] font-semibold text-[#087A45]">99.98%</span>
+</div>
+</div>
+</aside>
+<!-- MAIN WRAPPER (Offset sidebar width 218px) -->
+<div class="pl-[218px] flex flex-col flex-1 min-w-0">
+<!-- 3. TOPBAR CỐ ĐỊNH -->
+<header class="h-16 bg-white border-b border-[#E2E8F0] sticky top-0 z-30 px-6 flex items-center justify-between shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+<!-- Breadcrumb & Mini Search -->
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-1.5 text-[13px] text-[#64748B]">
+<span class="hover:text-[#1E293B] cursor-pointer">Quản trị</span>
+<span class="text-[#CBD5E1]">/</span>
+<span class="text-[#0F172A] font-semibold">Danh sách đặt sân</span>
+</div>
+<div class="relative w-64 hidden md:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8] text-[18px]">search</span>
+<input class="w-full pl-9 pr-3 py-1.5 bg-[#F8FAFC] border border-[#E2E8F0] text-[#1E293B] placeholder:text-[#94A3B8] text-[13px] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#087A45] focus:border-[#087A45] transition" placeholder="Tìm sân, đơn đặt, số điện thoại..." type="text"/>
+</div>
+</div>
+<!-- Right Actions: Notifications & Profile -->
+<div class="flex items-center gap-4">
+<button class="relative w-9 h-9 rounded-lg border border-[#E2E8F0] flex items-center justify-center text-[#64748B] hover:text-[#0F172A] hover:bg-[#F8FAFC] transition">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white"></span>
+</button>
+<div class="h-6 w-px bg-[#E2E8F0]"></div>
+<div class="flex items-center gap-3">
+<div class="flex flex-col text-right hidden sm:flex">
+<span class="text-[13px] font-semibold text-[#0F172A] leading-tight">Ban Quản Trị SportBooking</span>
+<span class="text-[11px] font-semibold text-[#D97706] uppercase tracking-wide">Super Admin</span>
+</div>
+<div class="w-8 h-8 rounded-full bg-[#087A45] text-white flex items-center justify-center font-bold text-[13px] shadow-sm">
+            SA
+          </div>
+</div>
+</div>
+</header>
+<!-- CONTENT BODY -->
+<main class="p-6 space-y-5 max-w-[1600px] w-full mx-auto">
+<!-- PAGE HEADER -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div>
+<h1 class="text-2xl font-bold text-[#0F172A] tracking-tight">Danh sách đặt sân</h1>
+<p class="text-[13px] text-[#64748B] mt-0.5">Quản lý đơn đặt sân, xác nhận lịch chơi và xử lý yêu cầu hủy, hoàn tiền.</p>
+</div>
+<div class="flex items-center gap-3 self-start md:self-auto shrink-0">
+<button class="h-10 px-4 rounded-lg bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#1E293B] text-[13px] font-medium flex items-center gap-2 shadow-sm transition">
+<span class="material-symbols-outlined text-[18px] text-[#64748B]">download</span>
+<span>Xuất Excel</span>
+</button>
+<button class="h-10 px-4 rounded-lg bg-[#087A45] hover:bg-[#066337] text-white text-[13px] font-semibold flex items-center gap-2 shadow-sm transition">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span>Đặt giữ chỗ thủ công</span>
+</button>
+</div>
+</div>
+<!-- 4. STAT CARDS (4 CỘT CÂN ĐỐI) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- Card 1 -->
+<div class="bg-white p-4 rounded-xl border border-[#E2E8F0] shadow-sm flex flex-col justify-between h-[106px]">
+<div class="flex items-center justify-between">
+<span class="text-[12px] font-medium text-[#64748B]">Tỷ lệ kín sân hôm nay</span>
+<div class="w-7 h-7 rounded-lg bg-emerald-50 text-[#087A45] flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">trending_up</span>
+</div>
+</div>
+<div class="flex items-baseline gap-2 mt-1">
+<span class="text-2xl font-bold text-[#0F172A] tracking-tight">87.4%</span>
+<span class="text-[11px] font-semibold text-[#087A45] bg-emerald-50 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+              +5.2% so với hôm qua
+            </span>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-white p-4 rounded-xl border border-[#E2E8F0] shadow-sm flex flex-col justify-between h-[106px]">
+<div class="flex items-center justify-between">
+<span class="text-[12px] font-medium text-[#64748B]">Doanh thu hôm nay</span>
+<div class="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">payments</span>
+</div>
+</div>
+<div class="mt-1">
+<div class="text-2xl font-bold text-[#0F172A] tracking-tight">29.440.000đ</div>
+<div class="text-[11px] text-[#64748B] mt-0.5">184 giao dịch phát sinh</div>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-white p-4 rounded-xl border border-[#E2E8F0] shadow-sm flex flex-col justify-between h-[106px]">
+<div class="flex items-center justify-between">
+<span class="text-[12px] font-medium text-[#64748B]">Đơn cần xử lý</span>
+<div class="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">notification_important</span>
+</div>
+</div>
+<div class="mt-1">
+<div class="text-2xl font-bold text-rose-600 tracking-tight">12 đơn</div>
+<div class="text-[11px] text-rose-600 font-medium mt-0.5 flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Cần duyệt hoàn tiền / kiểm tra
+            </div>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-white p-4 rounded-xl border border-[#E2E8F0] shadow-sm flex flex-col justify-between h-[106px]">
+<div class="flex items-center justify-between">
+<span class="text-[12px] font-medium text-[#64748B]">Khách đang trên sân</span>
+<div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">stadium</span>
+</div>
+</div>
+<div class="mt-1">
+<div class="text-2xl font-bold text-[#0F172A] tracking-tight">18 sân hoạt động</div>
+<div class="text-[11px] text-[#64748B] mt-0.5">Giờ cao điểm chiều tối</div>
+</div>
+</div>
+</div>
+<!-- 5. BỘ LỌC TRẠNG THÁI (STATUS TABS) -->
+<div class="flex items-center gap-2 border-b border-[#E2E8F0] pb-2 overflow-x-auto text-[13px]">
+<button class="px-3.5 py-1.5 rounded-lg bg-white border border-[#E2E8F0] font-semibold text-[#0F172A] shadow-sm flex items-center gap-2 whitespace-nowrap">
+<span>Tất cả</span>
+<span class="px-1.5 py-0.2 rounded-full bg-[#F1F5F9] text-[#475569] text-[11px] font-bold">184</span>
+</button>
+<button class="px-3.5 py-1.5 rounded-lg text-[#64748B] hover:text-[#0F172A] hover:bg-white/80 font-medium flex items-center gap-2 whitespace-nowrap transition">
+<span>Chờ xác nhận / Thanh toán</span>
+<span class="px-1.5 py-0.2 rounded-full bg-amber-50 text-amber-700 text-[11px] font-bold">8</span>
+</button>
+<button class="px-3.5 py-1.5 rounded-lg text-[#64748B] hover:text-[#0F172A] hover:bg-white/80 font-medium flex items-center gap-2 whitespace-nowrap transition">
+<span>Đã xác nhận</span>
+<span class="px-1.5 py-0.2 rounded-full bg-emerald-50 text-[#087A45] text-[11px] font-bold">142</span>
+</button>
+<button class="px-3.5 py-1.5 rounded-lg text-rose-600 hover:bg-rose-50 font-medium flex items-center gap-2 whitespace-nowrap transition">
+<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+<span>Yêu cầu hủy &amp; Hoàn tiền</span>
+<span class="px-1.5 py-0.2 rounded-full bg-rose-100 text-rose-700 text-[11px] font-bold">12</span>
+</button>
+<button class="px-3.5 py-1.5 rounded-lg text-[#64748B] hover:text-[#0F172A] hover:bg-white/80 font-medium flex items-center gap-2 whitespace-nowrap transition">
+<span>Đã hủy</span>
+<span class="px-1.5 py-0.2 rounded-full bg-[#F1F5F9] text-[#64748B] text-[11px]">22</span>
+</button>
+</div>
+<!-- 6. THANH TÌM KIẾM VÀ BỘ LỌC (SEARCH & FILTER BAR) -->
+<div class="bg-white p-3 rounded-xl border border-[#E2E8F0] shadow-sm flex flex-col md:flex-row items-stretch md:items-center gap-3">
+<!-- Input Search Chính -->
+<div class="relative flex-1">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8] text-[18px]">search</span>
+<input class="w-full h-10 pl-9 pr-4 bg-[#F8FAFC] border border-[#E2E8F0] text-[#1E293B] placeholder:text-[#94A3B8] text-[13px] rounded-lg focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#087A45] focus:border-[#087A45] transition" placeholder="Tìm theo mã đặt sân, tên khách hàng, SĐT..." type="text"/>
+</div>
+<!-- Bộ Lọc Ngày -->
+<div class="relative min-w-[200px]">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8] text-[18px]">calendar_today</span>
+<input class="w-full h-10 pl-9 pr-3 bg-[#F8FAFC] border border-[#E2E8F0] text-[#1E293B] text-[13px] rounded-lg focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#087A45] focus:border-[#087A45] transition font-medium" type="text" value="Thứ Hai, 21/10/2024"/>
+</div>
+<!-- Bộ Lọc Cơ Sở -->
+<div class="relative min-w-[240px]">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8] text-[18px]">location_on</span>
+<select class="w-full h-10 pl-9 pr-8 bg-[#F8FAFC] border border-[#E2E8F0] text-[#1E293B] text-[13px] rounded-lg focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#087A45] focus:border-[#087A45] transition font-medium appearance-none cursor-pointer">
+<option>Tất cả cơ sở</option>
+<option selected="">CLB Cầu Lông Ngôi Sao (Quận 7)</option>
+<option>Sân Bóng Đá Mini Chuyên Nghiệp (Bình Thạnh)</option>
+<option>Sân Tennis Sunrise (TP. Thủ Đức)</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-[#94A3B8] pointer-events-none text-[18px]">expand_more</span>
+</div>
+<!-- Các Nút Hành Động Phụ -->
+<div class="flex items-center gap-2 shrink-0">
+<button class="h-10 px-3.5 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] hover:bg-white text-[#1E293B] text-[13px] font-medium flex items-center gap-1.5 transition">
+<span class="material-symbols-outlined text-[18px] text-[#64748B]">tune</span>
+<span>Bộ lọc nâng cao</span>
+</button>
+<button class="h-10 w-10 rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] hover:bg-white text-[#64748B] hover:text-[#0F172A] flex items-center justify-center transition" title="Làm mới">
+<span class="material-symbols-outlined text-[18px]">refresh</span>
+</button>
+</div>
+</div>
+<!-- 7. BẢNG DANH SÁCH ĐẶT SÂN (TABLE DATA) -->
+<div class="bg-white rounded-xl border border-[#E2E8F0] shadow-sm overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse text-[13px]">
+<thead>
+<tr class="bg-[#F8FAFC] border-b border-[#E2E8F0] text-[#64748B] text-[11px] font-semibold uppercase tracking-wider">
+<th class="py-3 px-4">Mã đặt sân</th>
+<th class="py-3 px-4">Khách hàng</th>
+<th class="py-3 px-4">Cơ sở &amp; Sân con</th>
+<th class="py-3 px-4">Thời gian chơi</th>
+<th class="py-3 px-4">Chi phí / Cọc</th>
+<th class="py-3 px-4">Trạng thái</th>
+<th class="py-3 px-4 text-right">Thao tác</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-[#F1F5F9]">
+<!-- Dòng 1: SB-8831 -->
+<tr class="hover:bg-[#F8FAFC] transition-colors">
+<td class="py-3.5 px-4 align-middle">
+<div class="flex flex-col">
+<span class="font-semibold text-[#0F172A] hover:text-[#087A45] cursor-pointer">SB-8831</span>
+<span class="text-[11px] text-[#64748B]">21/10 09:12</span>
+</div>
+</td>
+<td class="py-3.5 px-4 align-middle">
+<div class="flex items-center gap-2.5">
+<div class="w-9 h-9 rounded-full bg-emerald-50 text-[#087A45] font-semibold flex items-center justify-center text-[12px] border border-emerald-100 shrink-0">
+                      NA
+                    </div>
+<div class="flex flex-col min-w-0">
+<span class="font-semibold text-[#0F172A] truncate">Nguyễn Tuấn Anh</span>
+<span class="text-[11px] text-[#64748B]">0912 345 678</span>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-4 align-middle">
+<div class="flex flex-col">
+<span class="font-medium text-[#0F172A]">Sân 1 Yonex</span>
+<span class="text-[11px] text-[#64748B]">CLB Ngôi Sao</span>
+</div>
+</td>
+<td class="py-3.5 px-4 align-middle">
+<div class="flex flex-col">
+<span class="font-medium text-[#0F172A]">20:00 - 21:00</span>
+<span class="text-[11px] text-[#64748B]">T2, 21/10/2024</span>
+</div>
+</td>
+<td class="py-3.5 px-4 align-middle">
+<div class="flex flex-col">
+<span class="font-bold text-[#0F172A]">160.000đ</span>
+<span class="text-[11px] text-[#087A45] font-medium flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[13px]">check_circle</span> Đã thu 100%
+                    </span>
+</div>
+</td>
+<td class="py-3.5 px-4 align-middle">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-[#087A45] border border-emerald-200 text-[11px] font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-[#087A45]"></span>
+                    Đã xác nhận
+                  </span>
+</td>
+<td class="py-3.5 px-4 align-middle text-right">
+<div class="flex items-center justify-end gap-1.5">
+<button class="h-8 px-3 rounded-lg bg-[#087A45] hover:bg-[#066337] text-white text-[12px] font-semibold shadow-sm transition">
+                      Check-in
+                    </button>
+<button class="h-8 w-8 rounded-lg hover:bg-[#F1F5F9] text-[#64748B] hover:text-[#0F172A] flex items-center justify-center transition">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Dòng 2: SB-8829 (Yêu cầu hủy) -->
+<tr class="bg-rose-50/30 hover:bg-rose-50/50 transition-colors">
+<td class="py-3.5 px-4 align-middle">
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="font-semibold text-[#0F172A] hover:text-[#087A45] cursor-pointer">SB-8829</span>
+<span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+</div>
+<span class="text-[11px] text-[#64748B]">20/10 14:00</span>
+</div>
+</td>
+<td class="py-3.5 px-4 align-middle">
+<div class="flex items-center gap-2.5">
+<div class="w-9 h-9 rounded-full bg-rose-50 text-rose-600 font-semibold flex items-center justify-center text-[12px] border border-rose-100 shrink-0">
+                      MT
+                    </div>
+<div class="flex flex-col min-w-0">
+<span class="font-semibold text-[#0F172A] truncate">Trần Thị Minh Thư</span>
+<span class="text-[11px] text-[#64748B]">0988 123 456</span>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-4 align-middle">
+<div class="flex flex-col">
+<span class="font-medium text-[#0F172A]">Sân 2 Victor</span>
+<span class="text-[11px] text-[#64748B]">CLB Ngôi Sao</span>
+</div>
+</td>
+<td class="py-3.5 px-4 align-middle">
+<div class="flex flex-col">
+<span class="font-medium text-[#0F172A]">18:00 - 19:00</span>
+<span class="text-[11px] text-[#64748B]">T2, 21/10/2024</span>
+</div>
+</td>
+<td class="py-3.5 px-4 align-middle">
+<div class="flex flex-col">
+<span class="font-bold text-[#0F172A]">160.000đ</span>
+<span class="text-[11px] text-[#64748B]">Đã thanh toán ví</span>
+</div>
+</td>
+<td class="py-3.5 px-4 align-middle">
+<div class="flex flex-col gap-0.5">
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-[11px] font-semibold w-fit">
+<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                      Yêu cầu hủy
+                    </span>
+<span class="text-[10px] text-rose-600 font-medium">Báo trước 28h • Hoàn 100%</span>
+</div>
+</td>
+<td class="py-3.5 px-4 align-middle text-right">
+<div class="flex items-center justify-end gap-1.5">
+<button class="h-8 px-2.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-[12px] font-medium shadow-sm transition">
+                      Xử lý hoàn tiền
+                    </button>
+<button class="h-8 px-2.5 rounded-lg bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#64748B] hover:text-[#0F172A] text-[12px] font-medium transition">
+                      Từ chối
+                    </button>
+</div>
+</td>
+</tr>
+<!-- Dòng 3: SB-8815 (Chờ thanh toán / Giữ chỗ) -->
+<tr class="hover:bg-[#F8FAFC] transition-colors">
+<td class="py-3.5 px-4 align-middle">
+<div class="flex flex-col">
+<span class="font-semibold text-[#0F172A] hover:text-[#087A45] cursor-pointer">SB-8815</span>
+<span class="text-[11px] text-[#64748B]">21/10 07:45</span>
+</div>
+</td>
+<td class="py-3.5 px-4 align-middle">
+<div class="flex items-center gap-2.5">
+<div class="w-9 h-9 rounded-full bg-blue-50 text-blue-600 font-semibold flex items-center justify-center text-[12px] border border-blue-100 shrink-0">
+                      QH
+                    </div>
+<div class="flex flex-col min-w-0">
+<span class="font-semibold text-[#0F172A] truncate">Vũ Quang Huy</span>
+<span class="text-[11px] text-[#64748B]">0903 789 012</span>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-4 align-middle">
+<div class="flex flex-col">
+<span class="font-medium text-[#0F172A]">Sân 3 Kumpoo</span>
+<span class="text-[11px] text-[#64748B]">CLB Ngôi Sao</span>
+</div>
+</td>
+<td class="py-3.5 px-4 align-middle">
+<div class="flex flex-col">
+<span class="font-medium text-[#0F172A]">19:00 - 20:00</span>
+<span class="text-[11px] text-[#64748B]">T3, 22/10/2024</span>
+</div>
+</td>
+<td class="py-3.5 px-4 align-middle">
+<div class="flex flex-col">
+<span class="font-bold text-[#0F172A]">160.000đ</span>
+<span class="text-[11px] text-amber-600 font-medium">Giữ chỗ trước</span>
+</div>
+</td>
+<td class="py-3.5 px-4 align-middle">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                    Chờ thanh toán
+                  </span>
+</td>
+<td class="py-3.5 px-4 align-middle text-right">
+<div class="flex items-center justify-end gap-1.5">
+<button class="h-8 px-3 rounded-lg bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#1E293B] text-[12px] font-medium transition">
+                      Xem chi tiết
+                    </button>
+<button class="h-8 w-8 rounded-lg hover:bg-[#F1F5F9] text-[#64748B] hover:text-[#0F172A] flex items-center justify-center transition">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Dòng 4: SB-8802 (Đã hoàn thành) -->
+<tr class="hover:bg-[#F8FAFC] transition-colors">
+<td class="py-3.5 px-4 align-middle">
+<div class="flex flex-col">
+<span class="font-semibold text-[#0F172A] hover:text-[#087A45] cursor-pointer">SB-8802</span>
+<span class="text-[11px] text-[#64748B]">20/10 16:30</span>
+</div>
+</td>
+<td class="py-3.5 px-4 align-middle">
+<div class="flex items-center gap-2.5">
+<div class="w-9 h-9 rounded-full bg-slate-100 text-[#475569] font-semibold flex items-center justify-center text-[12px] border border-slate-200 shrink-0">
+                      HN
+                    </div>
+<div class="flex flex-col min-w-0">
+<span class="font-semibold text-[#0F172A] truncate">Lê Hoàng Nam</span>
+<span class="text-[11px] text-[#64748B]">0934 555 789</span>
+</div>
+</div>
+</td>
+<td class="py-3.5 px-4 align-middle">
+<div class="flex flex-col">
+<span class="font-medium text-[#0F172A]">Sân 7A Cỏ Nhân Tạo</span>
+<span class="text-[11px] text-[#64748B]">Sân Mini Bình Thạnh</span>
+</div>
+</td>
+<td class="py-3.5 px-4 align-middle">
+<div class="flex flex-col">
+<span class="font-medium text-[#0F172A]">17:30 - 19:00</span>
+<span class="text-[11px] text-[#64748B]">CN, 20/10/2024</span>
+</div>
+</td>
+<td class="py-3.5 px-4 align-middle">
+<div class="flex flex-col">
+<span class="font-bold text-[#0F172A]">450.000đ</span>
+<span class="text-[11px] text-[#64748B]">Chuyển khoản VietQR</span>
+</div>
+</td>
+<td class="py-3.5 px-4 align-middle">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F1F5F9] text-[#475569] border border-[#E2E8F0] text-[11px] font-semibold">
+<span class="material-symbols-outlined text-[13px] text-[#087A45]">check</span>
+                    Đã hoàn thành
+                  </span>
+</td>
+<td class="py-3.5 px-4 align-middle text-right">
+<div class="flex items-center justify-end gap-1.5">
+<button class="h-8 px-2.5 rounded-lg bg-white border border-[#E2E8F0] hover:bg-[#F8FAFC] text-[#1E293B] text-[12px] font-medium flex items-center gap-1 transition">
+<span class="material-symbols-outlined text-[15px] text-[#64748B]">receipt</span>
+<span>Hóa đơn</span>
+</button>
+<button class="h-8 w-8 rounded-lg hover:bg-[#F1F5F9] text-[#64748B] hover:text-[#0F172A] flex items-center justify-center transition">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- 8. PHÂN TRANG (PAGINATION) -->
+<div class="p-3 bg-[#F8FAFC] border-t border-[#E2E8F0] flex flex-col sm:flex-row items-center justify-between gap-3 text-[13px]">
+<span class="text-[#64748B]">Hiển thị <span class="font-semibold text-[#0F172A]">1 - 4</span> của <span class="font-semibold text-[#0F172A]">184</span> đơn đặt sân</span>
+<div class="flex items-center gap-1">
+<button class="w-8 h-8 rounded-lg bg-white border border-[#E2E8F0] text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] flex items-center justify-center transition">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-[#087A45] text-white font-semibold flex items-center justify-center shadow-sm">1</button>
+<button class="w-8 h-8 rounded-lg bg-white border border-[#E2E8F0] text-[#1E293B] hover:bg-[#F1F5F9] flex items-center justify-center transition">2</button>
+<button class="w-8 h-8 rounded-lg bg-white border border-[#E2E8F0] text-[#1E293B] hover:bg-[#F1F5F9] flex items-center justify-center transition">3</button>
+<span class="px-1 text-[#94A3B8] font-bold">...</span>
+<button class="w-8 h-8 rounded-lg bg-white border border-[#E2E8F0] text-[#1E293B] hover:bg-[#F1F5F9] flex items-center justify-center transition">18</button>
+<button class="w-8 h-8 rounded-lg bg-white border border-[#E2E8F0] text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] flex items-center justify-center transition">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

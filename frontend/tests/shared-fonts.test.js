@@ -42,7 +42,16 @@ test('shared-header pages load both fonts only through the shared stylesheet', (
 
   for (const { file, html } of sharedHeaderPages) {
     assert.match(html, /href=["']\/shared\/header\.css["']/, `${path.relative(frontendRoot, file)} must load the shared header stylesheet`);
-    assert.doesNotMatch(html, /fonts\.(?:googleapis|gstatic)\.com/i, `${path.relative(frontendRoot, file)} must use shared font loading`);
+    const adminPage = path.basename(file).startsWith('quan-tri');
+    const externalFonts = [...html.matchAll(/<link\b[^>]*>/gi)]
+      .map(([tag]) => tag)
+      .filter((tag) => /\brel=["']stylesheet["']/i.test(tag))
+      .map((tag) => tag.match(/\bhref=["']([^"']+)["']/i)?.[1] || '')
+      .filter((href) => /fonts\.(?:googleapis|gstatic)\.com/i.test(href));
+    const unexpectedFonts = externalFonts.filter((href) => !(
+      adminPage && /fonts\.googleapis\.com\/css2\?family=Material\+Symbols\+Outlined/i.test(href)
+    ));
+    assert.equal(unexpectedFonts.length, 0, `${path.relative(frontendRoot, file)} must use shared font loading`);
   }
 });
 

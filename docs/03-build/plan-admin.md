@@ -71,3 +71,26 @@
 5. Khối dashboard 4 thẻ số liệu nằm đầu `/admin-bookings.html`; không tạo trang dashboard riêng.
 
 Chưa viết code. Chờ bạn duyệt trước khi bắt đầu triển khai.
+
+## Hoàn thiện module 10
+
+Thực hiện theo yêu cầu đã duyệt trong phiên 2026-11-13; chỉ sửa code backend/frontend và một migration 008.
+
+### Đã hoàn tất trong phiên
+
+- GĐ0 nền tảng: migration `008-create-admin-audit-logs.sql`; runner giới hạn database cho phép; audit giao dịch hủy sự cố và khóa/mở khóa user; weak ETag/304 cho GET booking, dashboard, users; dùng chung admin shell/polling; đổi ADMIN_HOME và mở rộng allowlist trang.
+- GĐ1 tổng quan: dashboard API hỗ trợ `range` và tương thích `period`; khoảng UTC+7, KPI, trạng thái, doanh thu theo ngày, tỷ lệ lấp, top sân, đơn mới; giao diện SVG nội tuyến và polling.
+- GĐ2 người dùng: API lọc/phân trang không trả trường nhạy cảm; khóa/mở trong transaction, thu hồi phiên, chống tự khóa và cập nhật đồng thời; giao diện bảng, draft/applied, hộp xác nhận và polling.
+- GĐ3 cơ sở/sân: API danh sách/chi tiết/tạo/sửa, khóa cập nhật lạc hậu, chặn ngừng hoạt động/đổi môn khi còn đơn hiệu lực, audit cùng transaction; trang quản trị có lọc, form cơ sở và danh sách/form sân.
+- GĐ4 khung giờ/giá: dùng lại slot generator hiện có; tạo tối đa 31 ngày idempotent; cập nhật giá chỉ cho khung `AVAILABLE`; trang lưới trạng thái có chữ, xem trước số khung và polling.
+- GĐ5 đơn đặt sân: polling cập nhật bảng, tab counts và KPI tại chỗ; giữ bộ lọc/trang/scroll, tô nổi đơn mới trong 5 giây; thao tác admin làm mới ngay.
+- GĐ6 kiểm thử: frontend 28 file đạt; backend `npm test` đạt 75/75 hai lượt với `sportbooking_test`; quét scope/icon/DOM đạt; `node --check` đã chạy.
+- Migration đã áp dụng/xác minh chỉ trên `sportbooking_test`.
+- HTTP integration GĐ0–4 và frontend test tập trung đạt; kiểm tra giao diện bằng trình duyệt: **Chờ người dùng xác nhận**.
+
+### Còn phải làm
+
+- Xác nhận trực quan các trang bằng trình duyệt: **Chờ người dùng xác nhận**.
+- Mockup người dùng và khung giờ trong thư mục nguồn hiện rỗng; dashboard/cơ sở dùng giao diện hiện có, chưa chép nguyên nội dung mockup. Trang cài đặt không triển khai.
+- Xuất dữ liệu, bộ lọc nâng cao và nội dung ngoài nghiệp vụ đã bỏ hoặc vô hiệu; cần đối chiếu trực quan lần cuối.
+- Trước khi phát hành, chỉ chạy `node ../infra/database/migrate-bookings.js --database sportbooking_dev` khi được phép; không chạy vào `sportbooking_system`.

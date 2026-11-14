@@ -302,6 +302,86 @@ async function applyNotificationsMigration(connection, databaseName) {
   await applyNotificationsMigration(connection, databaseName);
 }
 
+async function applyAdminAuditMigration(connection, databaseName) {
+  const [tables] = await connection.execute(
+    `SELECT engine
+     FROM information_schema.tables
+     WHERE table_schema = DATABASE() AND table_name = ?`,
+    ['admin_audit_logs']
+  );
+  if (tables.length > 0) {
+    const [columns] = await connection.execute(
+      `SELECT column_name, column_type, is_nullable
+       FROM information_schema.columns
+       WHERE table_schema = DATABASE() AND table_name = ?`,
+      ['admin_audit_logs']
+    );
+    const [indexes] = await connection.execute(
+      `SELECT index_name, column_name, seq_in_index
+       FROM information_schema.statistics
+       WHERE table_schema = DATABASE() AND table_name = ?
+       ORDER BY index_name, seq_in_index`,
+      ['admin_audit_logs']
+    );
+    const [foreignKeys] = await connection.execute(
+      `SELECT constraint_name
+       FROM information_schema.referential_constraints
+       WHERE constraint_schema = DATABASE() AND constraint_name = ?`,
+      ['fk_admin_audit_logs_user']
+    );
+    const expectedColumns = new Map([
+      ['id', ['bigint(20) unsigned', 'NO']],
+      ['admin_user_id', ['bigint(20) unsigned', 'NO']],
+      ['action', ['varchar(80)', 'NO']],
+      ['resource_type', ['varchar(40)', 'NO']],
+      ['resource_id', ['bigint(20) unsigned', 'NO']],
+      ['details', ['longtext', 'YES']],
+      ['created_at', ['datetime(3)', 'NO']]
+    ]);
+    const actualColumns = new Map(columns.map((row) => [
+      row.column_name,
+      [row.column_type, row.is_nullable]
+    ]));
+    const resourceIndex = indexes
+      .filter((row) => row.index_name === 'idx_admin_audit_resource')
+      .map((row) => row.column_name);
+    const adminIndex = indexes
+      .filter((row) => row.index_name === 'idx_admin_audit_admin_created')
+      .map((row) => row.column_name);
+    const complete = tables[0].engine === 'InnoDB'
+      && expectedColumns.size === actualColumns.size
+      && [...expectedColumns].every(([name, value]) => (
+        actualColumns.has(name)
+        && actualColumns.get(name)[0] === value[0]
+        && actualColumns.get(name)[1] === value[1]
+      ))
+      && JSON.stringify(resourceIndex) === JSON.stringify(['resource_type', 'resource_id'])
+      && JSON.stringify(adminIndex) === JSON.stringify(['admin_user_id', 'created_at'])
+      && foreignKeys.length === 1;
+    if (!complete) {
+      throw new Error(`${databaseName}: migration 008 is partially applied or has an unexpected schema.`);
+    }
+    console.log(`${databaseName}: migration 008 already applied.`);
+    return;
+  }
+
+  const [users] = await connection.execute(
+    `SELECT engine
+     FROM information_schema.tables
+     WHERE table_schema = DATABASE() AND table_name = ?`,
+    ['users']
+  );
+  if (users.length !== 1 || users[0].engine !== 'InnoDB') {
+    throw new Error(`${databaseName}: migration 008 requires the InnoDB users table.`);
+  }
+  const migrationPath = path.join(__dirname, 'migrations', '008-create-admin-audit-logs.sql');
+  const migration = await fs.readFile(migrationPath, 'utf8');
+  for (const statement of migration.split(';').map((part) => part.trim()).filter(Boolean)) {
+    await connection.query(statement);
+  }
+  await applyAdminAuditMigration(connection, databaseName);
+}
+
 async function migrateBookings(databaseName) {
   const pool = getAllowedPool(databaseName);
   const connection = await pool.getConnection();
@@ -357,6 +437,7 @@ async function migrateBookings(databaseName) {
     await applyPaymentTicketMigration(connection, databaseName);
     await applyBookingCancellationMigration(connection, databaseName);
     await applyNotificationsMigration(connection, databaseName);
+    await applyAdminAuditMigration(connection, databaseName);
   } finally {
     connection.release();
     await pool.end();

@@ -419,6 +419,7 @@
 
   window.addEventListener('pageshow', (event) => {
     if (event.persisted) {
+      if (window.SportBookingCurrentUser?.role === 'ADMIN') return;
       refreshPendingHoldBanner();
       const header = document.querySelector('.sb-shared-header');
       if (header) {
@@ -434,58 +435,67 @@
   });
 
   function render(user) {
+    const isAdmin = user.role === 'ADMIN';
+    const showNavigation = window.SportBookingHeaderState.shouldShowNavigation(user.role);
     const header = element('header', 'sb-shared-header');
     const inner = element('div', 'sb-shared-header__inner');
     const brandGroup = element('div', 'sb-shared-header__brand-group');
     const brand = element('a', 'sb-shared-header__brand', 'SportBooking');
-    brand.href = '/trangchu-user.html';
+    brand.href = isAdmin ? '/quan-tri-tong-quan.html' : '/trangchu-user.html';
 
-    const menuButton = element('button', 'sb-shared-header__menu-button');
-    menuButton.type = 'button';
-    menuButton.setAttribute('aria-label', 'Mở menu');
-    menuButton.setAttribute('aria-expanded', 'false');
-    menuButton.append(icon('menu'));
+    brandGroup.append(brand);
+    if (showNavigation) {
+      const menuButton = element('button', 'sb-shared-header__menu-button');
+      menuButton.type = 'button';
+      menuButton.setAttribute('aria-label', 'Mở menu');
+      menuButton.setAttribute('aria-expanded', 'false');
+      menuButton.append(icon('menu'));
 
-    const nav = element('nav', 'sb-shared-header__nav');
-    nav.setAttribute('aria-label', 'Điều hướng chính');
-    const pages = [
-      { label: 'Trang chủ', href: '/trangchu-user.html', paths: ['/trangchu-user.html'] },
-      { label: 'Tìm sân', href: '/tim-san.html', paths: ['/tim-san.html', '/chi-tiet-san.html', '/dat-san.html'] }
-    ];
-    for (const item of pages) {
-      const link = element('a', 'sb-shared-header__link', item.label);
-      link.href = item.href;
-      if (item.paths.includes(window.location.pathname)) link.setAttribute('aria-current', 'page');
-      nav.append(link);
-    }
-    const history = element('a', 'sb-shared-header__link', 'Lịch sử đặt sân');
-    history.href = '/lich-su-dat-san.html';
-    if ([
-      '/lich-su-dat-san.html',
-      '/chi-tiet-don-dat-san.html',
-      '/ve-dien-tu.html'
-    ].includes(window.location.pathname)) {
-      history.setAttribute('aria-current', 'page');
-    }
-    nav.append(history);
+      const nav = element('nav', 'sb-shared-header__nav');
+      nav.setAttribute('aria-label', 'Điều hướng chính');
+      const pages = [
+        { label: 'Trang chủ', href: '/trangchu-user.html', paths: ['/trangchu-user.html'] },
+        { label: 'Tìm sân', href: '/tim-san.html', paths: ['/tim-san.html', '/chi-tiet-san.html', '/dat-san.html'] }
+      ];
+      for (const item of pages) {
+        const link = element('a', 'sb-shared-header__link', item.label);
+        link.href = item.href;
+        if (item.paths.includes(window.location.pathname)) link.setAttribute('aria-current', 'page');
+        nav.append(link);
+      }
 
-    for (const label of ['Tin tức thể thao']) {
-      const item = element('span', 'sb-shared-header__disabled');
-      item.setAttribute('aria-disabled', 'true');
-      item.append(document.createTextNode(label), element('span', 'sb-shared-header__soon', 'Sắp có'));
-      nav.append(item);
+      const history = element('a', 'sb-shared-header__link', 'Lịch sử đặt sân');
+      history.href = '/lich-su-dat-san.html';
+      if ([
+        '/lich-su-dat-san.html',
+        '/chi-tiet-don-dat-san.html',
+        '/ve-dien-tu.html'
+      ].includes(window.location.pathname)) {
+        history.setAttribute('aria-current', 'page');
+      }
+      nav.append(history);
+
+      for (const label of ['Tin tức thể thao']) {
+        const item = element('span', 'sb-shared-header__disabled');
+        item.setAttribute('aria-disabled', 'true');
+        item.append(document.createTextNode(label), element('span', 'sb-shared-header__soon', 'Sắp có'));
+        nav.append(item);
+      }
+        menuButton.addEventListener('click', () => {
+          const expanded = menuButton.getAttribute('aria-expanded') === 'true';
+          menuButton.setAttribute('aria-expanded', String(!expanded));
+          menuButton.setAttribute('aria-label', expanded ? 'Mở menu' : 'Đóng menu');
+          menuButton.replaceChildren(icon(expanded ? 'menu' : 'close'));
+          nav.classList.toggle('is-open', !expanded);
+        });
+        brandGroup.prepend(menuButton);
+        brandGroup.append(nav);
     }
-    menuButton.addEventListener('click', () => {
-      const expanded = menuButton.getAttribute('aria-expanded') === 'true';
-      menuButton.setAttribute('aria-expanded', String(!expanded));
-      menuButton.setAttribute('aria-label', expanded ? 'Mở menu' : 'Đóng menu');
-      menuButton.replaceChildren(icon(expanded ? 'menu' : 'close'));
-      nav.classList.toggle('is-open', !expanded);
-    });
-    brandGroup.append(menuButton, brand, nav);
 
     const controls = element('div', 'sb-shared-header__controls');
-    const notification = element('div', 'sb-shared-header__notification');
+    let notification = null;
+    if (!isAdmin) {
+      notification = element('div', 'sb-shared-header__notification');
     const notificationButton = element('button', 'sb-shared-header__icon-button');
     notificationButton.type = 'button';
     notificationButton.setAttribute('aria-label', 'Thông báo');
@@ -548,20 +558,26 @@
       }
     });
     notification.append(notificationButton, popover);
+    }
 
     const account = element('div', 'sb-shared-header__account');
-    const identity = element('a', 'sb-shared-header__identity');
-    identity.href = '/profile/profile.html';
-    identity.setAttribute('aria-label', 'Mở hồ sơ cá nhân');
+    const identity = element(isAdmin ? 'span' : 'a', 'sb-shared-header__identity');
+    if (!isAdmin) {
+      identity.href = '/profile/profile.html';
+      identity.setAttribute('aria-label', 'Mở hồ sơ cá nhân');
+    }
     const sourceName = String(user.fullName || user.email || '').trim();
     const initials = sourceName.split(/\s+/).slice(-2).map((part) => part[0] || '').join('').toLocaleUpperCase('vi');
     identity.append(element('span', 'sb-shared-header__avatar', initials));
     const userDetails = element('span', 'sb-shared-header__user');
     userDetails.append(
-      element('span', 'sb-shared-header__name', user.fullName || user.email || ''),
-      element('span', 'sb-shared-header__role', user.role === 'ADMIN' ? 'Quản trị viên' : 'Người chơi')
+      element('span', 'sb-shared-header__name', user.fullName || user.email || '')
     );
+    if (!isAdmin) userDetails.append(element('span', 'sb-shared-header__role', 'Người chơi'));
     identity.append(userDetails);
+    if (isAdmin) {
+      identity.append(element('span', 'sb-shared-header__role sb-shared-header__admin-role', 'Quản trị viên'));
+    }
 
     const logout = element('button', 'sb-shared-header__logout');
     logout.type = 'button';
@@ -572,7 +588,8 @@
       try {
         const response = await fetch('/api/v1/auth/logout', {
           method: 'POST',
-          credentials: 'same-origin'
+          credentials: 'same-origin',
+          cache: 'no-store'
         });
         if (response.status === 401) {
           loginRedirect();
@@ -592,15 +609,17 @@
       }
     });
     account.append(identity, logout);
-    controls.append(notification, account);
+    if (notification) controls.append(notification);
+    controls.append(account);
     inner.append(brandGroup, controls);
     header.append(inner);
     mount.replaceChildren(header);
-    startNotificationPolling(header);
-    if (window.SportBookingHeaderState.shouldShowPendingBanner(window.location.pathname, true)) {
+    if (!isAdmin) startNotificationPolling(header);
+    if (!isAdmin
+        && window.SportBookingHeaderState.shouldShowPendingBanner(window.location.pathname, true)) {
       startPendingHoldPolling();
     }
-    window.SportBookingHeaderState.subscribePendingBookingChanged(
+    if (!isAdmin) window.SportBookingHeaderState.subscribePendingBookingChanged(
       window,
       refreshPendingHoldBanner,
       () => {
@@ -617,7 +636,7 @@
   }
 
   function initializeHeader() {
-    return fetch('/api/v1/auth/me', { credentials: 'same-origin' })
+    return fetch('/api/v1/auth/me', { credentials: 'same-origin', cache: 'no-store' })
       .then(async (response) => {
         if (response.status === 401) {
           loginRedirect();

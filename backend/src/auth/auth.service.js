@@ -169,7 +169,7 @@ function createAuthService({
       throw createAuthError(401, 'INVALID_CREDENTIALS', 'Email or password is incorrect.');
     }
     if (user.account_status === 'ADMIN_LOCKED') {
-      throw createAuthError(403, 'ACCOUNT_LOCKED', 'This account has been locked by an administrator.');
+      throw createAuthError(403, 'ACCOUNT_LOCKED', 'Tài khoản đã bị quản trị viên khóa.');
     }
 
     if (user.login_locked_until !== null && user.login_locked_until !== undefined) {

@@ -1,0 +1,1026 @@
+<!DOCTYPE html><html lang="vi"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_dashboard" name="shell-type"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      "colors": {
+        "primary-container": "#00873a",
+        "surface-container-lowest": "#ffffff",
+        "tertiary-fixed-dim": "#b4c5ff",
+        "on-secondary-fixed": "#341100",
+        "on-tertiary-fixed-variant": "#003ea8",
+        "on-secondary-fixed-variant": "#783200",
+        "on-primary": "#ffffff",
+        "tertiary-fixed": "#dbe1ff",
+        "inverse-surface": "#293040",
+        "on-error": "#ffffff",
+        "error": "#ba1a1a",
+        "on-secondary-container": "#5c2400",
+        "on-surface-variant": "#3e4a3d",
+        "outline-variant": "#bdcaba",
+        "tertiary-container": "#316bf3",
+        "on-primary-fixed-variant": "#005320",
+        "on-error-container": "#93000a",
+        "on-primary-container": "#f7fff2",
+        "secondary-fixed-dim": "#ffb690",
+        "surface": "#f9f9ff",
+        "inverse-primary": "#62df7d",
+        "secondary-container": "#fd761a",
+        "primary": "#006b2c",
+        "on-secondary": "#ffffff",
+        "secondary-fixed": "#ffdbca",
+        "tertiary": "#0051d5",
+        "on-tertiary-container": "#fefcff",
+        "secondary": "#9d4300",
+        "on-surface": "#141b2b",
+        "primary-fixed": "#7ffc97",
+        "surface-bright": "#f9f9ff",
+        "surface-container-low": "#f1f3ff",
+        "outline": "#6e7b6c",
+        "inverse-on-surface": "#edf0ff",
+        "surface-variant": "#dce2f7",
+        "surface-container-high": "#e1e8fd",
+        "on-tertiary-fixed": "#00174b",
+        "surface-dim": "#d3daef",
+        "surface-container-highest": "#dce2f7",
+        "on-primary-fixed": "#002109",
+        "on-tertiary": "#ffffff",
+        "error-container": "#ffdad6",
+        "surface-container": "#e9edff",
+        "surface-tint": "#006e2d",
+        "background": "#f9f9ff",
+        "on-background": "#141b2b",
+        "primary-fixed-dim": "#62df7d"
+      },
+      "borderRadius": {
+        "DEFAULT": "0.25rem",
+        "lg": "0.5rem",
+        "xl": "0.75rem",
+        "full": "9999px"
+      },
+      "spacing": {
+        "space-xl": "2rem",
+        "margin": "1.25rem",
+        "space-xs": "0.25rem",
+        "space-lg": "1.5rem",
+        "gutter": "1rem",
+        "space-md": "1rem",
+        "space-sm": "0.5rem"
+      },
+      "fontFamily": {
+        "display-lg-mobile": [
+          "Be Vietnam Pro"
+        ],
+        "headline-sm": [
+          "Be Vietnam Pro"
+        ],
+        "body-lg": [
+          "Be Vietnam Pro"
+        ],
+        "headline-lg": [
+          "Be Vietnam Pro"
+        ],
+        "label-lg": [
+          "Inter"
+        ],
+        "body-sm": [
+          "Be Vietnam Pro"
+        ],
+        "label-sm": [
+          "Inter"
+        ],
+        "label-md": [
+          "Inter"
+        ],
+        "headline-md": [
+          "Be Vietnam Pro"
+        ],
+        "display-lg": [
+          "Be Vietnam Pro"
+        ],
+        "body-md": [
+          "Be Vietnam Pro"
+        ]
+      },
+      "fontSize": {
+        "display-lg-mobile": [
+          "30px",
+          {
+            "lineHeight": "38px",
+            "fontWeight": "700"
+          }
+        ],
+        "headline-sm": [
+          "18px",
+          {
+            "lineHeight": "26px",
+            "fontWeight": "600"
+          }
+        ],
+        "body-lg": [
+          "16px",
+          {
+            "lineHeight": "26px",
+            "fontWeight": "400"
+          }
+        ],
+        "headline-lg": [
+          "28px",
+          {
+            "lineHeight": "36px",
+            "fontWeight": "700"
+          }
+        ],
+        "label-lg": [
+          "15px",
+          {
+            "lineHeight": "20px",
+            "fontWeight": "600"
+          }
+        ],
+        "body-sm": [
+          "12px",
+          {
+            "lineHeight": "18px",
+            "fontWeight": "400"
+          }
+        ],
+        "label-sm": [
+          "11px",
+          {
+            "lineHeight": "14px",
+            "fontWeight": "600"
+          }
+        ],
+        "label-md": [
+          "13px",
+          {
+            "lineHeight": "18px",
+            "fontWeight": "500"
+          }
+        ],
+        "headline-md": [
+          "22px",
+          {
+            "lineHeight": "30px",
+            "fontWeight": "600"
+          }
+        ],
+        "display-lg": [
+          "40px",
+          {
+            "lineHeight": "48px",
+            "fontWeight": "700"
+          }
+        ],
+        "body-md": [
+          "14px",
+          {
+            "lineHeight": "22px",
+            "fontWeight": "400"
+          }
+        ]
+      }
+    }
+  }
+};</script></head><body class="bg-surface font-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-72 bg-surface-container-low shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-50 flex flex-col justify-between"><div class="flex flex-col"><div class="h-16 px-space-lg flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-on-primary shadow-sm"><span class="material-symbols-outlined text-[24px]">sports_soccer</span></div><div class="flex flex-col"><span class="font-headline-sm text-headline-sm text-on-surface tracking-tight">SportBooking</span><span class="font-label-sm text-label-sm text-primary uppercase font-bold tracking-wider">Admin Portal</span></div></div><div class="px-space-md py-space-sm"><nav class="flex flex-col gap-1" data-active-classes="bg-primary-container text-on-primary-container font-semibold shadow-sm"><a class="flex items-center gap-3 px-space-md py-3 rounded-xl text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="tong-quan" href="#"><span class="material-symbols-outlined text-[20px]">space_dashboard</span><span>Tổng quan</span></a><a class="flex items-center gap-3 px-space-md py-3 rounded-xl text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="quan-ly-san" href="#"><span class="material-symbols-outlined text-[20px]">stadium</span><span>Quản lý sân</span></a><a aria-current="page" class="flex items-center gap-3 px-space-md py-3 rounded-xl transition-all bg-primary-container text-on-primary-container font-semibold shadow-sm" data-path="khung-gio-va-gia" href="#"><span class="material-symbols-outlined text-[20px]">schedule</span><span>Quản lý khung giờ &amp; giá</span></a><a class="flex items-center gap-3 px-space-md py-3 rounded-xl text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="danh-sach-dat-san" href="#"><span class="material-symbols-outlined text-[20px]">event_available</span><span>Danh sách đặt sân</span></a><a class="flex items-center gap-3 px-space-md py-3 rounded-xl text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="quan-ly-nguoi-dung" href="#"><span class="material-symbols-outlined text-[20px]">group</span><span>Quản lý người dùng</span></a><a class="flex items-center gap-3 px-space-md py-3 rounded-xl text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="cai-dat-he-thong" href="#"><span class="material-symbols-outlined text-[20px]">tune</span><span>Cài đặt hệ thống</span></a></nav></div></div><div class="p-space-md m-space-md rounded-xl bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="flex items-center justify-between"><div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-primary"></span><span class="font-label-sm text-label-sm text-on-surface-variant">Máy chủ: Bình thường</span></div><span class="font-label-sm text-label-sm text-primary font-bold">99.98%</span></div></div></aside><div class="pl-72 flex flex-col min-h-screen"><header class="fixed top-0 left-72 right-0 h-16 bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 flex items-center justify-between px-space-lg"><div class="flex items-center gap-space-lg"><div class="flex items-center gap-2 font-label-md text-label-md text-on-surface-variant"><span class="material-symbols-outlined text-[18px]">home</span><span>/</span><span class="text-on-surface font-semibold">Quản trị</span></div><div class="relative w-80"><span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span><input class="w-full pl-10 pr-4 py-2 bg-surface-container-lowest text-on-surface placeholder:text-on-surface-variant font-body-sm text-body-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-[0_1px_8px_rgba(0,0,0,0.04)] transition-all" placeholder="Tìm sân, đơn đặt, số điện thoại..." type="text"></div></div><div class="flex items-center gap-space-md"><div class="relative"><button class="w-10 h-10 rounded-xl bg-surface-container-lowest flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all shadow-[0_1px_8px_rgba(0,0,0,0.04)]" type="button"><span class="material-symbols-outlined text-[22px]">notifications</span></button><span class="absolute top-1.5 right-1.5 flex h-2.5 w-2.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary-container opacity-75"></span><span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-secondary-container"></span></span></div><div class="flex items-center gap-3 pl-space-sm"><div class="flex flex-col text-right"><span class="font-label-md text-label-md text-on-surface font-semibold">Ban Quản Trị SportBooking</span><span class="font-label-sm text-label-sm text-secondary font-bold uppercase tracking-wide">Super Admin</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-16 bg-surface px-space-lg py-space-lg flex-1"><div class="flex flex-col w-full gap-space-lg pb-12">
+<!-- Header Bar & Quick Actions -->
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm px-2.5 py-1 rounded-full bg-primary-container text-on-primary font-bold uppercase tracking-wider">Cấu hình vận hành</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+          Đồng bộ thời gian thực
+        </span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Quản lý khung giờ &amp; Bảng giá sân</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Tùy biến bảng giá động, điều phối ma trận sân theo ca và khóa bảo trì tức thời</p>
+</div>
+<!-- Action Buttons -->
+<div class="flex items-center gap-space-sm flex-wrap">
+<button class="px-space-md py-2.5 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md text-label-md flex items-center gap-2 transition-all shadow-sm" type="button">
+<span class="material-symbols-outlined text-[18px]">history</span>
+<span>Lịch sử đổi giá</span>
+</button>
+<button class="px-space-md py-2.5 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md text-label-md flex items-center gap-2 transition-all shadow-sm" type="button">
+<span class="material-symbols-outlined text-[18px]">content_copy</span>
+<span>Sao chép sang tuần sau</span>
+</button>
+<button class="px-space-lg py-2.5 rounded-xl bg-secondary-container hover:bg-secondary text-on-primary font-label-lg text-label-lg flex items-center gap-2 transition-all shadow-md" id="btn-save-all" type="button">
+<span class="material-symbols-outlined text-[20px]">save</span>
+<span>Lưu &amp; Áp dụng ngay</span>
+</button>
+</div>
+</div>
+<!-- Filter & Scope Bar -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-space-md">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md flex-1">
+<!-- Cơ sở selection -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-primary">location_on</span>
+          Cơ sở thể thao
+        </label>
+<div class="relative">
+<select class="w-full pl-3 pr-9 py-2.5 bg-surface-container-low text-on-surface font-label-md text-label-md rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-sm appearance-none cursor-pointer">
+<option selected="">CLB Cầu Lông Ngôi Sao Cầu Giấy (12 sân)</option>
+<option>Trung Tâm Thể Thao Thanh Xuân (8 sân)</option>
+<option>Sân Cầu Lông Đa Năng Mỹ Đình (16 sân)</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-[18px]">expand_more</span>
+</div>
+</div>
+<!-- Sân con filter -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-primary">sports_tennis</span>
+          Khu vực / Sân con
+        </label>
+<div class="relative">
+<select class="w-full pl-3 pr-9 py-2.5 bg-surface-container-low text-on-surface font-label-md text-label-md rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-sm appearance-none cursor-pointer">
+<option>Tất cả cụm sân thi đấu</option>
+<option selected="">Sân 1 Yonex (Sàn thảm tiêu chuẩn BWF)</option>
+<option>Sân 2 Victor (Sàn thảm đệm khí)</option>
+<option>Sân 3 Lining (Sàn cao su non)</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-[18px]">expand_more</span>
+</div>
+</div>
+<!-- Ngày áp dụng filter -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-primary">calendar_today</span>
+          Ngày áp dụng
+        </label>
+<div class="relative">
+<select class="w-full pl-3 pr-9 py-2.5 bg-surface-container-low text-on-surface font-label-md text-label-md rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-sm appearance-none cursor-pointer">
+<option selected="">Hôm nay (Thứ Tư, 24/10/2024)</option>
+<option>Ngày mai (Thứ Năm, 25/10/2024)</option>
+<option>Áp dụng cố định Ngày trong tuần (T2 - T6)</option>
+<option>Áp dụng cố định Cuối tuần (T7 - CN)</option>
+<option>Áp dụng toàn bộ tuần (T2 - CN)</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-[18px]">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Quick Switcher -->
+<div class="flex items-center gap-2 xl:self-end pt-2 xl:pt-0">
+<div class="inline-flex p-1 bg-surface-container-low rounded-xl">
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-lowest text-on-surface font-label-sm text-label-sm shadow-sm font-semibold" type="button">Theo ngày</button>
+<button class="px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm" type="button">Tuần</button>
+<button class="px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm" type="button">Tháng</button>
+</div>
+</div>
+</div>
+<!-- Section 1: Config Pricing Rules -->
+<div class="flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-primary-container text-on-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">price_change</span>
+</div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Cấu hình đơn giá theo loại khung giờ (Pricing Rules)</h2>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Tự động áp dụng theo ma trận giờ bên dưới</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md">
+<!-- Thẻ Giờ Thường -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between gap-space-md relative overflow-hidden group hover:shadow-md transition-shadow">
+<div class="flex items-start justify-between">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-primary"></span>
+<span class="font-label-md text-label-md text-on-surface font-bold">Khung Giờ Thường</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Giờ thấp điểm buổi sáng &amp; đầu chiều</span>
+</div>
+<span class="font-label-sm text-label-sm px-2.5 py-1 rounded-full bg-surface-container-high text-on-surface font-semibold">06:00 - 17:00</span>
+</div>
+<div class="flex flex-col gap-2">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Đơn giá giờ chuẩn</span>
+<div class="flex items-center gap-2">
+<div class="relative flex-1">
+<input class="w-full px-3 py-2 bg-surface-container-low text-on-surface font-headline-sm text-headline-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-sm" type="text" value="110.000">
+<span class="absolute right-3 top-1/2 -translate-y-1/2 font-label-sm text-label-sm text-on-surface-variant">đ/giờ</span>
+</div>
+<button class="px-3 py-2.5 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-label-sm font-label-sm" title="Áp dụng nhanh cho 11 slot" type="button">
+              Áp dụng
+            </button>
+</div>
+</div>
+<div class="flex items-center justify-between pt-2">
+<span class="font-body-sm text-body-sm text-primary flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+            11 slot tương ứng
+          </span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Độ phủ: 68.7%</span>
+</div>
+</div>
+<!-- Thẻ Giờ Vàng -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between gap-space-md relative overflow-hidden group hover:shadow-md transition-shadow">
+<div class="absolute top-0 right-0">
+<span class="px-3 py-1 rounded-bl-xl bg-secondary-container text-on-primary font-label-sm text-label-sm font-bold uppercase tracking-wider flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-[14px]">local_fire_department</span>
+            Giờ Vàng HOT
+          </span>
+</div>
+<div class="flex items-start justify-between pr-24">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-secondary-container"></span>
+<span class="font-label-md text-label-md text-on-surface font-bold">Khung Giờ Cao Điểm</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Tập trung nhu cầu thi đấu cao</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm px-2.5 py-1 rounded-full bg-secondary-fixed text-on-secondary-fixed font-bold">17:00 - 22:00</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">5 ca buổi tối</span>
+</div>
+<div class="flex flex-col gap-2">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Đơn giá giờ cao điểm</span>
+<div class="flex items-center gap-2">
+<div class="relative flex-1">
+<input class="w-full px-3 py-2 bg-surface-container-low text-on-surface font-headline-sm text-headline-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-secondary-container shadow-sm font-bold" type="text" value="160.000">
+<span class="absolute right-3 top-1/2 -translate-y-1/2 font-label-sm text-label-sm text-on-surface-variant">đ/giờ</span>
+</div>
+<button class="px-3 py-2.5 rounded-xl bg-secondary-fixed text-on-secondary-fixed hover:bg-secondary-fixed-dim font-label-sm text-label-sm font-semibold" title="Áp dụng nhanh cho 5 slot" type="button">
+              Áp dụng
+            </button>
+</div>
+</div>
+<div class="flex items-center justify-between pt-2">
+<span class="font-body-sm text-body-sm text-secondary font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">trending_up</span>
+            Lấp đầy trung bình 96%
+          </span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Tỉ lệ lấp đầy cao nhất</span>
+</div>
+</div>
+<!-- Phụ phí Cuối tuần & Bulk Action -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between gap-space-md hover:shadow-md transition-shadow">
+<div class="flex items-start justify-between">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-tertiary"></span>
+<span class="font-label-md text-label-md text-on-surface font-bold">Phụ Phí Cuối Tuần / Lễ</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Cộng thêm vào đơn giá gốc cho T7, CN</span>
+</div>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-semibold">Phụ thu</span>
+</div>
+<div class="flex flex-col gap-2">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Mức phụ thu mỗi giờ</span>
+<div class="flex items-center gap-2">
+<div class="relative flex-1">
+<input class="w-full px-3 py-2 bg-surface-container-low text-on-surface font-headline-sm text-headline-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-tertiary shadow-sm" type="text" value="+ 20.000">
+<span class="absolute right-3 top-1/2 -translate-y-1/2 font-label-sm text-label-sm text-on-surface-variant">đ/giờ</span>
+</div>
+<label class="flex items-center gap-2 cursor-pointer p-2 rounded-xl bg-surface-container-low">
+<input checked="" class="w-4 h-4 accent-tertiary rounded" type="checkbox">
+<span class="font-label-sm text-label-sm text-on-surface font-medium">Bật</span>
+</label>
+</div>
+</div>
+<div class="pt-2">
+<button class="w-full py-2.5 px-space-md rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md flex items-center justify-center gap-2 transition-all shadow-sm" type="button">
+<span class="material-symbols-outlined text-[18px]">sync_alt</span>
+<span>Cập nhật bảng giá đồng loạt</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Section 2: Interactive Time Slots Grid -->
+<div class="flex flex-col gap-space-md">
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-sm">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-surface-container-highest text-on-surface flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">calendar_view_week</span>
+</div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Ma trận điều phối khung giờ theo ngày (06:00 - 22:00)</h2>
+</div>
+<!-- Legend Indicator -->
+<div class="flex items-center gap-3 flex-wrap bg-surface-container-lowest px-space-md py-2 rounded-xl shadow-sm">
+<div class="flex items-center gap-1.5">
+<span class="w-3.5 h-3.5 rounded bg-surface-container-lowest shadow-sm"></span>
+<span class="font-label-sm text-label-sm text-primary font-semibold">Trống (Mở đặt)</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-3.5 h-3.5 rounded bg-secondary-fixed"></span>
+<span class="font-label-sm text-label-sm text-secondary font-semibold">Đang giữ / Tìm đối</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-3.5 h-3.5 rounded bg-inverse-surface"></span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-semibold">Đã thanh toán</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-3.5 h-3.5 rounded bg-error-container"></span>
+<span class="font-label-sm text-label-sm text-error font-semibold">Khóa / Bảo trì</span>
+</div>
+</div>
+</div>
+<!-- Matrix Schedule Table / Card Wrapper -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm overflow-hidden flex flex-col gap-space-lg">
+<!-- Court Tabs / Header Subtitle -->
+<div class="flex items-center justify-between pb-space-sm">
+<div class="flex items-center gap-space-sm overflow-x-auto pb-1">
+<button class="px-4 py-2 rounded-xl bg-primary text-on-primary font-label-md text-label-md shadow-sm font-semibold flex items-center gap-2 whitespace-nowrap" type="button">
+<span class="material-symbols-outlined text-[18px]">stadium</span>
+<span>Hiển thị tất cả (3 Sân)</span>
+</button>
+<button class="px-4 py-2 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md text-label-md whitespace-nowrap" type="button">
+            Sân 1 Yonex
+          </button>
+<button class="px-4 py-2 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md text-label-md whitespace-nowrap" type="button">
+            Sân 2 Victor
+          </button>
+<button class="px-4 py-2 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md text-label-md whitespace-nowrap" type="button">
+            Sân 3 Lining
+          </button>
+</div>
+<div class="hidden sm:flex items-center gap-2 text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[16px]">touch_app</span>
+<span>Nhấp trực tiếp ô slot để điều phối</span>
+</div>
+</div>
+<!-- Schedule Matrix Table Scrollable Container -->
+<div class="overflow-x-auto">
+<div class="min-w-[1080px] flex flex-col gap-space-md">
+<!-- COURT 1 ROW -->
+<div class="flex flex-col gap-2 p-space-md rounded-xl bg-surface-container-low">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-primary"></span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">Sân 1 - Yonex Pro Mat</span>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed font-bold uppercase">Tiêu chuẩn BWF</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">16 ca khả dụng / ngày</span>
+</div>
+<!-- Slots horizontal grid (16 slots: 06:00 to 22:00) -->
+<div class="grid grid-cols-8 lg:grid-cols-16 gap-2">
+<!-- 06:00 - 07:00: Trống -->
+<div class="cursor-pointer p-2.5 rounded-xl bg-surface-container-lowest hover:bg-surface-container-high transition-all flex flex-col justify-between h-24 shadow-sm group" onclick="openSlotModal('Sân 1', '06:00 - 07:00', '110.000đ', 'available')">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-semibold">06:00</span>
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-primary font-bold">110K</span>
+<span class="font-label-sm text-label-sm text-primary font-semibold">Trống</span>
+</div>
+</div>
+<!-- 07:00 - 08:00: Booked Nguyễn Tuấn Anh -->
+<div class="cursor-pointer p-2.5 rounded-xl bg-inverse-surface text-inverse-on-surface transition-all flex flex-col justify-between h-24 shadow-sm hover:opacity-95" onclick="openSlotModal('Sân 1', '07:00 - 08:00', '110.000đ', 'booked', 'Nguyễn Tuấn Anh - 0912***482')">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-inverse-on-surface font-semibold">07:00</span>
+<span class="material-symbols-outlined text-[14px] text-inverse-primary">check_circle</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-surface-dim line-through">110K</span>
+<span class="font-label-sm text-label-sm font-semibold text-inverse-on-surface truncate">N. Tuấn Anh</span>
+</div>
+</div>
+<!-- 08:00 - 09:00: Booked Nguyễn Tuấn Anh (2 ca liền) -->
+<div class="cursor-pointer p-2.5 rounded-xl bg-inverse-surface text-inverse-on-surface transition-all flex flex-col justify-between h-24 shadow-sm hover:opacity-95" onclick="openSlotModal('Sân 1', '08:00 - 09:00', '110.000đ', 'booked', 'Nguyễn Tuấn Anh - 0912***482')">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-inverse-on-surface font-semibold">08:00</span>
+<span class="material-symbols-outlined text-[14px] text-inverse-primary">check_circle</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-surface-dim line-through">110K</span>
+<span class="font-label-sm text-label-sm font-semibold text-inverse-on-surface truncate">N. Tuấn Anh</span>
+</div>
+</div>
+<!-- 09:00 - 10:00: Holding / Tìm đối -->
+<div class="cursor-pointer p-2.5 rounded-xl bg-secondary-fixed text-on-secondary-fixed transition-all flex flex-col justify-between h-24 shadow-sm hover:bg-secondary-fixed-dim" onclick="openSlotModal('Sân 1', '09:00 - 10:00', '110.000đ', 'holding', 'Lê Minh Khang (Giữ chỗ 8p)')">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm font-semibold">09:00</span>
+<span class="material-symbols-outlined text-[14px] text-secondary">hourglass_top</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-secondary font-bold">110K</span>
+<span class="font-label-sm text-label-sm text-secondary truncate font-semibold">Giữ chỗ (07:42)</span>
+</div>
+</div>
+<!-- 10:00 - 11:00: Trống -->
+<div class="cursor-pointer p-2.5 rounded-xl bg-surface-container-lowest hover:bg-surface-container-high transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 1', '10:00 - 11:00', '110.000đ', 'available')">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-semibold">10:00</span>
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-primary font-bold">110K</span>
+<span class="font-label-sm text-label-sm text-primary font-semibold">Trống</span>
+</div>
+</div>
+<!-- 11:00 - 12:00: Bảo trì nội bộ -->
+<div class="cursor-pointer p-2.5 rounded-xl bg-error-container text-on-error-container transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 1', '11:00 - 12:00', '---', 'maintenance', 'Bảo trì lưới thi đấu định kỳ')">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm font-semibold">11:00</span>
+<span class="material-symbols-outlined text-[14px] text-error">lock</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-error font-bold">Khóa</span>
+<span class="font-label-sm text-label-sm text-on-error-container truncate">Căng lưới</span>
+</div>
+</div>
+<!-- 12:00 - 13:00: Booked -->
+<div class="cursor-pointer p-2.5 rounded-xl bg-inverse-surface text-inverse-on-surface transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 1', '12:00 - 13:00', '110.000đ', 'booked', 'Công ty FPT Software')">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-inverse-on-surface font-semibold">12:00</span>
+<span class="material-symbols-outlined text-[14px] text-inverse-primary">check_circle</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-surface-dim line-through">110K</span>
+<span class="font-label-sm text-label-sm font-semibold text-inverse-on-surface truncate">FPT Corp</span>
+</div>
+</div>
+<!-- 13:00 - 14:00: Booked -->
+<div class="cursor-pointer p-2.5 rounded-xl bg-inverse-surface text-inverse-on-surface transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 1', '13:00 - 14:00', '110.000đ', 'booked', 'Công ty FPT Software')">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-inverse-on-surface font-semibold">13:00</span>
+<span class="material-symbols-outlined text-[14px] text-inverse-primary">check_circle</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-surface-dim line-through">110K</span>
+<span class="font-label-sm text-label-sm font-semibold text-inverse-on-surface truncate">FPT Corp</span>
+</div>
+</div>
+<!-- 14:00 - 15:00: Trống -->
+<div class="cursor-pointer p-2.5 rounded-xl bg-surface-container-lowest hover:bg-surface-container-high transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 1', '14:00 - 15:00', '110.000đ', 'available')">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-semibold">14:00</span>
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-primary font-bold">110K</span>
+<span class="font-label-sm text-label-sm text-primary font-semibold">Trống</span>
+</div>
+</div>
+<!-- 15:00 - 16:00: Booked -->
+<div class="cursor-pointer p-2.5 rounded-xl bg-inverse-surface text-inverse-on-surface transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 1', '15:00 - 16:00', '110.000đ', 'booked', 'Hoàng Văn Thắng - 0988***231')">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-inverse-on-surface font-semibold">15:00</span>
+<span class="material-symbols-outlined text-[14px] text-inverse-primary">check_circle</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-surface-dim line-through">110K</span>
+<span class="font-label-sm text-label-sm font-semibold text-inverse-on-surface truncate">H. V. Thắng</span>
+</div>
+</div>
+<!-- 16:00 - 17:00: Booked -->
+<div class="cursor-pointer p-2.5 rounded-xl bg-inverse-surface text-inverse-on-surface transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 1', '16:00 - 17:00', '110.000đ', 'booked', 'CLB Cầu Lông Ba Đình')">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-inverse-on-surface font-semibold">16:00</span>
+<span class="material-symbols-outlined text-[14px] text-inverse-primary">check_circle</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-surface-dim line-through">110K</span>
+<span class="font-label-sm text-label-sm font-semibold text-inverse-on-surface truncate">CLB Ba Đình</span>
+</div>
+</div>
+<!-- 17:00 - 18:00: GIỜ VÀNG - Booked -->
+<div class="cursor-pointer p-2.5 rounded-xl bg-inverse-surface text-inverse-on-surface transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 1', '17:00 - 18:00', '160.000đ (Giờ vàng)', 'booked', 'Trần Quốc Bảo - 0904***112')">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-secondary-fixed font-bold">17:00 🔥</span>
+<span class="material-symbols-outlined text-[14px] text-inverse-primary">check_circle</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-surface-dim line-through">160K</span>
+<span class="font-label-sm text-label-sm font-semibold text-inverse-on-surface truncate">T. Quốc Bảo</span>
+</div>
+</div>
+<!-- 18:00 - 19:00: GIỜ VÀNG - Booked -->
+<div class="cursor-pointer p-2.5 rounded-xl bg-inverse-surface text-inverse-on-surface transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 1', '18:00 - 19:00', '160.000đ (Giờ vàng)', 'booked', 'Trần Quốc Bảo - 0904***112')">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-secondary-fixed font-bold">18:00 🔥</span>
+<span class="material-symbols-outlined text-[14px] text-inverse-primary">check_circle</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-surface-dim line-through">160K</span>
+<span class="font-label-sm text-label-sm font-semibold text-inverse-on-surface truncate">T. Quốc Bảo</span>
+</div>
+</div>
+<!-- 19:00 - 20:00: GIỜ VÀNG - Booked -->
+<div class="cursor-pointer p-2.5 rounded-xl bg-inverse-surface text-inverse-on-surface transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 1', '19:00 - 20:00', '160.000đ (Giờ vàng)', 'booked', 'Đoàn Nhật Quang - 0973***889')">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-secondary-fixed font-bold">19:00 🔥</span>
+<span class="material-symbols-outlined text-[14px] text-inverse-primary">check_circle</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-surface-dim line-through">160K</span>
+<span class="font-label-sm text-label-sm font-semibold text-inverse-on-surface truncate">Đ. N. Quang</span>
+</div>
+</div>
+<!-- 20:00 - 21:00: GIỜ VÀNG - Booked -->
+<div class="cursor-pointer p-2.5 rounded-xl bg-inverse-surface text-inverse-on-surface transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 1', '20:00 - 21:00', '160.000đ (Giờ vàng)', 'booked', 'Vũ Đức Thịnh - 0936***998')">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-secondary-fixed font-bold">20:00 🔥</span>
+<span class="material-symbols-outlined text-[14px] text-inverse-primary">check_circle</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-surface-dim line-through">160K</span>
+<span class="font-label-sm text-label-sm font-semibold text-inverse-on-surface truncate">Vũ Đức Thịnh</span>
+</div>
+</div>
+<!-- 21:00 - 22:00: GIỜ VÀNG - Holding -->
+<div class="cursor-pointer p-2.5 rounded-xl bg-secondary-fixed text-on-secondary-fixed transition-all flex flex-col justify-between h-24 shadow-sm hover:bg-secondary-fixed-dim" onclick="openSlotModal('Sân 1', '21:00 - 22:00', '160.000đ (Giờ vàng)', 'holding', 'Lưu Văn Hải (Đang kết nối ZaloPay)')">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-secondary font-bold">21:00 🔥</span>
+<span class="material-symbols-outlined text-[14px] text-secondary">timer</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-secondary font-bold">160K</span>
+<span class="font-label-sm text-label-sm text-secondary truncate font-semibold">Giữ chỗ (02:11)</span>
+</div>
+</div>
+</div>
+</div>
+<!-- COURT 2 ROW -->
+<div class="flex flex-col gap-2 p-space-md rounded-xl bg-surface-container-low">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-tertiary"></span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">Sân 2 - Victor Air Cushion</span>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-bold uppercase">Giảm chấn khớp gối</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">16 ca khả dụng / ngày</span>
+</div>
+<!-- Slots horizontal grid -->
+<div class="grid grid-cols-8 lg:grid-cols-16 gap-2">
+<!-- 06 - 08 Trống -->
+<div class="cursor-pointer p-2.5 rounded-xl bg-surface-container-lowest hover:bg-surface-container-high transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 2', '06:00 - 07:00', '110.000đ', 'available')">
+<div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-on-surface-variant font-semibold">06:00</span><span class="w-2 h-2 rounded-full bg-primary"></span></div>
+<div class="flex flex-col"><span class="font-label-md text-label-md text-primary font-bold">110K</span><span class="font-label-sm text-label-sm text-primary font-semibold">Trống</span></div>
+</div>
+<div class="cursor-pointer p-2.5 rounded-xl bg-surface-container-lowest hover:bg-surface-container-high transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 2', '07:00 - 08:00', '110.000đ', 'available')">
+<div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-on-surface-variant font-semibold">07:00</span><span class="w-2 h-2 rounded-full bg-primary"></span></div>
+<div class="flex flex-col"><span class="font-label-md text-label-md text-primary font-bold">110K</span><span class="font-label-sm text-label-sm text-primary font-semibold">Trống</span></div>
+</div>
+<!-- 08 - 12 Đặt kín -->
+<div class="cursor-pointer p-2.5 rounded-xl bg-inverse-surface text-inverse-on-surface transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 2', '08:00 - 09:00', '110.000đ', 'booked', 'Hội Người Cao Tuổi P. Dịch Vọng')">
+<div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-inverse-on-surface font-semibold">08:00</span><span class="material-symbols-outlined text-[14px] text-inverse-primary">check_circle</span></div>
+<div class="flex flex-col"><span class="font-label-sm text-label-sm text-surface-dim line-through">110K</span><span class="font-label-sm text-label-sm font-semibold truncate">Hội Dịch Vọng</span></div>
+</div>
+<div class="cursor-pointer p-2.5 rounded-xl bg-inverse-surface text-inverse-on-surface transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 2', '09:00 - 10:00', '110.000đ', 'booked', 'Hội Người Cao Tuổi P. Dịch Vọng')">
+<div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-inverse-on-surface font-semibold">09:00</span><span class="material-symbols-outlined text-[14px] text-inverse-primary">check_circle</span></div>
+<div class="flex flex-col"><span class="font-label-sm text-label-sm text-surface-dim line-through">110K</span><span class="font-label-sm text-label-sm font-semibold truncate">Hội Dịch Vọng</span></div>
+</div>
+<div class="cursor-pointer p-2.5 rounded-xl bg-inverse-surface text-inverse-on-surface transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 2', '10:00 - 11:00', '110.000đ', 'booked', 'Dương Thu Hằng - 0966***102')">
+<div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-inverse-on-surface font-semibold">10:00</span><span class="material-symbols-outlined text-[14px] text-inverse-primary">check_circle</span></div>
+<div class="flex flex-col"><span class="font-label-sm text-label-sm text-surface-dim line-through">110K</span><span class="font-label-sm text-label-sm font-semibold truncate">D. T. Hằng</span></div>
+</div>
+<div class="cursor-pointer p-2.5 rounded-xl bg-surface-container-lowest hover:bg-surface-container-high transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 2', '11:00 - 12:00', '110.000đ', 'available')">
+<div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-on-surface-variant font-semibold">11:00</span><span class="w-2 h-2 rounded-full bg-primary"></span></div>
+<div class="flex flex-col"><span class="font-label-md text-label-md text-primary font-bold">110K</span><span class="font-label-sm text-label-sm text-primary font-semibold">Trống</span></div>
+</div>
+<div class="cursor-pointer p-2.5 rounded-xl bg-inverse-surface text-inverse-on-surface transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 2', '12:00 - 13:00', '110.000đ', 'booked', 'Ngô Kiến Huy - 0903***552')">
+<div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-inverse-on-surface font-semibold">12:00</span><span class="material-symbols-outlined text-[14px] text-inverse-primary">check_circle</span></div>
+<div class="flex flex-col"><span class="font-label-sm text-label-sm text-surface-dim line-through">110K</span><span class="font-label-sm text-label-sm font-semibold truncate">Ngô K. Huy</span></div>
+</div>
+<div class="cursor-pointer p-2.5 rounded-xl bg-inverse-surface text-inverse-on-surface transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 2', '13:00 - 14:00', '110.000đ', 'booked', 'Ngô Kiến Huy - 0903***552')">
+<div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-inverse-on-surface font-semibold">13:00</span><span class="material-symbols-outlined text-[14px] text-inverse-primary">check_circle</span></div>
+<div class="flex flex-col"><span class="font-label-sm text-label-sm text-surface-dim line-through">110K</span><span class="font-label-sm text-label-sm font-semibold truncate">Ngô K. Huy</span></div>
+</div>
+<div class="cursor-pointer p-2.5 rounded-xl bg-surface-container-lowest hover:bg-surface-container-high transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 2', '14:00 - 15:00', '110.000đ', 'available')">
+<div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-on-surface-variant font-semibold">14:00</span><span class="w-2 h-2 rounded-full bg-primary"></span></div>
+<div class="flex flex-col"><span class="font-label-md text-label-md text-primary font-bold">110K</span><span class="font-label-sm text-label-sm text-primary font-semibold">Trống</span></div>
+</div>
+<div class="cursor-pointer p-2.5 rounded-xl bg-secondary-fixed text-on-secondary-fixed transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 2', '15:00 - 16:00', '110.000đ', 'holding', 'Lớp năng khiếu trẻ em')">
+<div class="flex items-center justify-between"><span class="font-label-sm text-label-sm font-semibold">15:00</span><span class="material-symbols-outlined text-[14px] text-secondary">groups</span></div>
+<div class="flex flex-col"><span class="font-label-md text-label-md text-secondary font-bold">110K</span><span class="font-label-sm text-label-sm text-secondary truncate font-semibold">Ghép nhóm</span></div>
+</div>
+<div class="cursor-pointer p-2.5 rounded-xl bg-inverse-surface text-inverse-on-surface transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 2', '16:00 - 17:00', '110.000đ', 'booked', 'Phan Văn Hậu - 0984***789')">
+<div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-inverse-on-surface font-semibold">16:00</span><span class="material-symbols-outlined text-[14px] text-inverse-primary">check_circle</span></div>
+<div class="flex flex-col"><span class="font-label-sm text-label-sm text-surface-dim line-through">110K</span><span class="font-label-sm text-label-sm font-semibold truncate">Phan V. Hậu</span></div>
+</div>
+<!-- 17:00 - 22:00 Cao điểm kín lịch -->
+<div class="cursor-pointer p-2.5 rounded-xl bg-inverse-surface text-inverse-on-surface transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 2', '17:00 - 18:00', '160.000đ (Giờ vàng)', 'booked', 'CLB Vietcombank CN Tây HN')">
+<div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-secondary-fixed font-bold">17:00 🔥</span><span class="material-symbols-outlined text-[14px] text-inverse-primary">check_circle</span></div>
+<div class="flex flex-col"><span class="font-label-sm text-label-sm text-surface-dim line-through">160K</span><span class="font-label-sm text-label-sm font-semibold truncate">Vietcombank</span></div>
+</div>
+<div class="cursor-pointer p-2.5 rounded-xl bg-inverse-surface text-inverse-on-surface transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 2', '18:00 - 19:00', '160.000đ (Giờ vàng)', 'booked', 'CLB Vietcombank CN Tây HN')">
+<div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-secondary-fixed font-bold">18:00 🔥</span><span class="material-symbols-outlined text-[14px] text-inverse-primary">check_circle</span></div>
+<div class="flex flex-col"><span class="font-label-sm text-label-sm text-surface-dim line-through">160K</span><span class="font-label-sm text-label-sm font-semibold truncate">Vietcombank</span></div>
+</div>
+<div class="cursor-pointer p-2.5 rounded-xl bg-inverse-surface text-inverse-on-surface transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 2', '19:00 - 20:00', '160.000đ (Giờ vàng)', 'booked', 'Bùi Tiến Dũng - 0915***334')">
+<div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-secondary-fixed font-bold">19:00 🔥</span><span class="material-symbols-outlined text-[14px] text-inverse-primary">check_circle</span></div>
+<div class="flex flex-col"><span class="font-label-sm text-label-sm text-surface-dim line-through">160K</span><span class="font-label-sm text-label-sm font-semibold truncate">Bùi T. Dũng</span></div>
+</div>
+<div class="cursor-pointer p-2.5 rounded-xl bg-inverse-surface text-inverse-on-surface transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 2', '20:00 - 21:00', '160.000đ (Giờ vàng)', 'booked', 'Bùi Tiến Dũng - 0915***334')">
+<div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-secondary-fixed font-bold">20:00 🔥</span><span class="material-symbols-outlined text-[14px] text-inverse-primary">check_circle</span></div>
+<div class="flex flex-col"><span class="font-label-sm text-label-sm text-surface-dim line-through">160K</span><span class="font-label-sm text-label-sm font-semibold truncate">Bùi T. Dũng</span></div>
+</div>
+<div class="cursor-pointer p-2.5 rounded-xl bg-inverse-surface text-inverse-on-surface transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 2', '21:00 - 22:00', '160.000đ (Giờ vàng)', 'booked', 'Nguyễn Phương Thảo - 0979***661')">
+<div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-secondary-fixed font-bold">21:00 🔥</span><span class="material-symbols-outlined text-[14px] text-inverse-primary">check_circle</span></div>
+<div class="flex flex-col"><span class="font-label-sm text-label-sm text-surface-dim line-through">160K</span><span class="font-label-sm text-label-sm font-semibold truncate">N. P. Thảo</span></div>
+</div>
+</div>
+</div>
+<!-- COURT 3 ROW -->
+<div class="flex flex-col gap-2 p-space-md rounded-xl bg-surface-container-low">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-secondary"></span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">Sân 3 - Lining Standard</span>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-bold uppercase">Sàn cao su non</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">16 ca khả dụng / ngày</span>
+</div>
+<!-- Slots horizontal grid -->
+<div class="grid grid-cols-8 lg:grid-cols-16 gap-2">
+<!-- 06 - 09: Đặt & Trống -->
+<div class="cursor-pointer p-2.5 rounded-xl bg-surface-container-lowest hover:bg-surface-container-high transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 3', '06:00 - 07:00', '110.000đ', 'available')">
+<div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-on-surface-variant font-semibold">06:00</span><span class="w-2 h-2 rounded-full bg-primary"></span></div>
+<div class="flex flex-col"><span class="font-label-md text-label-md text-primary font-bold">110K</span><span class="font-label-sm text-label-sm text-primary font-semibold">Trống</span></div>
+</div>
+<div class="cursor-pointer p-2.5 rounded-xl bg-inverse-surface text-inverse-on-surface transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 3', '07:00 - 08:00', '110.000đ', 'booked', 'Nguyễn Gia Bảo - 0981***555')">
+<div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-inverse-on-surface font-semibold">07:00</span><span class="material-symbols-outlined text-[14px] text-inverse-primary">check_circle</span></div>
+<div class="flex flex-col"><span class="font-label-sm text-label-sm text-surface-dim line-through">110K</span><span class="font-label-sm text-label-sm font-semibold truncate">N. Gia Bảo</span></div>
+</div>
+<div class="cursor-pointer p-2.5 rounded-xl bg-surface-container-lowest hover:bg-surface-container-high transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 3', '08:00 - 09:00', '110.000đ', 'available')">
+<div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-on-surface-variant font-semibold">08:00</span><span class="w-2 h-2 rounded-full bg-primary"></span></div>
+<div class="flex flex-col"><span class="font-label-md text-label-md text-primary font-bold">110K</span><span class="font-label-sm text-label-sm text-primary font-semibold">Trống</span></div>
+</div>
+<div class="cursor-pointer p-2.5 rounded-xl bg-surface-container-lowest hover:bg-surface-container-high transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 3', '09:00 - 10:00', '110.000đ', 'available')">
+<div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-on-surface-variant font-semibold">09:00</span><span class="w-2 h-2 rounded-full bg-primary"></span></div>
+<div class="flex flex-col"><span class="font-label-md text-label-md text-primary font-bold">110K</span><span class="font-label-sm text-label-sm text-primary font-semibold">Trống</span></div>
+</div>
+<div class="cursor-pointer p-2.5 rounded-xl bg-inverse-surface text-inverse-on-surface transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 3', '10:00 - 11:00', '110.000đ', 'booked', 'Trịnh Thăng Bình - 0914***888')">
+<div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-inverse-on-surface font-semibold">10:00</span><span class="material-symbols-outlined text-[14px] text-inverse-primary">check_circle</span></div>
+<div class="flex flex-col"><span class="font-label-sm text-label-sm text-surface-dim line-through">110K</span><span class="font-label-sm text-label-sm font-semibold truncate">T. T. Bình</span></div>
+</div>
+<div class="cursor-pointer p-2.5 rounded-xl bg-inverse-surface text-inverse-on-surface transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 3', '11:00 - 12:00', '110.000đ', 'booked', 'Trịnh Thăng Bình - 0914***888')">
+<div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-inverse-on-surface font-semibold">11:00</span><span class="material-symbols-outlined text-[14px] text-inverse-primary">check_circle</span></div>
+<div class="flex flex-col"><span class="font-label-sm text-label-sm text-surface-dim line-through">110K</span><span class="font-label-sm text-label-sm font-semibold truncate">T. T. Bình</span></div>
+</div>
+<!-- 12 - 14: Đặt kín -->
+<div class="cursor-pointer p-2.5 rounded-xl bg-inverse-surface text-inverse-on-surface transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 3', '12:00 - 13:00', '110.000đ', 'booked', 'Nhóm Cầu Lông IT Keangnam')">
+<div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-inverse-on-surface font-semibold">12:00</span><span class="material-symbols-outlined text-[14px] text-inverse-primary">check_circle</span></div>
+<div class="flex flex-col"><span class="font-label-sm text-label-sm text-surface-dim line-through">110K</span><span class="font-label-sm text-label-sm font-semibold truncate">IT Keangnam</span></div>
+</div>
+<div class="cursor-pointer p-2.5 rounded-xl bg-inverse-surface text-inverse-on-surface transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 3', '13:00 - 14:00', '110.000đ', 'booked', 'Nhóm Cầu Lông IT Keangnam')">
+<div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-inverse-on-surface font-semibold">13:00</span><span class="material-symbols-outlined text-[14px] text-inverse-primary">check_circle</span></div>
+<div class="flex flex-col"><span class="font-label-sm text-label-sm text-surface-dim line-through">110K</span><span class="font-label-sm text-label-sm font-semibold truncate">IT Keangnam</span></div>
+</div>
+<div class="cursor-pointer p-2.5 rounded-xl bg-inverse-surface text-inverse-on-surface transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 3', '14:00 - 15:00', '110.000đ', 'booked', 'Lê Khánh Linh - 0968***332')">
+<div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-inverse-on-surface font-semibold">14:00</span><span class="material-symbols-outlined text-[14px] text-inverse-primary">check_circle</span></div>
+<div class="flex flex-col"><span class="font-label-sm text-label-sm text-surface-dim line-through">110K</span><span class="font-label-sm text-label-sm font-semibold truncate">L. K. Linh</span></div>
+</div>
+<!-- 15 - 17: Bảo trì -->
+<div class="cursor-pointer p-2.5 rounded-xl bg-error-container text-on-error-container transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 3', '15:00 - 16:00', '---', 'maintenance', 'Thay thế đèn rọi chống chói')">
+<div class="flex items-center justify-between"><span class="font-label-sm text-label-sm font-semibold">15:00</span><span class="material-symbols-outlined text-[14px] text-error">build</span></div>
+<div class="flex flex-col"><span class="font-label-sm text-label-sm text-error font-bold">Khóa</span><span class="font-label-sm text-label-sm text-on-error-container truncate">Đổi bóng đèn</span></div>
+</div>
+<div class="cursor-pointer p-2.5 rounded-xl bg-error-container text-on-error-container transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 3', '16:00 - 17:00', '---', 'maintenance', 'Thay thế đèn rọi chống chói')">
+<div class="flex items-center justify-between"><span class="font-label-sm text-label-sm font-semibold">16:00</span><span class="material-symbols-outlined text-[14px] text-error">build</span></div>
+<div class="flex flex-col"><span class="font-label-sm text-label-sm text-error font-bold">Khóa</span><span class="font-label-sm text-label-sm text-on-error-container truncate">Đổi bóng đèn</span></div>
+</div>
+<!-- 17 - 22: Kín giờ vàng -->
+<div class="cursor-pointer p-2.5 rounded-xl bg-inverse-surface text-inverse-on-surface transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 3', '17:00 - 18:00', '160.000đ (Giờ vàng)', 'booked', 'Hoàng Minh Tuấn - 0989***999')">
+<div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-secondary-fixed font-bold">17:00 🔥</span><span class="material-symbols-outlined text-[14px] text-inverse-primary">check_circle</span></div>
+<div class="flex flex-col"><span class="font-label-sm text-label-sm text-surface-dim line-through">160K</span><span class="font-label-sm text-label-sm font-semibold truncate">H. M. Tuấn</span></div>
+</div>
+<div class="cursor-pointer p-2.5 rounded-xl bg-inverse-surface text-inverse-on-surface transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 3', '18:00 - 19:00', '160.000đ (Giờ vàng)', 'booked', 'Hoàng Minh Tuấn - 0989***999')">
+<div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-secondary-fixed font-bold">18:00 🔥</span><span class="material-symbols-outlined text-[14px] text-inverse-primary">check_circle</span></div>
+<div class="flex flex-col"><span class="font-label-sm text-label-sm text-surface-dim line-through">160K</span><span class="font-label-sm text-label-sm font-semibold truncate">H. M. Tuấn</span></div>
+</div>
+<div class="cursor-pointer p-2.5 rounded-xl bg-inverse-surface text-inverse-on-surface transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 3', '19:00 - 20:00', '160.000đ (Giờ vàng)', 'booked', 'CLB VinFast Badminton')">
+<div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-secondary-fixed font-bold">19:00 🔥</span><span class="material-symbols-outlined text-[14px] text-inverse-primary">check_circle</span></div>
+<div class="flex flex-col"><span class="font-label-sm text-label-sm text-surface-dim line-through">160K</span><span class="font-label-sm text-label-sm font-semibold truncate">VinFast Club</span></div>
+</div>
+<div class="cursor-pointer p-2.5 rounded-xl bg-inverse-surface text-inverse-on-surface transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 3', '20:00 - 21:00', '160.000đ (Giờ vàng)', 'booked', 'CLB VinFast Badminton')">
+<div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-secondary-fixed font-bold">20:00 🔥</span><span class="material-symbols-outlined text-[14px] text-inverse-primary">check_circle</span></div>
+<div class="flex flex-col"><span class="font-label-sm text-label-sm text-surface-dim line-through">160K</span><span class="font-label-sm text-label-sm font-semibold truncate">VinFast Club</span></div>
+</div>
+<div class="cursor-pointer p-2.5 rounded-xl bg-surface-container-lowest hover:bg-surface-container-high transition-all flex flex-col justify-between h-24 shadow-sm" onclick="openSlotModal('Sân 3', '21:00 - 22:00', '160.000đ (Giờ vàng)', 'available')">
+<div class="flex items-center justify-between"><span class="font-label-sm text-label-sm text-secondary-container font-bold">21:00 🔥</span><span class="w-2 h-2 rounded-full bg-primary"></span></div>
+<div class="flex flex-col"><span class="font-label-md text-label-md text-primary font-bold">160K</span><span class="font-label-sm text-label-sm text-primary font-semibold">Trống</span></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Analytics Bar: Real-time Stats & Projected Revenue -->
+<div class="p-space-lg rounded-xl bg-inverse-surface text-inverse-on-surface shadow-xl flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-space-lg">
+<div class="flex items-center gap-space-md flex-wrap flex-1">
+<!-- Total Slots -->
+<div class="flex items-center gap-3 pr-space-lg">
+<div class="w-10 h-10 rounded-xl bg-surface-container-low/10 flex items-center justify-center text-inverse-on-surface">
+<span class="material-symbols-outlined text-[22px]">calendar_today</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-surface-variant uppercase font-semibold">Tổng slot hôm nay</span>
+<span class="font-headline-sm text-headline-sm font-bold text-inverse-on-surface">48 <span class="font-body-sm text-body-sm font-normal text-surface-variant">khung giờ</span></span>
+</div>
+</div>
+<!-- Booked Slots & Progress -->
+<div class="flex items-center gap-3 pr-space-lg">
+<div class="w-10 h-10 rounded-xl bg-inverse-primary/20 flex items-center justify-center text-inverse-primary">
+<span class="material-symbols-outlined text-[22px]">how_to_reg</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm text-surface-variant uppercase font-semibold">Đã đặt &amp; Giữ chỗ</span>
+<span class="font-label-sm text-label-sm px-1.5 py-0.2 rounded bg-inverse-primary text-on-primary-fixed font-bold">81.2%</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm font-bold text-inverse-on-surface">39 <span class="font-body-sm text-body-sm font-normal text-surface-variant">slot</span></span>
+<div class="w-20 h-2 bg-surface-container-high/30 rounded-full overflow-hidden">
+<div class="h-full bg-inverse-primary rounded-full" style="width: 81.2%"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Available Slots -->
+<div class="flex items-center gap-3 pr-space-lg">
+<div class="w-10 h-10 rounded-xl bg-primary-container/20 flex items-center justify-center text-primary-fixed">
+<span class="material-symbols-outlined text-[22px]">event_available</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-surface-variant uppercase font-semibold">Còn trống</span>
+<span class="font-headline-sm text-headline-sm font-bold text-primary-fixed">9 <span class="font-body-sm text-body-sm font-normal text-surface-variant">slot</span></span>
+</div>
+</div>
+</div>
+<!-- Projected Revenue Component -->
+<div class="flex items-center justify-between lg:justify-end gap-space-lg pt-4 lg:pt-0">
+<div class="flex flex-col text-left lg:text-right">
+<div class="flex items-center lg:justify-end gap-1.5 text-secondary-fixed">
+<span class="material-symbols-outlined text-[16px]">payments</span>
+<span class="font-label-sm text-label-sm uppercase font-bold tracking-wider">Doanh thu dự kiến</span>
+</div>
+<span class="font-display-lg text-display-lg font-bold text-secondary-fixed leading-none">5.850.000<span class="font-headline-sm text-headline-sm text-surface-variant ml-1 font-normal">đ</span></span>
+</div>
+<div class="flex items-center gap-2">
+<button class="px-space-md py-3 rounded-xl bg-surface-container-low/10 hover:bg-surface-container-low/20 text-inverse-on-surface font-label-md text-label-md flex items-center gap-1.5 transition-all" type="button">
+<span class="material-symbols-outlined text-[18px]">receipt_long</span>
+<span>Báo cáo ngày</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Interactive Modal for Slot Management (Tailwind Driven, Hidden by Default) -->
+<div class="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm hidden items-center justify-center p-4" id="slot-action-modal">
+<div class="w-full max-w-lg rounded-xl bg-surface-container-lowest p-space-lg shadow-xl flex flex-col gap-space-md transform transition-all">
+<!-- Modal Header -->
+<div class="flex items-center justify-between pb-2">
+<div class="flex items-center gap-2">
+<div class="w-9 h-9 rounded-xl bg-primary-container text-on-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">edit_calendar</span>
+</div>
+<div class="flex flex-col">
+<h3 class="font-headline-sm text-headline-sm text-on-surface" id="modal-slot-court">Sân 1 Yonex</h3>
+<span class="font-label-sm text-label-sm text-on-surface-variant" id="modal-slot-time">Khung giờ: 14:00 - 15:00</span>
+</div>
+</div>
+<button class="w-8 h-8 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface flex items-center justify-center" onclick="closeSlotModal()" type="button">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+<!-- Current Slot Info Badge -->
+<div class="p-space-md rounded-xl bg-surface-container-low flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Trạng thái hiện thời</span>
+<span class="font-label-lg text-label-lg font-bold text-primary" id="modal-slot-status">Đang mở đặt (Trống)</span>
+</div>
+<div class="flex flex-col text-right">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Giá đang áp dụng</span>
+<span class="font-headline-sm text-headline-sm font-bold text-on-surface" id="modal-slot-price">110.000đ</span>
+</div>
+</div>
+<div class="p-space-md rounded-xl bg-surface-container-high text-on-surface hidden flex-col gap-1" id="modal-booked-info">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Thông tin khách hàng:</span>
+<span class="font-label-md text-label-md font-bold text-on-surface" id="modal-customer-name">---</span>
+</div>
+<!-- Admin Actions Chooser -->
+<div class="flex flex-col gap-2.5">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase font-semibold">Tác vụ điều phối nhanh:</span>
+<!-- Action 1: Đặt tại quầy -->
+<button class="w-full p-3 rounded-xl bg-surface-container-low hover:bg-surface-container-high text-left flex items-center justify-between group transition-all" onclick="handleAdminAction('walkin')" type="button">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary-container text-[22px]">point_of_sale</span>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md font-semibold text-on-surface">Tạo đặt sân thủ công tại quầy</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Gán khách vãng lai, thu tiền mặt hoặc chuyển khoản QR</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:translate-x-1 transition-transform text-[18px]">chevron_right</span>
+</button>
+<!-- Action 2: Chỉnh giá riêng -->
+<button class="w-full p-3 rounded-xl bg-surface-container-low hover:bg-surface-container-high text-left flex items-center justify-between group transition-all" onclick="handleAdminAction('custom-price')" type="button">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary text-[22px]">price_change</span>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md font-semibold text-on-surface">Điều chỉnh giá riêng cho slot này</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Ghi đè đơn giá mặc định không ảnh hưởng các ca khác</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:translate-x-1 transition-transform text-[18px]">chevron_right</span>
+</button>
+<!-- Action 3: Khóa sân bảo trì -->
+<button class="w-full p-3 rounded-xl bg-error-container/40 hover:bg-error-container text-left flex items-center justify-between group transition-all" onclick="handleAdminAction('lock-court')" type="button">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-error text-[22px]">lock_clock</span>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md font-semibold text-error">Khóa slot / Bảo trì đột xuất</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Tạm ngưng nhận lịch trực tuyến và quầy</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-error group-hover:translate-x-1 transition-transform text-[18px]">chevron_right</span>
+</button>
+</div>
+<!-- Action Footer -->
+<div class="flex items-center justify-end gap-2 pt-2">
+<button class="px-space-md py-2.5 rounded-xl bg-surface-container-high text-on-surface font-label-md text-label-md hover:bg-surface-container-highest" onclick="closeSlotModal()" type="button">
+          Đóng
+        </button>
+<button class="px-space-md py-2.5 rounded-xl bg-primary text-on-primary font-label-md text-label-md hover:bg-primary-container shadow-sm" onclick="confirmSlotChange()" type="button">
+          Xác nhận thay đổi
+        </button>
+</div>
+</div>
+</div>
+<!-- Notification Toast Container -->
+<div class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none p-space-md rounded-xl bg-inverse-surface text-inverse-on-surface shadow-lg flex items-center gap-3" id="toast-message">
+<span class="material-symbols-outlined text-inverse-primary text-[22px]">check_circle</span>
+<span class="font-label-md text-label-md" id="toast-text">Đã cập nhật bảng giá thành công!</span>
+</div>
+</div>
+<script>
+  function openSlotModal(court, time, price, status, detail) {
+    const modal = document.getElementById('slot-action-modal');
+    document.getElementById('modal-slot-court').textContent = court;
+    document.getElementById('modal-slot-time').textContent = 'Khung giờ: ' + time;
+    document.getElementById('modal-slot-price').textContent = price;
+    
+    const statusEl = document.getElementById('modal-slot-status');
+    const bookedBox = document.getElementById('modal-booked-info');
+    const customerEl = document.getElementById('modal-customer-name');
+
+    if(status === 'available') {
+      statusEl.textContent = 'Đang mở đặt (Trống)';
+      statusEl.className = 'font-label-lg text-label-lg font-bold text-primary';
+      bookedBox.classList.add('hidden');
+    } else if(status === 'booked') {
+      statusEl.textContent = 'Đã thanh toán (Có khách)';
+      statusEl.className = 'font-label-lg text-label-lg font-bold text-inverse-surface';
+      bookedBox.classList.remove('hidden');
+      customerEl.textContent = detail || 'Khách đặt qua App SportBooking';
+    } else if(status === 'holding') {
+      statusEl.textContent = 'Đang giữ chỗ / Tìm đối';
+      statusEl.className = 'font-label-lg text-label-lg font-bold text-secondary';
+      bookedBox.classList.remove('hidden');
+      customerEl.textContent = detail || 'Khách giữ slot';
+    } else if(status === 'maintenance') {
+      statusEl.textContent = 'Đang khóa / Bảo trì';
+      statusEl.className = 'font-label-lg text-label-lg font-bold text-error';
+      bookedBox.classList.remove('hidden');
+      customerEl.textContent = detail || 'Lý do: Bảo trì nội bộ';
+    }
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  function closeSlotModal() {
+    const modal = document.getElementById('slot-action-modal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+
+  function showToast(msg) {
+    const toast = document.getElementById('toast-message');
+    const toastText = document.getElementById('toast-text');
+    toastText.textContent = msg;
+    toast.classList.remove('translate-y-20', 'opacity-0');
+    setTimeout(() => {
+      toast.classList.add('translate-y-20', 'opacity-0');
+    }, 2800);
+  }
+
+  function handleAdminAction(action) {
+    if(action === 'walkin') {
+      showToast('Đang mở màn hình tạo đơn đặt khách vãng lai tại quầy...');
+    } else if(action === 'custom-price') {
+      showToast('Đã mở cấu hình giá riêng cho slot đã chọn.');
+    } else if(action === 'lock-court') {
+      showToast('Đã kích hoạt khóa slot bảo trì cho ca này!');
+    }
+    closeSlotModal();
+  }
+
+  function confirmSlotChange() {
+    showToast('Đã lưu cấu hình slot thành công!');
+    closeSlotModal();
+  }
+
+  document.getElementById('btn-save-all').addEventListener('click', function() {
+    showToast('Toàn bộ bảng giá và khung giờ ngày hôm nay đã được cập nhật!');
+  });
+</script></main></div></body></html>

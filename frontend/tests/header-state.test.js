@@ -6,6 +6,7 @@ const path = require('node:path');
 const test = require('node:test');
 const {
   mergeVenueNames,
+  shouldShowNavigation,
   shouldShowPendingBanner,
   subscribePendingBookingChanged
 } = require('../shared/header-state.js');
@@ -32,7 +33,11 @@ test('every page using the shared header loads the pending banner configuration'
     const relativePath = `/${path.relative(frontendRoot, file).split(path.sep).join('/')}`;
     assert.equal(
       shouldShowPendingBanner(relativePath, true),
-      !['/thanh-toan.html', '/dang-nhap.html', '/dang-ky.html'].includes(relativePath),
+        ![
+          '/thanh-toan.html', '/dang-nhap.html', '/dang-ky.html', '/quan-tri.html',
+          '/quan-tri-tong-quan.html', '/quan-tri-nguoi-dung.html',
+          '/quan-tri-san.html', '/quan-tri-khung-gio-gia.html'
+        ].includes(relativePath),
       `${relativePath} must follow the shared header visibility rule`
     );
   }
@@ -56,6 +61,7 @@ test('pending banner visibility is limited only by the hidden paths and authenti
   assert.equal(shouldShowPendingBanner('/thanh-toan.html', true), false);
   assert.equal(shouldShowPendingBanner('/dang-nhap.html', true), false);
   assert.equal(shouldShowPendingBanner('/dang-ky.html', true), false);
+  assert.equal(shouldShowPendingBanner('/quan-tri.html', true), false);
   assert.equal(shouldShowPendingBanner('/tim-san.html', false), false);
 });
 
@@ -63,6 +69,11 @@ test('venue names collapse whitespace and avoid duplicate facility/court labels'
   assert.equal(mergeVenueNames('  Sân Cầu lông  ', 'sân   cầu LÔNG'), 'Sân Cầu lông');
   assert.equal(mergeVenueNames(' Cơ sở A ', ' Sân 1 '), 'Cơ sở A — Sân 1');
   assert.equal(mergeVenueNames('', ' Sân 1 '), 'Sân 1');
+});
+
+test('only ADMIN hides shared navigation while user navigation remains enabled', () => {
+  assert.equal(shouldShowNavigation('ADMIN'), false);
+  assert.equal(shouldShowNavigation('USER'), true);
 });
 
 test('pending-booking-changed refreshes both the hold banner and notification count', () => {

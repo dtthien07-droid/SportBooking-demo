@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+
+<html lang="vi"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      "colors": {
+        "primary-container": "#00873a",
+        "surface-container-lowest": "#ffffff",
+        "tertiary-fixed-dim": "#b4c5ff",
+        "on-secondary-fixed": "#341100",
+        "on-tertiary-fixed-variant": "#003ea8",
+        "on-secondary-fixed-variant": "#783200",
+        "on-primary": "#ffffff",
+        "tertiary-fixed": "#dbe1ff",
+        "inverse-surface": "#293040",
+        "on-error": "#ffffff",
+        "error": "#ba1a1a",
+        "on-secondary-container": "#5c2400",
+        "on-surface-variant": "#3e4a3d",
+        "outline-variant": "#e2e8f0",
+        "tertiary-container": "#316bf3",
+        "on-primary-fixed-variant": "#005320",
+        "on-error-container": "#93000a",
+        "on-primary-container": "#f7fff2",
+        "secondary-fixed-dim": "#ffb690",
+        "surface": "#f8fafc",
+        "inverse-primary": "#62df7d",
+        "secondary-container": "#fd761a",
+        "primary": "#006b2c",
+        "on-secondary": "#ffffff",
+        "secondary-fixed": "#ffdbca",
+        "tertiary": "#0051d5",
+        "on-tertiary-container": "#fefcff",
+        "secondary": "#9d4300",
+        "on-surface": "#141b2b",
+        "primary-fixed": "#7ffc97",
+        "surface-bright": "#f9f9ff",
+        "surface-container-low": "#f1f5f9",
+        "outline": "#6e7b6c",
+        "inverse-on-surface": "#edf0ff",
+        "surface-variant": "#e2e8f0",
+        "surface-container-high": "#e2e8f0",
+        "on-tertiary-fixed": "#00174b",
+        "surface-dim": "#cbd5e1",
+        "surface-container-highest": "#cbd5e1",
+        "on-primary-fixed": "#002109",
+        "on-tertiary": "#ffffff",
+        "error-container": "#ffdad6",
+        "surface-container": "#e9edff",
+        "surface-tint": "#006e2d",
+        "background": "#f8fafc",
+        "on-background": "#141b2b",
+        "primary-fixed-dim": "#62df7d"
+      },
+      "borderRadius": {
+        "DEFAULT": "0.25rem",
+        "lg": "0.5rem",
+        "xl": "0.75rem",
+        "2xl": "1rem",
+        "full": "9999px"
+      },
+      "spacing": {
+        "space-xl": "2rem",
+        "margin": "1.25rem",
+        "space-xs": "0.25rem",
+        "space-lg": "1.5rem",
+        "gutter": "1rem",
+        "space-md": "1rem",
+        "space-sm": "0.5rem"
+      },
+      "fontFamily": {
+        "display-lg-mobile": ["Be Vietnam Pro"],
+        "headline-sm": ["Be Vietnam Pro"],
+        "body-lg": ["Be Vietnam Pro"],
+        "headline-lg": ["Be Vietnam Pro"],
+        "label-lg": ["Inter"],
+        "body-sm": ["Be Vietnam Pro"],
+        "label-sm": ["Inter"],
+        "label-md": ["Inter"],
+        "headline-md": ["Be Vietnam Pro"],
+        "display-lg": ["Be Vietnam Pro"],
+        "body-md": ["Be Vietnam Pro"]
+      },
+      "fontSize": {
+        "display-lg-mobile": ["30px", {"lineHeight": "38px", "fontWeight": "700"}],
+        "headline-sm": ["18px", {"lineHeight": "26px", "fontWeight": "600"}],
+        "body-lg": ["16px", {"lineHeight": "26px", "fontWeight": "400"}],
+        "headline-lg": ["26px", {"lineHeight": "34px", "fontWeight": "700"}],
+        "label-lg": ["15px", {"lineHeight": "20px", "fontWeight": "600"}],
+        "body-sm": ["12px", {"lineHeight": "18px", "fontWeight": "400"}],
+        "label-sm": ["11px", {"lineHeight": "14px", "fontWeight": "600"}],
+        "label-md": ["13px", {"lineHeight": "18px", "fontWeight": "500"}],
+        "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+        "display-lg": ["32px", {"lineHeight": "38px", "fontWeight": "700"}],
+        "body-md": ["14px", {"lineHeight": "22px", "fontWeight": "400"}]
+      }
+    }
+  }
+};</script></head><body class="bg-surface font-body-md text-on-surface antialiased">
+<!-- Sidebar Persistent 218px -->
+<aside class="fixed left-0 top-0 h-full w-[218px] bg-white border-r border-gray-200 z-50 flex flex-col justify-between">
+<div class="flex flex-col">
+<!-- Brand -->
+<div class="h-16 px-4 flex items-center gap-3 border-b border-gray-100">
+<div class="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-on-primary shadow-sm flex-shrink-0">
+<span class="material-symbols-outlined text-[20px]">sports_soccer</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-headline-sm text-[16px] text-slate-900 tracking-tight leading-none font-bold truncate">SportBooking</span>
+<span class="font-label-sm text-[10px] text-primary uppercase font-bold tracking-wider mt-1 truncate">Admin Portal</span>
+</div>
+</div>
+<!-- Navigation -->
+<div class="p-3">
+<nav class="flex flex-col gap-1">
+<a aria-current="page" class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-primary text-on-primary font-semibold text-[13px] shadow-sm transition-all" data-path="tong-quan" href="#">
+<span class="material-symbols-outlined text-[19px]">space_dashboard</span>
+<span class="truncate">Tổng quan</span>
+</a>
+<a class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium text-[13px] transition-all" data-path="quan-ly-san" href="#">
+<span class="material-symbols-outlined text-[19px]">stadium</span>
+<span class="truncate">Quản lý sân</span>
+</a>
+<a class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium text-[13px] transition-all" data-path="khung-gio-va-gia" href="#">
+<span class="material-symbols-outlined text-[19px]">schedule</span>
+<span class="truncate">Khung giờ &amp; giá</span>
+</a>
+<a class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium text-[13px] transition-all" data-path="danh-sach-dat-san" href="#">
+<span class="material-symbols-outlined text-[19px]">event_available</span>
+<span class="truncate">Danh sách đặt sân</span>
+</a>
+<a class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium text-[13px] transition-all" data-path="quan-ly-nguoi-dung" href="#">
+<span class="material-symbols-outlined text-[19px]">group</span>
+<span class="truncate">Quản lý người dùng</span>
+</a>
+<a class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium text-[13px] transition-all" data-path="cai-dat-he-thong" href="#">
+<span class="material-symbols-outlined text-[19px]">tune</span>
+<span class="truncate">Cài đặt hệ thống</span>
+</a>
+</nav>
+</div>
+</div>
+<!-- System Status Badge -->
+<div class="p-3 m-3 rounded-xl bg-slate-50 border border-slate-200">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5 min-w-0">
+<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0"></span>
+<span class="font-label-sm text-[11px] text-slate-600 truncate">Máy chủ: Ổn định</span>
+</div>
+<span class="font-label-sm text-[11px] text-primary font-bold ml-1">99.98%</span>
+</div>
+</div>
+</aside>
+<!-- Main Wrapper -->
+<div class="pl-[218px] flex flex-col min-h-screen">
+<!-- Top Header Fixed -->
+<header class="fixed top-0 left-[218px] right-0 h-16 bg-white/90 backdrop-blur-md border-b border-gray-200 z-40 flex items-center justify-between px-6">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2 text-[13px] text-slate-500">
+<span class="material-symbols-outlined text-[18px]">home</span>
+<span>/</span>
+<span class="text-slate-900 font-semibold">Quản trị</span>
+<span>/</span>
+<span class="text-primary font-semibold">Tổng quan Dashboard</span>
+</div>
+<div class="relative w-80">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
+<input class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 text-slate-900 placeholder:text-slate-400 text-[13px] rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" placeholder="Tìm sân, đơn đặt, số điện thoại..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative">
+<button class="w-9 h-9 rounded-xl border border-gray-200 bg-white flex items-center justify-center text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all shadow-sm" type="button">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+</button>
+<span class="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary-container opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-secondary-container"></span>
+</span>
+</div>
+<div class="h-6 w-px bg-gray-200"></div>
+<div class="flex items-center gap-2.5">
+<div class="flex flex-col text-right">
+<span class="text-[13px] text-slate-900 font-semibold leading-tight">Ban Quản Trị SportBooking</span>
+<span class="text-[10px] text-secondary font-bold uppercase tracking-wider">Super Admin</span>
+</div>
+<div class="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-on-primary font-bold shadow-sm">
+<span class="material-symbols-outlined text-[19px]">shield_person</span>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Dashboard -->
+<main class="w-full pt-20 px-6 pb-12 bg-surface flex-1">
+<div class="flex flex-col w-full gap-6">
+<!-- Page Header & Action Controls -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-primary font-label-sm text-[11px] font-bold uppercase tracking-wider">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              TRỰC TIẾP • REALTIME
+            </span>
+<span class="text-[12px] text-slate-500">Cập nhật 2 phút trước</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-slate-900 tracking-tight">
+            Tổng quan hoạt động hôm nay
+          </h1>
+<p class="text-[13px] text-slate-500">
+            Theo dõi lưu lượng đặt sân, hiệu suất khai thác và doanh thu hệ thống SportBooking trên toàn quốc.
+          </p>
+</div>
+<!-- Date Selector & CTA -->
+<div class="flex items-center gap-2.5 flex-wrap">
+<div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+<button class="px-3.5 py-1.5 rounded-lg bg-white text-slate-900 font-semibold text-[12px] shadow-sm transition-all" type="button">
+              Hôm nay
+            </button>
+<button class="px-3.5 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 font-medium text-[12px] transition-all" type="button">
+              7 ngày qua
+            </button>
+<button class="px-3.5 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 font-medium text-[12px] transition-all" type="button">
+              Tháng này
+            </button>
+</div>
+<button class="flex items-center gap-1.5 px-4 py-2 bg-secondary-container hover:bg-secondary text-white rounded-xl font-semibold text-[13px] shadow-sm hover:shadow transition-all" type="button">
+<span class="material-symbols-outlined text-[18px]">file_download</span>
+<span>Xuất báo cáo Excel</span>
+</button>
+</div>
+</div>
+<!-- ROW 1: Sewaya-inspired Multi-Card Top Grid (4 cards) -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-5">
+<!-- Card 1 (Width ~38-40% / xl:col-span-5): Booking Trends & Occupancy Chart -->
+<div class="xl:col-span-5 bg-white rounded-2xl p-5 border border-gray-200 shadow-sm flex flex-col justify-between">
+<div class="flex items-start justify-between">
+<div>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span class="text-[12px] font-bold text-slate-500 uppercase tracking-wider">Xu hướng đặt sân &amp; Tỷ lệ lấp đầy</span>
+</div>
+<div class="flex items-baseline gap-2 mt-1">
+<span class="font-display-lg text-display-lg text-slate-900 font-bold tracking-tight">86.5%</span>
+<span class="inline-flex items-center text-primary text-[12px] font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+<span class="material-symbols-outlined text-[14px]">arrow_upward</span> +4.2% tuần này
+                </span>
+</div>
+</div>
+<!-- Mini legend indicator -->
+<div class="flex flex-col items-end gap-1 text-[11px] text-slate-500">
+<span class="flex items-center gap-1.5"><span class="w-2.5 h-1.5 rounded-sm bg-primary"></span> Giờ vàng</span>
+<span class="flex items-center gap-1.5"><span class="w-2.5 h-1.5 rounded-sm bg-slate-300"></span> Giờ thường</span>
+</div>
+</div>
+<!-- SVG Weekly Trend Micro-Chart -->
+<div class="relative w-full mt-3 pt-4 pb-1">
+<!-- Tooltip Peak Point Marker -->
+<div class="absolute left-[78%] top-0 -translate-x-1/2 flex flex-col items-center pointer-events-none z-10">
+<div class="bg-slate-900 text-white text-[10px] font-semibold px-2 py-0.5 rounded shadow-md whitespace-nowrap">
+                T7: 32.4Tr (Đỉnh)
+              </div>
+<div class="w-0 h-0 border-x-3 border-x-transparent border-t-3 border-t-slate-900"></div>
+</div>
+<svg class="w-full h-28 overflow-visible" preserveaspectratio="none" viewbox="0 0 420 120">
+<defs>
+<lineargradient id="gridPrimaryArea" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#006b2c" stop-opacity="0.22"></stop>
+<stop offset="100%" stop-color="#006b2c" stop-opacity="0.0"></stop>
+</lineargradient>
+</defs>
+<line stroke="#f1f5f9" stroke-dasharray="3,3" stroke-width="1" x1="10" x2="410" y1="15"></line>
+<line stroke="#f1f5f9" stroke-dasharray="3,3" stroke-width="1" x1="10" x2="410" y1="55"></line>
+<line stroke="#e2e8f0" stroke-width="1" x1="10" x2="410" y1="95"></line>
+<!-- Off peak curve -->
+<path d="M 20,80 Q 75,70 135,72 T 255,62 T 330,48 T 400,60" fill="none" stroke="#cbd5e1" stroke-dasharray="3,3" stroke-width="1.8"></path>
+<!-- Peak curve area & line -->
+<path d="M 20,70 C 70,64 110,60 145,55 C 190,48 225,52 265,38 C 295,28 315,16 330,16 C 350,16 375,35 400,42 L 400,95 L 20,95 Z" fill="url(#gridPrimaryArea)"></path>
+<path d="M 20,70 C 70,64 110,60 145,55 C 190,48 225,52 265,38 C 295,28 315,16 330,16 C 350,16 375,35 400,42" fill="none" stroke="#006b2c" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
+<circle cx="330" cy="16" fill="#006b2c" r="4.5" stroke="#ffffff" stroke-width="2.5"></circle>
+<!-- Day markers -->
+<text fill="#64748b" font-size="10" text-anchor="middle" x="20" y="112">T2</text>
+<text fill="#64748b" font-size="10" text-anchor="middle" x="80" y="112">T3</text>
+<text fill="#64748b" font-size="10" text-anchor="middle" x="145" y="112">T4</text>
+<text fill="#64748b" font-size="10" text-anchor="middle" x="205" y="112">T5</text>
+<text fill="#64748b" font-size="10" text-anchor="middle" x="265" y="112">T6</text>
+<text fill="#006b2c" font-size="10" font-weight="700" text-anchor="middle" x="330" y="112">T7</text>
+<text fill="#64748b" font-size="10" text-anchor="middle" x="400" y="112">CN</text>
+</svg>
+</div>
+<div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[12px] text-slate-500">
+<span>Tổng 7 ngày: <strong class="text-slate-800 font-semibold">168.320.000đ</strong></span>
+<span class="text-primary font-semibold">Giờ vàng chiếm 68.4%</span>
+</div>
+</div>
+<!-- Card 2 (Width ~18-20% / xl:col-span-2): Booking Statistics -->
+<div class="xl:col-span-2 bg-white rounded-2xl p-5 border border-gray-200 shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between">
+<span class="text-[12px] font-bold text-slate-500 uppercase tracking-wider">Đơn đặt sân</span>
+<div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">confirmation_number</span>
+</div>
+</div>
+<div class="mt-2">
+<div class="font-display-lg text-display-lg text-slate-900 font-bold tracking-tight">142</div>
+<span class="text-[12px] text-slate-500">lượt đặt hôm nay</span>
+</div>
+</div>
+<!-- Breakdown Pill -->
+<div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex items-center justify-between text-[11px] my-2">
+<span class="font-semibold text-blue-700">118 App/Web</span>
+<span class="text-slate-300">•</span>
+<span class="font-semibold text-slate-700">24 Tại quầy</span>
+</div>
+<!-- Status Indicators -->
+<div class="flex flex-col gap-1.5 text-[11px]">
+<div class="flex items-center justify-between text-slate-600">
+<span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>142 Xác nhận</span>
+<span class="font-bold text-emerald-600">92%</span>
+</div>
+<div class="flex items-center justify-between text-slate-600">
+<span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-500"></span>8 Chờ duyệt</span>
+<span class="font-semibold text-slate-500">5%</span>
+</div>
+<div class="flex items-center justify-between text-slate-600">
+<span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-rose-500"></span>3 Đã hủy</span>
+<span class="font-semibold text-slate-500">3%</span>
+</div>
+</div>
+</div>
+<!-- Card 3 (Width ~18-20% / xl:col-span-2): Revenue Today -->
+<div class="xl:col-span-2 bg-white rounded-2xl p-5 border border-gray-200 shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between">
+<span class="text-[12px] font-bold text-slate-500 uppercase tracking-wider">Doanh thu ngày</span>
+<div class="w-8 h-8 rounded-lg bg-emerald-50 text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">payments</span>
+</div>
+</div>
+<div class="mt-2">
+<div class="font-display-lg text-[22px] lg:text-[24px] text-slate-900 font-bold tracking-tight leading-tight">
+                24.850.000<span class="text-[14px] text-slate-500 font-normal ml-0.5">đ</span>
+</div>
+<span class="inline-flex items-center gap-0.5 mt-1 text-[11px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[13px]">trending_up</span> +18.4%
+              </span>
+</div>
+</div>
+<div class="mt-3 pt-3 border-t border-slate-100 flex flex-col gap-1.5 text-[11px]">
+<div class="flex items-center justify-between text-slate-500">
+<span>Hôm qua:</span>
+<span class="font-medium text-slate-700">20.980.000đ</span>
+</div>
+<div class="flex items-center justify-between text-slate-500">
+<span>Tuần này:</span>
+<span class="font-bold text-primary">168.32M</span>
+</div>
+<div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1">
+<div class="bg-primary h-full rounded-full" style="width: 78%"></div>
+</div>
+<span class="text-[10px] text-slate-400 text-right">Đạt 78% chỉ tiêu tháng</span>
+</div>
+</div>
+<!-- Card 4 (Width ~22-24% / xl:col-span-3): Court Capacity / Overview Ring -->
+<div class="xl:col-span-3 bg-white rounded-2xl p-5 border border-gray-200 shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="text-[12px] font-bold text-slate-500 uppercase tracking-wider">Công suất &amp; Sân bãi</span>
+<div class="w-8 h-8 rounded-lg bg-orange-50 text-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">stadium</span>
+</div>
+</div>
+<div class="flex items-center gap-4 my-2">
+<!-- Circular Progress Ring (SVG) -->
+<div class="relative w-16 h-16 flex-shrink-0">
+<svg class="w-full h-full -rotate-90" viewbox="0 0 36 36">
+<path class="text-slate-100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3.5"></path>
+<path class="text-primary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="86.4, 100" stroke-linecap="round" stroke-width="3.5"></path>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center text-[11px] font-bold text-slate-800">
+                86.4%
+              </div>
+</div>
+<div class="flex flex-col">
+<span class="text-[13px] font-bold text-slate-900 leading-tight">38 / 44 Slot</span>
+<span class="text-[11px] text-slate-500">Giờ cao điểm (18h-22h)</span>
+<span class="text-[11px] text-primary font-semibold mt-0.5">Cao điểm gần kín</span>
+</div>
+</div>
+<div class="space-y-1.5 text-[11px] pt-2 border-t border-slate-100">
+<div class="flex items-center justify-between text-slate-600">
+<span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>18 Sân đang hoạt động</span>
+<span class="font-semibold text-slate-800">41%</span>
+</div>
+<div class="flex items-center justify-between text-slate-600">
+<span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-slate-300"></span>22 Sân trống đón khách</span>
+<span class="font-semibold text-slate-800">50%</span>
+</div>
+<div class="flex items-center justify-between text-slate-600">
+<span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-rose-500"></span>4 Sân bảo trì / khóa đèn</span>
+<span class="font-bold text-rose-600">9%</span>
+</div>
+</div>
+</div>
+</div>
+<!-- ROW 2: Middle Grid (2 Balanced Columns 50% / 50%) -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+<!-- Left Card (50%): Top cụm sân & Sân có nhu cầu cao -->
+<div class="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">leaderboard</span>
+<h2 class="font-headline-sm text-[16px] text-slate-900 font-bold">Top cụm sân &amp; Sân có nhu cầu cao</h2>
+</div>
+<button class="text-primary hover:underline text-[12px] font-semibold flex items-center gap-0.5" type="button">
+                Xem 28 cơ sở →
+              </button>
+</div>
+<!-- List of Featured Arenas -->
+<div class="divide-y divide-slate-100">
+<!-- Item 1: CLB Ngôi Sao Cầu Giấy -->
+<div class="py-3 flex items-center justify-between gap-3">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-primary font-bold text-[14px] flex-shrink-0">
+                    #1
+                  </div>
+<div class="min-w-0">
+<div class="flex items-center gap-2">
+<h4 class="text-[13px] font-bold text-slate-900 truncate">CLB Thể Thao Ngôi Sao Cầu Giấy</h4>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800">Cầu lông</span>
+</div>
+<p class="text-[11px] text-slate-500 truncate">12 sân BWF + 4 sân pickleball ngoài trời</p>
+</div>
+</div>
+<div class="text-right flex-shrink-0">
+<div class="text-[13px] font-bold text-primary">58.400.000đ</div>
+<div class="text-[11px] text-slate-500">Lấp đầy <strong class="text-slate-800 font-semibold">98.2%</strong> • ★ 4.9</div>
+</div>
+</div>
+<!-- Item 2: Sân bóng mini Trung Kính Green -->
+<div class="py-3 flex items-center justify-between gap-3">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-10 h-10 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-700 font-bold text-[14px] flex-shrink-0">
+                    #2
+                  </div>
+<div class="min-w-0">
+<div class="flex items-center gap-2">
+<h4 class="text-[13px] font-bold text-slate-900 truncate">Sân bóng mini Trung Kính Green</h4>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 text-blue-800">Bóng đá</span>
+</div>
+<p class="text-[11px] text-slate-500 truncate">Cụm sân 7 người (Sân A &amp; B cỏ nhân tạo)</p>
+</div>
+</div>
+<div class="text-right flex-shrink-0">
+<div class="text-[13px] font-bold text-slate-900">46.250.000đ</div>
+<div class="text-[11px] text-slate-500">Lấp đầy <strong class="text-slate-800 font-semibold">89.2%</strong> • ★ 4.8</div>
+</div>
+</div>
+<!-- Item 3: Sân Cầu Lông Ba Đình Pro -->
+<div class="py-3 flex items-center justify-between gap-3">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-10 h-10 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-700 font-bold text-[14px] flex-shrink-0">
+                    #3
+                  </div>
+<div class="min-w-0">
+<div class="flex items-center gap-2">
+<h4 class="text-[13px] font-bold text-slate-900 truncate">Sân Cầu Lông Ba Đình Pro</h4>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800">Cầu lông</span>
+</div>
+<p class="text-[11px] text-slate-500 truncate">Sân thi đấu số 01 - 04 (Thảm Taraflex)</p>
+</div>
+</div>
+<div class="text-right flex-shrink-0">
+<div class="text-[13px] font-bold text-slate-900">36.900.000đ</div>
+<div class="text-[11px] text-slate-500">Lấp đầy <strong class="text-slate-800 font-semibold">84.5%</strong> • ★ 4.7</div>
+</div>
+</div>
+<!-- Item 4: Sân Tennis Khu Liên Hợp Mỹ Đình -->
+<div class="py-3 flex items-center justify-between gap-3">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-10 h-10 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-700 font-bold text-[14px] flex-shrink-0">
+                    #4
+                  </div>
+<div class="min-w-0">
+<div class="flex items-center gap-2">
+<h4 class="text-[13px] font-bold text-slate-900 truncate">Sân Tennis Khu Liên Hợp Mỹ Đình</h4>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-purple-100 text-purple-800">Tennis</span>
+</div>
+<p class="text-[11px] text-slate-500 truncate">Cụm sân cứng 01 &amp; 02 có khán đài có mái che</p>
+</div>
+</div>
+<div class="text-right flex-shrink-0">
+<div class="text-[13px] font-bold text-slate-900">42.200.000đ</div>
+<div class="text-[11px] text-slate-500">Lấp đầy <strong class="text-slate-800 font-semibold">78.0%</strong> • ★ 4.9</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom facility highlight footer -->
+<div class="mt-2 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 bg-slate-50 p-2.5 rounded-xl">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-amber-500 text-[16px]">verified</span>
+              Cơ sở xuất sắc: <strong class="text-slate-900 font-semibold">CLB Ngôi Sao Cầu Giấy (1,480+ lượt khách)</strong>
+</span>
+<span class="font-bold text-primary">+14.6% Doanh thu</span>
+</div>
+</div>
+<!-- Right Card (50%): Đơn đặt sân mới nhất & Yêu cầu xử lý gấp -->
+<div class="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping"></span>
+<h2 class="font-headline-sm text-[16px] text-slate-900 font-bold">Cảnh báo &amp; Việc cần xử lý gấp</h2>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-[11px] font-bold">
+                5 việc khẩn cấp
+              </span>
+</div>
+<!-- List of Critical Action Items -->
+<div class="space-y-2.5">
+<!-- Item 1: Yêu cầu hoàn tiền -->
+<div class="p-3 rounded-xl bg-rose-50/70 border border-rose-100 flex items-start justify-between gap-3">
+<div class="flex items-start gap-2.5">
+<div class="w-7 h-7 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[16px]">currency_exchange</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="text-[12px] font-bold text-slate-900">3 Đơn hủy &amp; yêu cầu hoàn tiền</span>
+<span class="text-[10px] font-bold text-rose-700 uppercase">Chờ duyệt</span>
+</div>
+<p class="text-[11px] text-slate-600 mt-0.5">Mưa lớn tại Tây Hồ Arena &amp; Ngôi Sao Cầu Giấy. Tổng hoàn: 1.350.000đ.</p>
+</div>
+</div>
+<button class="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-[11px] font-bold shadow-sm flex-shrink-0 transition-all" type="button">
+                  Xử lý hoàn tiền
+                </button>
+</div>
+<!-- Item 2: Báo hỏng đèn LED -->
+<div class="p-3 rounded-xl bg-amber-50/70 border border-amber-100 flex items-start justify-between gap-3">
+<div class="flex items-start gap-2.5">
+<div class="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[16px]">lightbulb</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="text-[12px] font-bold text-slate-900">2 Sân báo hỏng hệ thống đèn</span>
+<span class="text-[10px] font-bold text-amber-800 uppercase">Kỹ thuật</span>
+</div>
+<p class="text-[11px] text-slate-600 mt-0.5">Sân 3 Cầu Lông Ba Đình và Sân 2 Tennis Mỹ Đình chập đèn. Cần khóa slot.</p>
+</div>
+</div>
+<button class="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-[11px] font-bold shadow-sm flex-shrink-0 transition-all" type="button">
+                  Khóa slot
+                </button>
+</div>
+<!-- Item 3: Ghép đối quá hạn -->
+<div class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-start justify-between gap-3">
+<div class="flex items-start gap-2.5">
+<div class="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[16px]">timer</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="text-[12px] font-bold text-slate-900">4 Kèo ghép đối quá 30 phút</span>
+<span class="text-[10px] font-bold text-blue-700 uppercase">Tự động xả</span>
+</div>
+<p class="text-[11px] text-slate-600 mt-0.5">Hệ thống sẵn sàng xả slot mở bán lại cho khách vãng lai sau 5 phút.</p>
+</div>
+</div>
+<button class="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg text-[11px] font-bold flex-shrink-0 transition-all" type="button">
+                  Xả ngay
+                </button>
+</div>
+</div>
+</div>
+<!-- Hotline quick contact strip -->
+<div class="mt-2 pt-3 border-t border-slate-100 flex items-center justify-between bg-emerald-50 text-slate-800 p-2.5 rounded-xl border border-emerald-100">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">support_agent</span>
+<span class="text-[12px] font-medium text-slate-700">Đường dây nóng chủ sân: <strong class="text-primary font-bold">1900 6886 (Nhánh 1)</strong></span>
+</div>
+<button class="px-3 py-1 bg-primary text-white rounded-lg text-[11px] font-semibold hover:bg-emerald-800 transition-all" type="button">
+              Gọi trợ giúp
+            </button>
+</div>
+</div>
+</div>
+<!-- ROW 3: Bottom Full-Width Table ("Bảng danh sách đặt sân & Giao dịch mới nhất") -->
+<div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+<!-- Table Header & Filter Tabs -->
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-gray-100">
+<div>
+<h3 class="font-headline-sm text-[17px] text-slate-900 font-bold">
+              Bảng danh sách đặt sân &amp; Giao dịch mới nhất
+            </h3>
+<p class="text-[12px] text-slate-500">Quản lý và tra cứu trạng thái booking theo thời gian thực trên toàn bộ hệ thống</p>
+</div>
+<!-- Filter Tabs & Table Search -->
+<div class="flex items-center gap-3 flex-wrap">
+<div class="flex items-center bg-slate-100 p-1 rounded-xl text-[12px]">
+<button class="px-3 py-1 rounded-lg bg-white text-slate-900 font-semibold shadow-sm" type="button">
+                Tất cả (142)
+              </button>
+<button class="px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900 font-medium" type="button">
+                Chờ duyệt (8)
+              </button>
+<button class="px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900 font-medium" type="button">
+                Đã xác nhận (124)
+              </button>
+<button class="px-3 py-1 rounded-lg text-rose-700 font-semibold" type="button">
+                Yêu cầu hoàn tiền (3)
+              </button>
+<button class="px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900 font-medium" type="button">
+                Đã hủy (7)
+              </button>
+</div>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[16px]">filter_list</span>
+<input class="pl-8 pr-3 py-1.5 text-[12px] bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary w-44" placeholder="Lọc theo mã/tên..." type="text"/>
+</div>
+</div>
+</div>
+<!-- Table Responsive Container -->
+<div class="overflow-x-auto mt-2">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-gray-100">
+<th class="py-3 px-3">Mã đơn</th>
+<th class="py-3 px-3">Khách hàng</th>
+<th class="py-3 px-3">Cơ sở &amp; Sân con</th>
+<th class="py-3 px-3">Thời gian chơi</th>
+<th class="py-3 px-3 text-right">Chi phí / Thanh toán</th>
+<th class="py-3 px-3 text-center">Trạng thái</th>
+<th class="py-3 px-3 text-right">Thao tác</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-gray-100 text-[13px]">
+<!-- Row 1 -->
+<tr class="hover:bg-slate-50/80 transition-colors">
+<td class="py-3 px-3 font-semibold text-slate-900 font-mono text-[12px]">
+                  #SB-8831
+                </td>
+<td class="py-3 px-3">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-[12px] flex-shrink-0">
+                      TH
+                    </div>
+<div>
+<div class="font-bold text-slate-900 text-[13px]">Trần Hoàng Long</div>
+<div class="text-[11px] text-slate-400">0982.341.***</div>
+</div>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="font-medium text-slate-900 text-[13px]">CLB Cầu Lông Ngôi Sao Cầu Giấy</div>
+<div class="text-[11px] text-slate-500">Sân số 04 (Thảm BWF)</div>
+</td>
+<td class="py-3 px-3">
+<div class="font-semibold text-slate-900 text-[12px]">18:00 - 20:00 (2h)</div>
+<div class="text-[11px] text-primary font-medium">Hôm nay (Giờ vàng)</div>
+</td>
+<td class="py-3 px-3 text-right">
+<div class="font-bold text-slate-900 text-[13px]">360.000đ</div>
+<span class="text-[10px] text-emerald-600 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded">Đã thanh toán (Ví)</span>
+</td>
+<td class="py-3 px-3 text-center">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                    Đã xác nhận
+                  </span>
+</td>
+<td class="py-3 px-3 text-right">
+<div class="flex items-center justify-end gap-1.5">
+<button class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-primary border border-emerald-200 rounded-lg text-[11px] font-semibold transition-all" type="button">
+                      Check-in
+                    </button>
+<button class="p-1 text-slate-400 hover:text-slate-600 rounded-lg" type="button">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-slate-50/80 transition-colors">
+<td class="py-3 px-3 font-semibold text-slate-900 font-mono text-[12px]">
+                  #SB-8829
+                </td>
+<td class="py-3 px-3">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-full bg-rose-100 text-rose-800 flex items-center justify-center font-bold text-[12px] flex-shrink-0">
+                      NQ
+                    </div>
+<div>
+<div class="font-bold text-slate-900 text-[13px]">Nguyễn Quang Huy</div>
+<div class="text-[11px] text-slate-400">0912.879.***</div>
+</div>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="font-medium text-slate-900 text-[13px]">Sân bóng mini Trung Kính Green</div>
+<div class="text-[11px] text-slate-500">Sân bóng 7 người (Sân A)</div>
+</td>
+<td class="py-3 px-3">
+<div class="font-semibold text-slate-900 text-[12px]">19:30 - 21:00 (1.5h)</div>
+<div class="text-[11px] text-rose-600 font-medium">Báo mưa dông ngập</div>
+</td>
+<td class="py-3 px-3 text-right">
+<div class="font-bold text-slate-900 text-[13px]">650.000đ</div>
+<span class="text-[10px] text-rose-600 font-semibold bg-rose-50 px-1.5 py-0.5 rounded">Yêu cầu hoàn ví</span>
+</td>
+<td class="py-3 px-3 text-center">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+<span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span>
+                    Yêu cầu hủy
+                  </span>
+</td>
+<td class="py-3 px-3 text-right">
+<div class="flex items-center justify-end gap-1.5">
+<button class="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-[11px] font-semibold transition-all" type="button">
+                      Hoàn tiền
+                    </button>
+<button class="p-1 text-slate-400 hover:text-slate-600 rounded-lg" type="button">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-slate-50/80 transition-colors">
+<td class="py-3 px-3 font-semibold text-slate-900 font-mono text-[12px]">
+                  #SB-8815
+                </td>
+<td class="py-3 px-3">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-[12px] flex-shrink-0">
+                      VA
+                    </div>
+<div>
+<div class="font-bold text-slate-900 text-[13px]">Vũ Anh Tuấn</div>
+<div class="text-[11px] text-slate-400">0934.112.***</div>
+</div>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="font-medium text-slate-900 text-[13px]">Sân Tennis Khu Liên Hợp Mỹ Đình</div>
+<div class="text-[11px] text-slate-500">Cụm sân cứng 02</div>
+</td>
+<td class="py-3 px-3">
+<div class="font-semibold text-slate-900 text-[12px]">20:00 - 22:00 (2h)</div>
+<div class="text-[11px] text-slate-500 font-medium">Hôm nay</div>
+</td>
+<td class="py-3 px-3 text-right">
+<div class="font-bold text-slate-900 text-[13px]">500.000đ</div>
+<span class="text-[10px] text-amber-700 font-semibold bg-amber-50 px-1.5 py-0.5 rounded">Chờ chuyển khoản</span>
+</td>
+<td class="py-3 px-3 text-center">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                    Chờ thanh toán
+                  </span>
+</td>
+<td class="py-3 px-3 text-right">
+<div class="flex items-center justify-end gap-1.5">
+<button class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-semibold transition-all" type="button">
+                      Chi tiết
+                    </button>
+<button class="p-1 text-slate-400 hover:text-slate-600 rounded-lg" type="button">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-slate-50/80 transition-colors">
+<td class="py-3 px-3 font-semibold text-slate-900 font-mono text-[12px]">
+                  #SB-8802
+                </td>
+<td class="py-3 px-3">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-[12px] flex-shrink-0">
+                      ĐM
+                    </div>
+<div>
+<div class="font-bold text-slate-900 text-[13px]">Đoàn Minh Phương</div>
+<div class="text-[11px] text-slate-400">0977.890.***</div>
+</div>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="font-medium text-slate-900 text-[13px]">Sân Cầu Lông Ba Đình Pro</div>
+<div class="text-[11px] text-slate-500">Sân số 02</div>
+</td>
+<td class="py-3 px-3">
+<div class="font-semibold text-slate-900 text-[12px]">16:00 - 18:00 (2h)</div>
+<div class="text-[11px] text-slate-400 font-medium">Ca đã kết thúc</div>
+</td>
+<td class="py-3 px-3 text-right">
+<div class="font-bold text-slate-900 text-[13px]">320.000đ</div>
+<span class="text-[10px] text-slate-600 font-semibold bg-slate-100 px-1.5 py-0.5 rounded">Thanh toán quầy</span>
+</td>
+<td class="py-3 px-3 text-center">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700">
+<span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                    Hoàn thành
+                  </span>
+</td>
+<td class="py-3 px-3 text-right">
+<div class="flex items-center justify-end gap-1.5">
+<button class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-semibold transition-all" type="button">
+                      In hóa đơn
+                    </button>
+<button class="p-1 text-slate-400 hover:text-slate-600 rounded-lg" type="button">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination & Summary -->
+<div class="pt-4 mt-2 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-[12px] text-slate-500">
+<div>
+            Hiển thị <span class="font-semibold text-slate-800">1 - 4</span> trong tổng số <span class="font-semibold text-slate-800">142</span> đơn đặt sân hôm nay
+          </div>
+<div class="flex items-center gap-1">
+<button class="px-2.5 py-1 rounded border border-gray-200 text-slate-400 hover:bg-slate-50 disabled:opacity-50" disabled="" type="button">
+              ← Trước
+            </button>
+<button class="px-2.5 py-1 rounded bg-primary text-white font-bold" type="button">1</button>
+<button class="px-2.5 py-1 rounded border border-gray-200 text-slate-600 hover:bg-slate-50" type="button">2</button>
+<button class="px-2.5 py-1 rounded border border-gray-200 text-slate-600 hover:bg-slate-50" type="button">3</button>
+<span class="px-1 text-slate-400">...</span>
+<button class="px-2.5 py-1 rounded border border-gray-200 text-slate-600 hover:bg-slate-50" type="button">12</button>
+<button class="px-2.5 py-1 rounded border border-gray-200 text-slate-600 hover:bg-slate-50" type="button">
+              Sau →
+            </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

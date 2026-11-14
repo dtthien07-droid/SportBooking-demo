@@ -251,7 +251,7 @@ test('notification API and booking events work transactionally over HTTP on spor
         {},
         owner.cookie
       );
-      assert.equal(refundResponse.status, 200);
+      assert.equal(refundResponse.status, 200, await refundResponse.clone().text());
       const refund = await refundResponse.json();
       const refundRows = await notificationsFor(refundable.booking_id);
       assert.equal(refund.refund_percent, 100);

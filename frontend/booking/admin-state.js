@@ -5,6 +5,9 @@
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root) root.SportBookingAdminState = api;
 }(typeof window === 'undefined' ? null : window, () => {
+  const USER_HOME = '/trangchu-user.html';
+  const ADMIN_HOME = '/quan-tri-tong-quan.html';
+
   const BOOKING_STATUS_LABELS = Object.freeze({
     PENDING: 'Chờ thanh toán',
     CONFIRMED: 'Đã xác nhận',
@@ -24,13 +27,13 @@
   }
 
   function getPostLoginDestination(role) {
-    return role === 'ADMIN' ? '/admin-bookings.html' : '/trangchu-user.html';
+    return role === 'ADMIN' ? ADMIN_HOME : USER_HOME;
   }
 
   function getAdminAccessDestination(authenticated) {
     return authenticated
-      ? '/trangchu-user.html?accessDenied=1'
-      : '/dang-nhap.html?accessDenied=1&returnTo=%2Fadmin-bookings.html';
+      ? USER_HOME
+      : `/dang-nhap.html?returnTo=${encodeURIComponent(ADMIN_HOME)}`;
   }
 
   function isValidCancellationReason(reason) {
@@ -68,7 +71,9 @@
   }
 
   return {
+    ADMIN_HOME,
     BOOKING_STATUS_LABELS,
+    USER_HOME,
     canCancelIncident,
     createIncidentCancellationSubmitter,
     formatMoney,

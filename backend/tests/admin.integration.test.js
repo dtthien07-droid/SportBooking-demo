@@ -10,6 +10,7 @@ if (process.env.APP_ENV !== 'test' || process.env.DB_NAME !== 'sportbooking_test
 
 const { closePool, getPool } = require('../src/config/database');
 const { createApp } = require('../src/app');
+const { dateOffset, localDateString } = require('../src/facilities/slot-generator');
 
 function cookiePair(setCookie) {
   assert.ok(setCookie, 'Login must set a session cookie.');
@@ -61,6 +62,10 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
   const userEmails = [];
   const bookingIds = [];
   const slotIds = [];
+  const createdFacilityIds = [];
+  const createdCourtIds = [];
+  let managedFacilityId;
+  let generatedCourtId;
   const triggerNames = [];
   let facilityId;
   let courtId;
@@ -121,6 +126,7 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
     const admin = await createUser('Admin Integration Test', 'ADMIN');
     const owner = await createUser('Booking Owner Integration Test');
     const ordinaryUser = await createUser('Ordinary Integration Test');
+    const lockTarget = await createUser('Lock Target Integration Test');
     const suffix = crypto.randomUUID();
     const [facilityResult] = await pool.execute(
       `INSERT INTO facilities
@@ -206,7 +212,12 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP(3), UTC_TIMESTAMP(3))`,
         [bookingId, paymentStatus, paidAmount, paidAmount, refundedAmount, 'FULL', paidAt, refundedAt]
       );
-      return { id: bookingId, code: bookingCode, slotId: slot ? slotIds[slotIds.length - 1] : null };
+      return {
+        id: bookingId,
+        code: bookingCode,
+        slotId: slot ? slotIds[slotIds.length - 1] : null,
+        serviceDate: slot?.serviceDate || null
+      };
     }
 
     const inProgressBooking = await addBooking({
@@ -280,25 +291,376 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
     await t.test('ordinary users receive 403 for every admin route without changing data', async () => {
       const before = await snapshotBooking(inProgressBooking.id);
       const responseRows = await Promise.all([
-        requestJson(baseUrl, '/api/v1/admin/bookings', 'GET', undefined, ordinaryUser.cookie),
+        requestJson(
+          baseUrl,
+          `/api/v1/admin/bookings?facility_id=${facilityId}&date=${inProgressBooking.serviceDate}`,
+          'GET',
+          undefined,
+          ordinaryUser.cookie
+        ),
         requestJson(baseUrl, '/api/v1/admin/dashboard?period=today', 'GET', undefined, ordinaryUser.cookie),
+        requestJson(baseUrl, '/api/v1/admin/users', 'GET', undefined, ordinaryUser.cookie),
+        requestJson(
+          baseUrl,
+          `/api/v1/admin/users/${lockTarget.id}/lock`,
+          'PATCH',
+          {},
+          ordinaryUser.cookie
+        ),
         requestJson(
           baseUrl,
           `/api/v1/admin/bookings/${inProgressBooking.id}/incident-cancellation`,
           'POST',
           { cancellation_reason: 'User must not cancel incidents' },
           ordinaryUser.cookie
-        )
+        ),
+        requestJson(baseUrl, '/api/v1/admin/facilities', 'GET', undefined, ordinaryUser.cookie),
+        requestJson(baseUrl, `/api/v1/admin/facilities/${facilityId}`, 'GET', undefined, ordinaryUser.cookie),
+        requestJson(baseUrl, '/api/v1/admin/facilities', 'POST', {}, ordinaryUser.cookie),
+        requestJson(baseUrl, `/api/v1/admin/facilities/${facilityId}`, 'PATCH', {}, ordinaryUser.cookie),
+        requestJson(baseUrl, '/api/v1/admin/courts', 'POST', {}, ordinaryUser.cookie),
+        requestJson(baseUrl, `/api/v1/admin/courts/${courtId}`, 'PATCH', {}, ordinaryUser.cookie),
+        requestJson(baseUrl, `/api/v1/admin/courts/${courtId}/time-slots?date=2026-01-01`, 'GET', undefined, ordinaryUser.cookie),
+        requestJson(baseUrl, `/api/v1/admin/courts/${courtId}/generate-slots`, 'POST', {}, ordinaryUser.cookie),
+        requestJson(baseUrl, `/api/v1/admin/courts/${courtId}/prices`, 'PATCH', {}, ordinaryUser.cookie)
       ]);
-      assert.deepEqual(responseRows.map((response) => response.status), [403, 403, 403]);
+      assert.deepEqual(responseRows.map((response) => response.status),
+        [403, 403, 403, 403, 403, 403, 403, 403, 403, 403, 403, 403, 403, 403]);
       assert.equal(await snapshotBooking(inProgressBooking.id), before);
 
       const unauthenticated = await requestJson(
         baseUrl,
-        '/api/v1/admin/dashboard?period=today',
+        `/api/v1/admin/bookings?facility_id=${facilityId}&date=${inProgressBooking.serviceDate}`,
         'GET'
       );
       assert.equal(unauthenticated.status, 401);
+      const unauthenticatedDashboard = await requestJson(
+        baseUrl,
+        '/api/v1/admin/dashboard?range=today',
+        'GET'
+      );
+      assert.equal(unauthenticatedDashboard.status, 401);
+      const unauthenticatedUsers = await requestJson(baseUrl, '/api/v1/admin/users', 'GET');
+      assert.equal(unauthenticatedUsers.status, 401);
+      const unauthenticatedFacilities = await Promise.all([
+        requestJson(baseUrl, '/api/v1/admin/facilities', 'GET'),
+        requestJson(baseUrl, `/api/v1/admin/facilities/${facilityId}`, 'GET'),
+        requestJson(baseUrl, '/api/v1/admin/facilities', 'POST', {}),
+        requestJson(baseUrl, `/api/v1/admin/facilities/${facilityId}`, 'PATCH', {}),
+        requestJson(baseUrl, '/api/v1/admin/courts', 'POST', {}),
+        requestJson(baseUrl, `/api/v1/admin/courts/${courtId}`, 'PATCH', {}),
+        requestJson(baseUrl, `/api/v1/admin/courts/${courtId}/time-slots?date=2026-01-01`, 'GET'),
+        requestJson(baseUrl, `/api/v1/admin/courts/${courtId}/generate-slots`, 'POST', {}),
+        requestJson(baseUrl, `/api/v1/admin/courts/${courtId}/prices`, 'PATCH', {})
+      ]);
+      assert.deepEqual(unauthenticatedFacilities.map((response) => response.status),
+        [401, 401, 401, 401, 401, 401, 401, 401, 401]);
+    });
+
+    await t.test('facility and court management validates, checks stale data, and audits writes', async () => {
+      const listResponse = await requestJson(
+        baseUrl, `/api/v1/admin/facilities?q=${encodeURIComponent('Admin test')}&page=1`,
+        'GET', undefined, admin.cookie
+      );
+      assert.equal(listResponse.status, 200);
+      assert.equal(listResponse.headers.get('cache-control'), 'no-cache');
+      const list = await listResponse.json();
+      assert.equal(list.facilities.length, 1);
+      assert.equal(list.facilities[0].id, facilityId);
+      assert.equal(list.facilities[0].court_count, 1);
+      assert.ok(list.facilities[0].updated_at.endsWith('Z'));
+      const unchanged = await fetch(`${baseUrl}/api/v1/admin/facilities?q=Admin%20test&page=1`, {
+        headers: { cookie: admin.cookie, 'if-none-match': listResponse.headers.get('etag') }
+      });
+      assert.equal(unchanged.status, 304);
+
+      const detailResponse = await requestJson(
+        baseUrl, `/api/v1/admin/facilities/${facilityId}`, 'GET', undefined, admin.cookie
+      );
+      assert.equal(detailResponse.status, 200);
+      const detail = await detailResponse.json();
+      assert.equal(detail.courts[0].id, courtId);
+      const activeFacilityUpdate = await requestJson(
+        baseUrl, `/api/v1/admin/facilities/${facilityId}`, 'PATCH',
+        {
+          expected_updated_at: detail.facility.updated_at,
+          is_active: false,
+          opening_time: '06:00',
+          closing_time: '22:00'
+        }, admin.cookie
+      );
+      const activeFacilityError = await activeFacilityUpdate.json();
+      assert.equal(activeFacilityUpdate.status, 409, JSON.stringify(activeFacilityError));
+      assert.match(activeFacilityError.error.message, /\d+ đơn hiệu lực/);
+      const activeCourtUpdate = await requestJson(
+        baseUrl, `/api/v1/admin/courts/${courtId}`, 'PATCH',
+        { expected_updated_at: detail.courts[0].updated_at, sport_type: 'PICKLEBALL' }, admin.cookie
+      );
+      assert.equal(activeCourtUpdate.status, 409);
+      assert.match((await activeCourtUpdate.json()).error.message, /\d+ đơn hiệu lực/);
+
+      const suffix = crypto.randomUUID();
+      const created = await requestJson(baseUrl, '/api/v1/admin/facilities', 'POST', {
+        name: `Managed facility ${suffix}`,
+        address: 'Địa chỉ kiểm thử',
+        district: 'Quận kiểm thử',
+        opening_time: '06:00',
+        closing_time: '24:00',
+        amenities: ['Chỗ để xe'],
+        is_active: true
+      }, admin.cookie);
+      assert.equal(created.status, 201);
+      const createdFacility = await created.json();
+      createdFacilityIds.push(createdFacility.id);
+      managedFacilityId = createdFacility.id;
+      const createdDetailResponse = await requestJson(
+        baseUrl, `/api/v1/admin/facilities/${createdFacility.id}`, 'GET', undefined, admin.cookie
+      );
+      const createdDetail = await createdDetailResponse.json();
+      assert.equal(createdDetail.courts.length, 0);
+
+      const partialUpdate = await requestJson(
+        baseUrl, `/api/v1/admin/facilities/${createdFacility.id}`, 'PATCH',
+        { expected_updated_at: createdDetail.facility.updated_at, address: 'Địa chỉ mới' }, admin.cookie
+      );
+      assert.equal(partialUpdate.status, 200, JSON.stringify(await partialUpdate.json()));
+      const staleUpdate = await requestJson(
+        baseUrl, `/api/v1/admin/facilities/${createdFacility.id}`, 'PATCH',
+        { expected_updated_at: createdDetail.facility.updated_at, district: 'Quận cũ' }, admin.cookie
+      );
+      assert.equal(staleUpdate.status, 409);
+      assert.match((await staleUpdate.json()).error.message,
+        /Dữ liệu vừa được người khác thay đổi, hãy tải lại/);
+
+      const newCourt = await requestJson(baseUrl, '/api/v1/admin/courts', 'POST', {
+        facility_id: createdFacility.id,
+        name: `Managed court ${suffix}`,
+        sport_type: 'BADMINTON',
+        price_normal: 100000,
+        price_peak: 120000
+      }, admin.cookie);
+      assert.equal(newCourt.status, 201);
+      const createdCourt = await newCourt.json();
+      createdCourtIds.push(createdCourt.id);
+      const duplicateCourt = await requestJson(baseUrl, '/api/v1/admin/courts', 'POST', {
+        facility_id: createdFacility.id,
+        name: `Managed court ${suffix}`,
+        sport_type: 'BADMINTON',
+        price_normal: 100000,
+        price_peak: 120000
+      }, admin.cookie);
+      assert.equal(duplicateCourt.status, 409);
+      const courtDetailResponse = await requestJson(
+        baseUrl, `/api/v1/admin/facilities/${createdFacility.id}`, 'GET', undefined, admin.cookie
+      );
+      const courtDetail = await courtDetailResponse.json();
+      const disabledCourt = await requestJson(
+        baseUrl, `/api/v1/admin/courts/${createdCourt.id}`, 'PATCH',
+        { expected_updated_at: courtDetail.courts[0].updated_at, is_active: false }, admin.cookie
+      );
+      assert.equal(disabledCourt.status, 200);
+
+      const [auditRows] = await pool.execute(
+        `SELECT action, resource_id FROM admin_audit_logs
+         WHERE admin_user_id = ? AND resource_id IN (?, ?) ORDER BY id`,
+        [admin.id, createdFacility.id, createdCourt.id]
+      );
+      assert.deepEqual(auditRows.map((row) => row.action),
+        ['FACILITY_CREATE', 'FACILITY_UPDATE', 'COURT_CREATE', 'COURT_UPDATE']);
+    });
+
+    await t.test('slot generation is idempotent and price updates preserve held and booked slots', async () => {
+      const suffix = crypto.randomUUID();
+      const createdCourt = await requestJson(baseUrl, '/api/v1/admin/courts', 'POST', {
+        facility_id: managedFacilityId,
+        name: `Generated court ${suffix}`,
+        sport_type: 'BADMINTON',
+        price_normal: 100000,
+        price_peak: 120000
+      }, admin.cookie);
+      assert.equal(createdCourt.status, 201);
+      generatedCourtId = (await createdCourt.json()).id;
+      createdCourtIds.push(generatedCourtId);
+
+      const fromDate = dateOffset(localDateString(), 1);
+      const toDate = dateOffset(fromDate, 1);
+      const generated = await requestJson(
+        baseUrl, `/api/v1/admin/courts/${generatedCourtId}/generate-slots`, 'POST',
+        { from_date: fromDate, to_date: toDate }, admin.cookie
+      );
+      assert.equal(generated.status, 201);
+      const generatedResult = await generated.json();
+      assert.equal(generatedResult.inserted, 36);
+      assert.equal(generatedResult.existing, 0);
+      const repeated = await requestJson(
+        baseUrl, `/api/v1/admin/courts/${generatedCourtId}/generate-slots`, 'POST',
+        { from_date: fromDate, to_date: toDate }, admin.cookie
+      );
+      assert.equal(repeated.status, 201);
+      assert.deepEqual(
+        (({ inserted, existing }) => ({ inserted, existing }))(await repeated.json()),
+        { inserted: 0, existing: 36 }
+      );
+
+      await pool.execute(
+        `UPDATE time_slots SET status = 'LOCKED', lock_expires_at = DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 1 MINUTE)
+         WHERE court_id = ? AND service_date = ? AND starts_at = '06:00:00'`,
+        [generatedCourtId, fromDate]
+      );
+      await pool.execute(
+        `UPDATE time_slots SET status = 'BOOKED'
+         WHERE court_id = ? AND service_date = ? AND starts_at = '17:00:00'`,
+        [generatedCourtId, fromDate]
+      );
+      const facilityDetailResponse = await requestJson(
+        baseUrl, `/api/v1/admin/facilities/${managedFacilityId}`, 'GET', undefined, admin.cookie
+      );
+      const courtDetail = (await facilityDetailResponse.json()).courts
+        .find((court) => court.id === generatedCourtId);
+      assert.ok(courtDetail);
+      const slotUrl = `${baseUrl}/api/v1/admin/courts/${generatedCourtId}/time-slots?date=${fromDate}&from_date=${localDateString()}`;
+      const beforePriceResponse = await fetch(slotUrl, { headers: { cookie: admin.cookie } });
+      assert.equal(beforePriceResponse.status, 200);
+      const slotsEtag = beforePriceResponse.headers.get('etag');
+      const beforePriceSlots = await beforePriceResponse.json();
+      assert.equal(beforePriceSlots.price_preview.available_slots, 34);
+      const unchangedSlots = await fetch(slotUrl, {
+        headers: { cookie: admin.cookie, 'if-none-match': slotsEtag }
+      });
+      assert.equal(unchangedSlots.status, 304);
+      const priceUpdate = await requestJson(
+        baseUrl, `/api/v1/admin/courts/${generatedCourtId}/prices`, 'PATCH',
+        {
+          price_normal: 110000,
+          price_peak: 150000,
+          expected_updated_at: courtDetail.updated_at
+        }, admin.cookie
+      );
+      assert.equal(priceUpdate.status, 200);
+      const priceResult = await priceUpdate.json();
+      assert.equal(priceResult.affected_slots, 34);
+      const stalePrices = await requestJson(
+        baseUrl, `/api/v1/admin/courts/${generatedCourtId}/prices`, 'PATCH',
+        {
+          price_normal: 120000,
+          price_peak: 160000,
+          expected_updated_at: courtDetail.updated_at
+        }, admin.cookie
+      );
+      assert.equal(stalePrices.status, 409);
+
+      const changedSlots = await fetch(slotUrl, {
+        headers: { cookie: admin.cookie, 'if-none-match': slotsEtag }
+      });
+      assert.equal(changedSlots.status, 200);
+      const slotsResult = await changedSlots.json();
+      const early = slotsResult.time_slots.find((slot) => slot.starts_at === '06:00:00');
+      const peak = slotsResult.time_slots.find((slot) => slot.starts_at === '17:00:00');
+      const evening = slotsResult.time_slots.find((slot) => slot.starts_at === '18:00:00');
+      assert.equal(early.status, 'AVAILABLE');
+      assert.equal(early.price, '100000');
+      assert.equal(peak.status, 'BOOKED');
+      assert.equal(peak.price, '120000');
+      assert.equal(evening.status, 'AVAILABLE');
+      assert.equal(evening.price, '150000');
+      const updatedSlotsEtag = changedSlots.headers.get('etag');
+      const unchangedUpdatedSlots = await fetch(slotUrl, {
+        headers: { cookie: admin.cookie, 'if-none-match': updatedSlotsEtag }
+      });
+      assert.equal(unchangedUpdatedSlots.status, 304);
+
+      const existingSlots = await requestJson(
+        baseUrl,
+        `/api/v1/admin/courts/${courtId}/time-slots?date=${inProgressBooking.serviceDate}`,
+        'GET', undefined, admin.cookie
+      );
+      const existingResult = await existingSlots.json();
+      const booked = existingResult.time_slots.find((slot) => slot.booking_code === inProgressBooking.code);
+      assert.equal(booked.status, 'BOOKED');
+      assert.ok(updatedSlotsEtag);
+      const [auditRows] = await pool.execute(
+        `SELECT action FROM admin_audit_logs
+         WHERE admin_user_id = ? AND resource_type = ? AND resource_id = ?`,
+        [admin.id, 'court', generatedCourtId]
+      );
+      assert.deepEqual(auditRows.map((row) => row.action),
+        ['COURT_CREATE', 'SLOTS_GENERATE', 'SLOTS_GENERATE', 'COURT_PRICES_UPDATE']);
+    });
+
+    await t.test('user list excludes sensitive fields and account locking revokes sessions transactionally', async () => {
+      const listResponse = await requestJson(
+        baseUrl,
+        '/api/v1/admin/users?q=Lock%20Target&page=1&page_size=5',
+        'GET',
+        undefined,
+        admin.cookie
+      );
+      assert.equal(listResponse.status, 200);
+      assert.equal(listResponse.headers.get('cache-control'), 'no-cache');
+      const listResult = await listResponse.json();
+      assert.equal(listResult.users.length, 1);
+      assert.equal(listResult.users[0].id, lockTarget.id);
+      assert.equal(listResult.users[0].stats.total_bookings, 0);
+      assert.doesNotMatch(JSON.stringify(listResult), /password_hash|failed_login_count|token_hash|user_sessions/i);
+      const usersEtag = listResponse.headers.get('etag');
+      const usersUnchanged = await fetch(
+        `${baseUrl}/api/v1/admin/users?q=Lock%20Target&page=1&page_size=5`,
+        { headers: { cookie: admin.cookie, 'if-none-match': usersEtag } }
+      );
+      assert.equal(usersUnchanged.status, 304);
+
+      const selfLock = await requestJson(
+        baseUrl,
+        `/api/v1/admin/users/${admin.id}/lock`,
+        'PATCH',
+        {},
+        admin.cookie
+      );
+      assert.equal(selfLock.status, 409);
+
+      const lockResponses = await Promise.all([
+        requestJson(baseUrl, `/api/v1/admin/users/${lockTarget.id}/lock`, 'PATCH',
+          { reason: 'Kiểm tra đồng thời' }, admin.cookie),
+        requestJson(baseUrl, `/api/v1/admin/users/${lockTarget.id}/lock`, 'PATCH',
+          { reason: 'Yêu cầu đồng thời khác' }, admin.cookie)
+      ]);
+      assert.deepEqual(lockResponses.map((response) => response.status).sort(), [200, 409]);
+      const expiredSession = await requestJson(baseUrl, '/api/v1/auth/me', 'GET', undefined, lockTarget.cookie);
+      assert.equal(expiredSession.status, 401);
+      const blockedLogin = await requestJson(
+        baseUrl, '/api/v1/auth/login', 'POST',
+        { email: lockTarget.email, password }, undefined
+      );
+      assert.equal(blockedLogin.status, 403);
+      assert.match((await blockedLogin.json()).error.message, /đã bị quản trị viên khóa/);
+      const [auditRows] = await pool.execute(
+        `SELECT action, details FROM admin_audit_logs
+         WHERE admin_user_id = ? AND resource_type = ? AND resource_id = ?`,
+        [admin.id, 'user', lockTarget.id]
+      );
+      assert.equal(auditRows.length, 1);
+      assert.equal(auditRows[0].action, 'USER_LOCK');
+      assert.match(auditRows[0].details, /Kiểm tra đồng thời|Yêu cầu đồng thời khác/);
+
+      const unlock = await requestJson(
+        baseUrl, `/api/v1/admin/users/${lockTarget.id}/unlock`, 'PATCH', {}, admin.cookie
+      );
+      assert.equal(unlock.status, 200);
+      assert.equal((await unlock.json()).account_status, 'ACTIVE');
+      const loginAgain = await requestJson(
+        baseUrl, '/api/v1/auth/login', 'POST',
+        { email: lockTarget.email, password }, undefined
+      );
+      assert.equal(loginAgain.status, 200);
+      const oldSessionAfterUnlock = await requestJson(baseUrl, '/api/v1/auth/me', 'GET', undefined, lockTarget.cookie);
+      assert.equal(oldSessionAfterUnlock.status, 401);
+      const [finalAuditRows] = await pool.execute(
+        `SELECT action FROM admin_audit_logs
+         WHERE admin_user_id = ? AND resource_type = ? AND resource_id = ?
+         ORDER BY id`,
+        [admin.id, 'user', lockTarget.id]
+      );
+      assert.deepEqual(finalAuditRows.map((row) => row.action), ['USER_LOCK', 'USER_UNLOCK']);
     });
 
     await t.test('admin booking list filters by status and code, paginates, and includes owner and slots', async () => {
@@ -310,8 +672,11 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
         admin.cookie
       );
       assert.equal(response.status, 200);
-      assert.equal(response.headers.get('cache-control'), 'no-store');
+      assert.equal(response.headers.get('cache-control'), 'no-cache');
+      const etag = response.headers.get('etag');
+      assert.match(etag, /^W\/".+"$/);
       const result = await response.json();
+      assert.match(result.server_time, /^\d{4}-\d{2}-\d{2}T.*Z$/);
       assert.equal(result.bookings.length, 1);
       assert.equal(result.pagination.total, 1);
       assert.equal(result.pagination.page, 1);
@@ -322,6 +687,12 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
       assert.ok(result.bookings[0].owner.phone);
       assert.equal(result.bookings[0].slots.length, 1);
       assert.equal(result.bookings[0].slots[0].time_slot_id, inProgressBooking.slotId);
+      const unchanged = await fetch(
+        `${baseUrl}/api/v1/admin/bookings?status=CONFIRMED&q=${encodeURIComponent(inProgressBooking.code)}&page=1&page_size=1`,
+        { headers: { cookie: admin.cookie, 'if-none-match': etag } }
+      );
+      assert.equal(unchanged.status, 304);
+      assert.equal(unchanged.headers.get('cache-control'), 'no-cache');
 
       const firstPage = await requestJson(
         baseUrl,
@@ -333,10 +704,31 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
       const firstPageResult = await firstPage.json();
       assert.equal(firstPageResult.bookings.length, 1);
       assert.ok(firstPageResult.pagination.total_pages > 1);
+      const invalidFacility = await requestJson(
+        baseUrl,
+        '/api/v1/admin/bookings?facility_id=not-a-number',
+        'GET',
+        undefined,
+        admin.cookie
+      );
+      assert.equal(invalidFacility.status, 400);
+      assert.match((await invalidFacility.json()).error.message, /facility_id.*số nguyên dương/);
+      const invalidDate = await requestJson(
+        baseUrl,
+        '/api/v1/admin/bookings?date=2026-02-31',
+        'GET',
+        undefined,
+        admin.cookie
+      );
+      assert.equal(invalidDate.status, 400);
+      assert.match((await invalidDate.json()).error.message, /date.*ngày hợp lệ/);
       for (const query of [
         '?status=UNKNOWN',
         '?page=0',
-        '?page_size=51'
+        '?page_size=51',
+        '?facility_id=0',
+        '?date=2026-2-3',
+        '?date=2026-02-30'
       ]) {
         const invalid = await requestJson(
           baseUrl,
@@ -355,6 +747,76 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
         admin.cookie
       );
       assert.equal(longSearch.status, 400);
+    });
+
+    await t.test('admin booking list filters by facility, Vietnam service date, and both together', async () => {
+      const byFacilityResponse = await requestJson(
+        baseUrl,
+        `/api/v1/admin/bookings?facility_id=${facilityId}&page=1&page_size=2`,
+        'GET',
+        undefined,
+        admin.cookie
+      );
+      assert.equal(byFacilityResponse.status, 200);
+      const byFacility = await byFacilityResponse.json();
+      assert.equal(byFacility.pagination.total, 5);
+      assert.equal(byFacility.pagination.total_pages, 3);
+      assert.equal(byFacility.bookings.length, 2);
+      assert.ok(byFacility.bookings.every((booking) => booking.slots.some(
+        (slot) => slot.facility_id === facilityId
+      )));
+
+      const byDateResponse = await requestJson(
+        baseUrl,
+        `/api/v1/admin/bookings?date=${inProgressBooking.serviceDate}`,
+        'GET',
+        undefined,
+        admin.cookie
+      );
+      assert.equal(byDateResponse.status, 200);
+      const byDate = await byDateResponse.json();
+      assert.equal(byDate.pagination.total, 1);
+      assert.equal(byDate.pagination.total_pages, 1);
+      assert.ok(byDate.bookings.some((booking) => booking.booking_id === inProgressBooking.id));
+      assert.ok(byDate.bookings.every((booking) => booking.slots.some(
+        (slot) => slot.service_date === inProgressBooking.serviceDate
+      )));
+
+      const byBothResponse = await requestJson(
+        baseUrl,
+        `/api/v1/admin/bookings?facility_id=${facilityId}&date=${inProgressBooking.serviceDate}`,
+        'GET',
+        undefined,
+        admin.cookie
+      );
+      assert.equal(byBothResponse.status, 200);
+      const byBoth = await byBothResponse.json();
+      assert.equal(byBoth.pagination.total, 1);
+      assert.equal(byBoth.bookings[0].booking_id, inProgressBooking.id);
+
+      const blankFilterResponse = await requestJson(
+        baseUrl,
+        `/api/v1/admin/bookings?q=${encodeURIComponent(inProgressBooking.code)}&facility_id=&date=`,
+        'GET',
+        undefined,
+        admin.cookie
+      );
+      assert.equal(blankFilterResponse.status, 200);
+      const blankFilters = await blankFilterResponse.json();
+      assert.equal(blankFilters.pagination.total, 1);
+      assert.equal(blankFilters.bookings[0].booking_id, inProgressBooking.id);
+
+      const byStatusResponse = await requestJson(
+        baseUrl,
+        `/api/v1/admin/bookings?status=CONFIRMED&facility_id=${facilityId}&date=${inProgressBooking.serviceDate}`,
+        'GET',
+        undefined,
+        admin.cookie
+      );
+      assert.equal(byStatusResponse.status, 200);
+      const byStatus = await byStatusResponse.json();
+      assert.equal(byStatus.pagination.total, 1);
+      assert.equal(byStatus.bookings[0].booking_id, inProgressBooking.id);
     });
 
     await t.test('incident cancellation validates reason and refunds a confirmed booking in progress once', async () => {
@@ -386,7 +848,7 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
           baseUrl,
           `/api/v1/admin/bookings/${inProgressBooking.id}/incident-cancellation`,
           'POST',
-          { cancellation_reason: 'Yêu cầu lặp' },
+          { cancellation_reason: '  Sự cố trong trận  ' },
           admin.cookie
         )
       ]);
@@ -441,6 +903,15 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
       assert.equal(duplicate.status, 409);
       assert.notEqual(await snapshotBooking(inProgressBooking.id), before);
       assert.equal((await snapshotBooking(inProgressBooking.id)).includes('Lặp lại sau hoàn tất'), false);
+      const [auditRows] = await pool.execute(
+        `SELECT action, resource_type, resource_id, details
+         FROM admin_audit_logs
+         WHERE admin_user_id = ? AND resource_type = ? AND resource_id = ?`,
+        [admin.id, 'booking', inProgressBooking.id]
+      );
+      assert.equal(auditRows.length, 1);
+      assert.equal(auditRows[0].action, 'INCIDENT_CANCELLATION');
+      assert.doesNotMatch(String(auditRows[0].details), /password|Sự cố trong trận/i);
     });
 
     await t.test('incident cancellation of a pending booking refunds zero and writes one booking notification', async () => {
@@ -523,6 +994,11 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
       );
       assert.equal(response.status, 500);
       assert.equal(await snapshotBooking(paymentRollbackBooking.id), before);
+      const [paymentAuditRows] = await pool.execute(
+        'SELECT id FROM admin_audit_logs WHERE resource_type = ? AND resource_id = ?',
+        ['booking', paymentRollbackBooking.id]
+      );
+      assert.equal(paymentAuditRows.length, 0);
       await pool.query(`DROP TRIGGER IF EXISTS ${triggerName}`);
       triggerNames.splice(triggerNames.indexOf(triggerName), 1);
     });
@@ -545,6 +1021,11 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
       );
       assert.equal(response.status, 500);
       assert.equal(await snapshotBooking(notificationRollbackBooking.id), before);
+      const [notificationAuditRows] = await pool.execute(
+        'SELECT id FROM admin_audit_logs WHERE resource_type = ? AND resource_id = ?',
+        ['booking', notificationRollbackBooking.id]
+      );
+      assert.equal(notificationAuditRows.length, 0);
       await pool.query(`DROP TRIGGER IF EXISTS ${triggerName}`);
       triggerNames.splice(triggerNames.indexOf(triggerName), 1);
     });
@@ -552,6 +1033,7 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
     await t.test('dashboard reports four metrics for today, 7d, and 30d using event timestamps', async () => {
       const periods = ['today', '7d', '30d'];
       const before = {};
+      const beforeEtags = {};
       for (const period of periods) {
         const response = await requestJson(
           baseUrl,
@@ -562,6 +1044,14 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
         );
         assert.equal(response.status, 200);
         before[period] = await response.json();
+        const etag = response.headers.get('etag');
+        assert.ok(etag);
+        beforeEtags[period] = etag;
+        const unchanged = await fetch(
+          `${baseUrl}/api/v1/admin/dashboard?period=${period}`,
+          { headers: { cookie: admin.cookie, 'if-none-match': etag } }
+        );
+        assert.equal(unchanged.status, 304);
       }
 
       await addBooking({ status: 'PENDING' });
@@ -586,7 +1076,7 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
         paidAt: timestampDaysAgo(8)
       });
 
-      const expectedRevenueDeltas = { today: '7000', '7d': '7000', '30d': '27000' };
+      const expectedRevenueDeltas = { today: '12000', '7d': '12000', '30d': '32000' };
       for (const period of periods) {
         const response = await requestJson(
           baseUrl,
@@ -597,7 +1087,12 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
         );
         assert.equal(response.status, 200);
         const after = await response.json();
+        assert.notEqual(response.headers.get('etag'), beforeEtags[period]);
         assert.equal(after.period, period);
+        assert.ok(after.range.from);
+        assert.ok(after.range.to);
+        assert.equal(after.kpis.pending_match_requests, 0);
+        assert.equal(after.revenue_by_day.length, period === 'today' ? 1 : period === '7d' ? 7 : 30);
         assert.equal(after.new_bookings, before[period].new_bookings + 4);
         assert.equal(after.cancelled_bookings, before[period].cancelled_bookings + 1);
         assert.equal(after.completed_bookings, before[period].completed_bookings + 1);
@@ -673,6 +1168,20 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
         slotIds
       ));
     }
+    if (createdCourtIds.length > 0) {
+      const placeholders = createdCourtIds.map(() => '?').join(', ');
+      await cleanup(() => pool.execute(
+        `DELETE FROM courts WHERE id IN (${placeholders})`,
+        createdCourtIds
+      ));
+    }
+    if (createdFacilityIds.length > 0) {
+      const placeholders = createdFacilityIds.map(() => '?').join(', ');
+      await cleanup(() => pool.execute(
+        `DELETE FROM facilities WHERE id IN (${placeholders})`,
+        createdFacilityIds
+      ));
+    }
     if (courtId) {
       await cleanup(() => pool.execute('DELETE FROM courts WHERE id = ?', [courtId]));
     }
@@ -681,6 +1190,10 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
     }
     if (userIds.length > 0) {
       const placeholders = userIds.map(() => '?').join(', ');
+      await cleanup(() => pool.execute(
+        `DELETE FROM admin_audit_logs WHERE admin_user_id IN (${placeholders})`,
+        userIds
+      ));
       await cleanup(() => pool.execute(
         `DELETE FROM user_sessions WHERE user_id IN (${placeholders})`,
         userIds
