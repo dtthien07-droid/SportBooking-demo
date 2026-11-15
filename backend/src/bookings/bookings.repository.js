@@ -762,7 +762,12 @@ function createBookingRepository(pool) {
       return rows;
     },
 
-    async findConfirmedBookingsDueForCompletion(limit) {
+        async findConfirmedBookingsDueForCompletion(limit) {
+      const safeLimit =
+        Number.isSafeInteger(Number(limit)) && Number(limit) > 0
+          ? Math.min(Number(limit), 1000)
+          : 100;
+
       const [rows] = await pool.execute(
         `SELECT b.id,
                 MIN(CONCAT(DATE_FORMAT(ts.service_date, '%Y-%m-%d'), 'T',
@@ -777,9 +782,9 @@ function createBookingRepository(pool) {
          HAVING MAX(TIMESTAMP(ts.service_date, ts.ends_at))
                   <= DATE_ADD(UTC_TIMESTAMP(3), INTERVAL 7 HOUR)
          ORDER BY last_slot_end ASC, b.id ASC
-         LIMIT ?`,
-        [limit]
+         LIMIT ${safeLimit}`
       );
+
       return rows;
     },
 
@@ -803,16 +808,21 @@ function createBookingRepository(pool) {
       return result.affectedRows === 1;
     },
 
-    async findExpiredBookingIds(limit) {
+        async findExpiredBookingIds(limit) {
+      const safeLimit =
+        Number.isSafeInteger(Number(limit)) && Number(limit) > 0
+          ? Math.min(Number(limit), 1000)
+          : 100;
+
       const [rows] = await pool.execute(
         `SELECT id
          FROM bookings
          WHERE status = 'PENDING'
            AND lock_expires_at <= UTC_TIMESTAMP(3)
          ORDER BY lock_expires_at ASC, id ASC
-         LIMIT ?`,
-        [limit]
+         LIMIT ${safeLimit}`
       );
+
       return rows.map((row) => row.id);
     },
 
