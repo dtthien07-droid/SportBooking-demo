@@ -66,7 +66,7 @@ Frontend được phục vụ tại gốc `/`; `GET /` chuyển tới `/dang-nha
 |---|---|---|---|
 | Dashboard | Số lượt đặt, doanh thu thực thu (đã thu trừ hoàn), tỷ lệ lấp sân, tỷ lệ hoàn thành/hủy, đơn mới, yêu cầu tìm đối chờ, sân đặt nhiều; lọc hôm nay/7 ngày/30 ngày. Không có chỉ số “bùng cọc”. | Skeleton chỉ số; lỗi có thử lại; không có dữ liệu hiển thị 0 và giải thích. | Trang quản trị trước; dự phòng Dashboard. |
 | Quản lý người dùng | Tìm tên/email; xem hồ sơ, khóa/mở khóa tài khoản; không cho admin tự khóa tài khoản đang đăng nhập. | Loading bảng; lỗi có thử lại; không có kết quả hiển thị trạng thái trống. | Trang quản trị trước; dự phòng Dashboard. |
-| Quản lý cơ sở, sân, khung giờ và giá | CRUD cơ sở/sân; thông tin liên hệ, tiện ích, bản đồ, nội quy, ảnh; tạo khung một tiếng; cấu hình giờ vàng 17:00–21:00 giá cao hơn; không xóa sân có booking hiệu lực. | Loading bảng/form; lỗi validation hiển thị rõ; danh sách trống có nút tạo dữ liệu. | Trang quản trị trước; dự phòng Dashboard. |
+| Quản lý cơ sở, sân, khung giờ và giá | CRUD cơ sở/sân; thông tin liên hệ, tiện ích, bản đồ, nội quy, ảnh; tạo khung một tiếng; cấu hình giờ vàng 17:00–21:00 giá cao hơn; hàng cơ sở không có sân có nhãn **Chưa có sân**; chỉ xóa cơ sở chưa từng có booking ở mọi trạng thái. Bốn thẻ đếm tổng cơ sở, cơ sở đang mở/khóa và tỷ lệ lấp đầy 7 ngày. | Loading bảng/form; lỗi validation hiển thị rõ; xác nhận xóa; danh sách trống có nút tạo dữ liệu. | Trang quản trị trước; dự phòng Dashboard. |
 | Booking ngoại lệ | Tìm booking; admin chủ động hủy khi sân gặp sự cố, kể cả trong trận; xác nhận hoàn 100% số đã trả và gửi thông báo. Không có thao tác chỉnh tay tiền hoàn khác. | Loading; lỗi nêu booking không còn hợp lệ; không có booking cần xử lý thì hiển thị trạng thái trống. | Trang quản trị trước; dự phòng Dashboard. |
 
 Menu User và Admin chỉ hiện theo vai trò, nhưng ẩn menu không thay thế kiểm tra quyền trên API.
@@ -167,8 +167,8 @@ Các route dưới đây là hợp đồng HTTP/JSON đề xuất, dùng tiền 
 
 | API | Vai trò | Input | Output thành công | Lỗi chính |
 |---|---|---|---|---|
-| `GET /facilities` | User/Admin | Bộ lọc môn, quận/huyện, ngày/giờ, trang | Danh sách cơ sở/sân, giá từ, điểm đánh giá | `400` bộ lọc sai; `401` chưa đăng nhập |
-| `GET /facilities/{id}` | User/Admin | ID cơ sở | Thông tin cơ sở, sân, giá, tiện ích, nội quy, bản đồ, đánh giá | `401` chưa đăng nhập; `404` không tồn tại/không công khai |
+| `GET /facilities` | User/Admin | Bộ lọc môn, quận/huyện, ngày/giờ, trang | Chỉ cơ sở đang mở và có ít nhất một sân con đang hoạt động; danh sách không dùng cache | `400` bộ lọc sai; `401` chưa đăng nhập |
+| `GET /facilities/{id}` | User/Admin | ID cơ sở | Chi tiết cơ sở đủ điều kiện công khai; `Cache-Control: no-store` | `401` chưa đăng nhập; `404` không tồn tại/không công khai |
 | `GET /courts/{id}/time-slots` | User/Admin | Ngày | Danh sách khung giờ và trạng thái khả dụng tại thời điểm phản hồi | `400` ngày sai; `401` chưa đăng nhập; `404` sân không tồn tại |
 | `POST /bookings` | User | `{ "slot_ids": [id, ...], "payment_option": "DEPOSIT_50" hoặc "FULL", "match_preference": null hoặc {"mode":"RANDOM" hoặc "CRITERIA", "gender":"ANY"/"MALE"/"FEMALE"/null, "skill":"BEGINNER"/"INTERMEDIATE"/"GOOD"/null, "format":"SINGLES"/"DOUBLES"/null, "message":string/null} }`; `match_preference` tùy chọn, mặc định NULL | `201`, booking `PENDING`, tổng/giá snapshot, payment `PENDING`, `payment_option`, `deposit_amount`, `amount_due_at_venue`, preference, `lock_expires_at`; booking, payment và khóa slot cùng transaction. Cọc = `CEILING(total_amount / 2)` VND. | `400` payload/enum sai, slot không liền, format không hỗ trợ, hoặc tìm đối khi khung đầu còn dưới 30 phút (`MATCH_PREFERENCE_TOO_LATE`)/format sai môn (`MATCH_FORMAT_NOT_SUPPORTED`); `401`; `403`; `404`; `409` slot bận, user đã có `PENDING`, thời gian/giá thay đổi |
 | `GET /bookings?mine=true` | User | Lọc `status`, `page`, `page_size` (mặc định 1/10, tối đa 50) | Danh sách và phân trang của user hiện tại; chỉ truy vấn booking theo user đăng nhập | `400` tham số sai; `401` |
@@ -203,17 +203,21 @@ Endpoint giả lập không gọi ngân hàng/ví thật. Kết quả mô phỏn
 
 | API | Vai trò | Input | Output thành công | Lỗi chính |
 |---|---|---|---|---|
-| `GET /admin/dashboard?range=today\|7d\|30d` (tương thích `period`) | Admin | Khoảng thời gian | Range, KPIs, doanh thu/ngày, trạng thái booking, top sân, đơn gần nhất, `server_time`; weak ETag | `400`; `401`; `403`; `304` |
+| `GET /admin/dashboard?range=today\|7d\|30d` (tương thích `period`) | Admin | Khoảng thời gian | Range, KPIs (gồm doanh thu kỳ trước và số liệu sân), `series` theo giờ/ngày, `revenue_by_day` tương thích, trạng thái booking, top sân, đơn gần nhất, `server_time`; weak ETag | `400`; `401`; `403`; `304` |
 | `GET /admin/bookings` | Admin | Bộ lọc/phân trang | Danh sách booking và metadata; `server_time`; weak ETag | `400`; `401`; `403`; `304` |
-| `GET /admin/users` | Admin | `q`, `status`, `page`, `page_size` | Danh sách không gồm hash/token/thông tin đăng nhập nhạy cảm; thống kê; `server_time`; weak ETag | `400`; `401`; `403`; `304` |
+| `GET /admin/bookings/{id}` | Admin | ID booking | Chi tiết đơn, khách, sân/khung giờ, thanh toán/hoàn tiền, thông tin hủy và quyền hủy sự cố | `400`; `401`; `403`; `404` |
+| `GET /admin/users` | Admin | `q`, `status`, `page`, `page_size` | Danh sách không gồm hash/token/thông tin đăng nhập nhạy cảm; `summary` toàn hệ thống gồm tổng, ACTIVE, ADMIN_LOCKED và tài khoản mới từ đầu tháng UTC+7; `server_time`; weak ETag | `400`; `401`; `403`; `304` |
 | `PATCH /admin/users/{id}/lock`, `PATCH /admin/users/{id}/unlock` | Admin | Lý do khóa tùy chọn | Trạng thái tài khoản; khóa thu hồi phiên | `400`; `401`; `403`; `404`; `409` |
-| `GET /admin/facilities` | Admin | `q`, `district`, `is_active`, `page`, `page_size` | Cơ sở, số sân, số đơn hiệu lực, phân trang; `server_time`; weak ETag | `400`; `401`; `403`; `304` |
+| `GET /admin/facilities` | Admin | `q`, `district`, `is_active`, `page`, `page_size` | Cơ sở, số sân, số đơn hiệu lực, phân trang; `summary` toàn hệ thống gồm tổng cơ sở, cơ sở đang mở/khóa và tỷ lệ lấp đầy 7 ngày; giữ các trường `active_courts`/`inactive_courts` cho tương thích; `server_time`; weak ETag | `400`; `401`; `403`; `304` |
 | `GET /admin/facilities/{id}` | Admin | ID cơ sở | Thông tin cơ sở, danh sách sân và số đơn hiệu lực; `server_time`; weak ETag | `401`; `403`; `404`; `304` |
 | `POST /admin/facilities`, `PATCH /admin/facilities/{id}` | Admin | Thông tin cơ sở; PATCH gồm `expected_updated_at` | Cơ sở được tạo/cập nhật; ghi audit trong transaction | `400`; `401`; `403`; `404`; `409` dữ liệu cũ/đơn hiệu lực |
+| `DELETE /admin/facilities/{id}` | Admin | `expected_updated_at` | Chỉ xóa khi chưa từng có booking; xóa các bản ghi phụ thuộc và ghi `DELETE_FACILITY` trong cùng transaction | `401`; `403`; `404`; `409` dữ liệu cũ hoặc lịch sử booking (kèm số đơn) |
 | `POST /admin/courts`, `PATCH /admin/courts/{id}` | Admin | `facility_id` khi tạo; PATCH gồm `expected_updated_at` | Sân được tạo/cập nhật; không đổi môn/ngừng sân có đơn hiệu lực; ghi audit | `400`; `401`; `403`; `404`; `409` dữ liệu cũ/trùng tên/đơn hiệu lực |
-| `GET /admin/courts/{id}/time-slots?date=&from_date=` | Admin | Ngày xem; ngày bắt đầu đếm khung trống tùy chọn | Khung giờ với trạng thái hiệu lực, mã booking khi bận, số khung trống sắp áp giá; `server_time`; weak ETag | `400`; `401`; `403`; `404`; `304` |
+| `GET /admin/courts/{id}/time-slots?date=&from_date=` hoặc `?from=&to=` | Admin | Ngày xem hoặc khoảng tối đa 31 ngày | Khung giờ với trạng thái hiệu lực, mã booking khi bận, số khung trống sắp áp giá; `server_time`; weak ETag | `400`; `401`; `403`; `404`; `304` |
+| `GET /admin/courts/{id}/time-slots/summary?month=YYYY-MM` | Admin | Tháng lịch | Tổng khung, đã đặt, đang giữ, còn trống và doanh thu dự kiến cho từng ngày; ngày không có khung trả 0; weak ETag | `400`; `401`; `403`; `404`; `304` |
 | `POST /admin/courts/{id}/generate-slots` | Admin | `from_date`, `to_date` (tối đa 31 ngày) | Chỉ chèn khung còn thiếu; số `inserted`/`existing`; audit trong transaction | `400`; `401`; `403`; `404`; `409` sân ngừng hoạt động |
-| `PATCH /admin/courts/{id}/prices` | Admin | `price_normal`, `price_peak`, `expected_updated_at` | Cập nhật giá sân và các khung `AVAILABLE` từ hôm nay; không đổi `LOCKED`, `BOOKED` hay giá booking đã chốt; audit | `400`; `401`; `403`; `404`; `409` dữ liệu cũ |
+| `PATCH /admin/courts/{id}/prices` | Admin | Một hoặc cả `price_normal`, `price_peak`; `expected_updated_at`; query `dry_run=true` để xem trước | Giá nguyên VND 1.000–10.000.000; xem trước trả số khung ảnh hưởng không ghi dữ liệu. Lưu cập nhật giá sân và khung `AVAILABLE` từ hôm nay; không đổi khung đang giữ/đã đặt hoặc giá booking đã chốt; audit cùng transaction | `400`; `401`; `403`; `404`; `409` dữ liệu cũ |
+| `GET /admin/bookings/export?status=&q=&date=&facility_id=` | Admin | Cùng bộ lọc booking đang áp dụng; tối đa 5.000 dòng | Tệp `.xlsx` với trạng thái tiếng Việt; tên `don-dat-san-YYYYMMDD-HHmm.xlsx`; ghi `EXPORT_BOOKINGS` và bộ lọc không chứa dữ liệu cá nhân | `400` bộ lọc sai hoặc quá 5.000 dòng; `401`; `403` |
 | `POST /admin/bookings/{id}/incident-cancellation` | Admin | Lý do sự cố bắt buộc | Booking hủy; hoàn 100% tức thời; thông báo khách | `400`; `401`; `403`; `404`; `409` trạng thái đã kết thúc hoặc thao tác lặp |
 | `GET /health` | Public/monitoring | Không | Trạng thái dịch vụ, không tiết lộ secret/chi tiết kết nối | `503` nếu dịch vụ không sẵn sàng |
 
@@ -226,6 +230,7 @@ Endpoint giả lập không gọi ngân hàng/ví thật. Kết quả mô phỏn
 | `409 Conflict` | Xung đột trạng thái, đặt trùng, dữ liệu thay đổi đồng thời hoặc vi phạm unique. |
 | `410 Gone` | Tài nguyên đã hết hạn theo thời hạn nghiệp vụ, ví dụ lock/thời gian ghép. |
 | `423 Locked` | Tài khoản tạm khóa đăng nhập do nhập sai mật khẩu quá số lần cho phép. |
+| `401 ACCOUNT_LOCKED` / `403 ACCOUNT_LOCKED` | Phiên của tài khoản Admin-locked hoặc đăng nhập vào tài khoản Admin-locked; phản hồi dùng thông báo khóa đã thống nhất. |
 
 ## 6. Tác vụ nền và cập nhật trạng thái
 

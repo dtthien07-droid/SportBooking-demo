@@ -314,6 +314,8 @@ Các quyết định dưới đây đã chốt và được áp dụng nhất qu
 17. Mốc tính hoàn tiền theo chính sách hủy là giờ bắt đầu khung đầu tiên. Admin được hủy booking ngoại lệ kể cả trong trận và hoàn 100% số đã trả.
 18. Vé QR chứa mã đơn để khách xuất trình cho nhân viên sân; hệ thống không có check-in nên không quét QR. Dashboard và quản lý user không có chỉ số "bùng cọc"; dùng số lượt đặt, tỷ lệ hoàn thành, tỷ lệ hủy.
 19. Dữ liệu sân ban đầu lấy từ khảo sát: 29 cơ sở tại 6 quận Hà Nội (cầu lông 10, bóng đá mini 8, pickleball 11). Mỗi cơ sở có ít nhất một sân; ban đầu mỗi cơ sở có một sân mặc định nên tổng là 29 sân. Môn hỗ trợ thể thức đơn/đôi: cầu lông, pickleball.
+20. Khách chỉ thấy cơ sở có `facilities.is_active = 1` và ít nhất một sân con có `courts.is_active = 1`; cơ sở chưa có sân vẫn hiện trong quản trị với nhãn **Chưa có sân**. Admin chỉ xóa cơ sở chưa từng có đơn đặt sân ở mọi trạng thái; thao tác xóa phụ thuộc và ghi audit cùng một transaction.
+21. Bốn số liệu trang quản lý cơ sở tính theo toàn bộ cơ sở, không theo bộ lọc: tổng, đang mở (`facilities.is_active = 1`), tạm khóa (`facilities.is_active = 0`) và tỷ lệ lấp đầy 7 ngày. Số liệu được cập nhật sau thao tác và polling mỗi 5 giây.
 
 ### Câu hỏi còn mở
 
