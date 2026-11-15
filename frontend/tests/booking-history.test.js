@@ -25,6 +25,12 @@ const historyMockup = fs.readFileSync(
   'utf8'
 );
 const legacyMaterialIconClass = ['material', '-symbols-outlined'].join('');
+const BOOKING_CARD_MOCKUP_EXCEPTIONS = {
+  ticketStatus: {
+    attribute: 'data-ticket-status',
+    reason: 'Trạng thái vé là thông tin nghiệp vụ trên thẻ thật, không có trong mockup.'
+  }
+};
 
 function classNames(source) {
   const classes = new Set();
@@ -459,6 +465,12 @@ test('cây phần tử của thẻ ở bốn trạng thái khớp mockup, sai kh
   statusRow.children.push(mockupBadge);
   footer.children.unshift(mockupPrice);
   const cardTree = parseElements(templateArticle)[0];
+  const ticketStatusException = BOOKING_CARD_MOCKUP_EXCEPTIONS.ticketStatus;
+  assert.equal(
+    (templateArticle.match(new RegExp(`\\b${ticketStatusException.attribute}\\b`, 'g')) || []).length,
+    1,
+    `${ticketStatusException.reason} Phần tử phải có đúng một lần trong thẻ thật.`
+  );
   const statuses = [
     ['PENDING', 'PENDING'],
     ['CONFIRMED', 'UPCOMING'],
@@ -481,6 +493,25 @@ test('cây phần tử của thẻ ở bốn trạng thái khớp mockup, sai kh
       }]
     });
     assert.equal(runtime.list.children.length, 1, `${status}: không dựng được thẻ`);
+    const actualStatusRow = findTreeNode(runtime.card.elementTree, (node) =>
+      node.tag === 'div' && node.classes.includes('flex-wrap') && node.classes.includes('justify-between'));
+    assert.ok(actualStatusRow, `${status}: thiếu hàng đầu của thẻ`);
+    const bookingCodeGroup = actualStatusRow.children[0];
+    assert.ok(
+      bookingCodeGroup?.tag === 'div' && bookingCodeGroup.classes.includes('items-center'),
+      `${status}: thiếu nhóm mã đơn ở hàng đầu`
+    );
+    const ticketStatusIndexes = bookingCodeGroup.children
+      .map((node, index) => 'attributes' in node && ticketStatusException.attribute in node.attributes
+        ? index
+        : -1)
+      .filter((index) => index >= 0);
+    assert.equal(
+      ticketStatusIndexes.length,
+      1,
+      `${status}: ${ticketStatusException.reason} Ngoại lệ chỉ áp dụng một phần tử tại hàng đầu.`
+    );
+    bookingCodeGroup.children.splice(ticketStatusIndexes[0], 1);
     const output = comparableMockupTree([runtime.card.elementTree]);
     const difference = treeDifference(expected[0], output[0]);
     assert.equal(difference, null, `${status}: ${difference}`);
