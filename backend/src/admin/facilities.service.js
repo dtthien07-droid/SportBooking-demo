@@ -1,6 +1,13 @@
 'use strict';
 
 const { writeAudit } = require('./admin-audit');
+const { createFacilitiesExport } = require('./bookings-export');
+const {
+  insertMissingSlotsForCourt,
+  localDateString,
+  normalizedHours,
+  readSlotDaysAhead
+} = require('../facilities/slot-generator');
 
 const SPORTS = new Set(['FOOTBALL_MINI', 'BADMINTON', 'PICKLEBALL']);
 const UINT64_MAX = 18446744073709551615n;
@@ -65,8 +72,13 @@ function optionalUrl(value, field) {
 function time(value, field, allowEndOfDay = false) {
   const endOfDay = allowEndOfDay && (value === '24:00' || value === '24:00:00');
   const valid = typeof value === 'string'
-    && (/^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value) || endOfDay);
-  if (!valid) throw failure(400, 'INVALID_INPUT', `${field} không hợp lệ.`);
+    && (/^(?:[01]\d|2[0-3]):00(?::00)?$/.test(value) || endOfDay);
+  if (!valid) {
+    const fieldName = field === 'Giờ mở cửa' ? 'opening_time' : 'closing_time';
+    throw failure(400, 'INVALID_OPENING_HOURS',
+      `${field} phải là giờ tròn, phút bằng 00${allowEndOfDay ? ' hoặc 24:00' : ''}.`,
+      { field: fieldName });
+  }
   return endOfDay ? '24:00' : value.length === 5 ? `${value}:00` : value;
 }
 
@@ -110,7 +122,8 @@ function validateFacility(input, { allowMissingHours = false } = {}) {
     const closingMinutes = closing === '24:00' ? 1440
       : Number(closing.slice(0, 2)) * 60 + Number(closing.slice(3, 5));
     if (openingMinutes >= closingMinutes) {
-      throw failure(400, 'INVALID_INPUT', 'Giờ mở cửa phải nhỏ hơn giờ đóng cửa.');
+      throw failure(400, 'INVALID_OPENING_HOURS', 'Giờ mở cửa phải nhỏ hơn giờ đóng cửa.',
+        { field: 'closing_time' });
     }
   }
   if (typeof input.amenities !== 'undefined'
@@ -222,6 +235,93 @@ function createAdminFacilitiesService(pool) {
     if (rows.length) throw failure(409, 'COURT_NAME_CONFLICT', 'Tên sân đã tồn tại trong cơ sở này.');
   }
 
+  async function synchronizeFacilityHours(connection, facilityId, values) {
+    const hours = normalizedHours(values.opening_time, values.closing_time);
+    if (!hours) throw failure(409, 'INVALID_OPENING_HOURS', 'Giờ hoạt động của cơ sở chưa hợp lệ.');
+    const [courts] = await connection.execute(
+      `SELECT id, price_normal, price_peak
+       FROM courts
+       WHERE facility_id = ?
+       ORDER BY id
+       FOR UPDATE`,
+      [facilityId]
+    );
+    if (!courts.length) return;
+
+    const today = localDateString();
+    const courtIds = courts.map((court) => String(court.id));
+    const placeholders = courtIds.map(() => '?').join(', ');
+    await connection.execute(
+      `SELECT id
+       FROM time_slots
+       WHERE court_id IN (${placeholders}) AND service_date >= ?
+       ORDER BY court_id, service_date, starts_at, id
+       FOR UPDATE`,
+      [...courtIds, today]
+    );
+
+    const [bookingRows] = await connection.execute(
+      `SELECT COUNT(DISTINCT b.id) AS total
+       FROM bookings AS b
+       INNER JOIN booking_slots AS bs ON bs.booking_id = b.id
+       INNER JOIN time_slots AS ts ON ts.id = bs.time_slot_id
+       INNER JOIN courts AS c ON c.id = bs.court_id
+       WHERE c.facility_id = ?
+         AND ((b.status = 'PENDING' AND b.lock_expires_at > UTC_TIMESTAMP(3))
+           OR (b.status = 'CONFIRMED'
+             AND TIMESTAMP(ts.service_date, ts.ends_at) - INTERVAL 7 HOUR > UTC_TIMESTAMP(3)))
+         AND (TIME_TO_SEC(ts.starts_at) < ? OR TIME_TO_SEC(ts.ends_at) > ?)`,
+      [facilityId, hours.openingMinutes * 60, hours.closingMinutes * 60]
+    );
+    const activeBookings = Number(bookingRows[0].total);
+    if (activeBookings > 0) {
+      throw failure(
+        409,
+        'FACILITY_HAS_ACTIVE_BOOKINGS',
+        `Không thể đổi giờ hoạt động vì còn ${activeBookings} đơn hiệu lực ngoài khung giờ mới.`,
+        { active_bookings: activeBookings }
+      );
+          await insertMissingSlotsForCourt(connection, {
+      courtId: courtResult.insertId,
+      firstDate: localDateString(),
+      daysAhead: readSlotDaysAhead(),
+      ...hours,
+      priceNormal: Number(court.price_normal),
+      pricePeak: Number(court.price_peak)
+          });
+    }
+
+    await connection.execute(
+      `DELETE ts
+       FROM time_slots AS ts
+       WHERE ts.court_id IN (${placeholders})
+         AND ts.service_date >= ?
+         AND ts.status = 'AVAILABLE'
+         AND (TIME_TO_SEC(ts.starts_at) < ? OR TIME_TO_SEC(ts.ends_at) > ?)
+         AND NOT EXISTS (
+           SELECT 1 FROM booking_slots AS bs WHERE bs.time_slot_id = ts.id
+         )`,
+      [
+        ...courtIds,
+        today,
+        hours.openingMinutes * 60,
+        hours.closingMinutes * 60
+      ]
+    );
+
+    const daysAhead = readSlotDaysAhead();
+    for (const court of courts) {
+      await insertMissingSlotsForCourt(connection, {
+        courtId: court.id,
+        firstDate: today,
+        daysAhead,
+        ...hours,
+        priceNormal: Number(court.price_normal),
+        pricePeak: Number(court.price_peak)
+      });
+    }
+  }
+
   return {
     async listFacilities(query) {
       const search = query.q === undefined ? '' : query.q;
@@ -251,11 +351,41 @@ function createAdminFacilitiesService(pool) {
         `SELECT COUNT(*) AS total FROM facilities AS f ${where}`,
         parameters
       );
+      const [summaryRows] = await pool.execute(
+        `SELECT
+           (SELECT COUNT(*) FROM facilities) AS total_facilities,
+           (SELECT COUNT(*) FROM facilities WHERE is_active = TRUE) AS active_facilities,
+           (SELECT COUNT(*) FROM facilities WHERE is_active = FALSE) AS inactive_facilities,
+           (SELECT COUNT(*)
+            FROM courts AS c
+            INNER JOIN facilities AS f ON f.id = c.facility_id
+            WHERE c.is_active = TRUE AND f.is_active = TRUE) AS active_courts,
+           (SELECT COUNT(*)
+            FROM courts AS c
+            INNER JOIN facilities AS f ON f.id = c.facility_id
+            WHERE c.is_active = FALSE OR f.is_active = FALSE) AS inactive_courts,
+           (SELECT COALESCE(ROUND(
+              100 * SUM(CASE WHEN ts.status = 'BOOKED' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0),
+              1
+            ), 0)
+            FROM time_slots AS ts
+            INNER JOIN courts AS c ON c.id = ts.court_id
+            INNER JOIN facilities AS f ON f.id = c.facility_id
+            WHERE f.is_active = TRUE AND c.is_active = TRUE
+              AND ts.service_date BETWEEN
+                DATE_SUB(DATE(DATE_ADD(UTC_TIMESTAMP(3), INTERVAL 7 HOUR)), INTERVAL 6 DAY)
+                AND DATE(DATE_ADD(UTC_TIMESTAMP(3), INTERVAL 7 HOUR))
+              AND ts.status IN ('AVAILABLE', 'LOCKED', 'BOOKED')
+              AND (ts.status <> 'LOCKED' OR ts.lock_expires_at > UTC_TIMESTAMP(3))
+           ) AS avg_fill_rate_percent`
+      );
       const [rows] = await pool.execute(
         `SELECT f.id, f.name, f.address, f.district, f.hotline, f.opening_time,
                 f.closing_time, f.is_active, f.updated_at,
                 COUNT(DISTINCT c.id) AS court_count,
-                COUNT(DISTINCT CASE WHEN c.is_active = TRUE THEN c.id END) AS active_court_count,
+                COUNT(DISTINCT CASE
+                  WHEN c.is_active = TRUE AND f.is_active = TRUE THEN c.id
+                END) AS active_court_count,
                 COUNT(DISTINCT CASE WHEN b.id IS NOT NULL THEN b.id END) AS active_booking_count
          FROM facilities AS f
          LEFT JOIN courts AS c ON c.facility_id = f.id
@@ -284,8 +414,143 @@ function createAdminFacilitiesService(pool) {
           page, page_size: pageSize, total: Number(counts[0].total),
           total_pages: Math.ceil(Number(counts[0].total) / pageSize)
         },
+        summary: {
+          total_facilities: Number(summaryRows[0].total_facilities),
+          active_facilities: Number(summaryRows[0].active_facilities),
+          inactive_facilities: Number(summaryRows[0].inactive_facilities),
+          active_courts: Number(summaryRows[0].active_courts),
+          inactive_courts: Number(summaryRows[0].inactive_courts),
+          avg_fill_rate_percent: Number(summaryRows[0].avg_fill_rate_percent)
+        },
         server_time: new Date().toISOString()
       };
+    },
+
+    async exportFacilities(query = {}, adminUserId) {
+      const search = query.q === undefined ? '' : query.q;
+      if (typeof search !== 'string' || search.length > 120) {
+        throw failure(400, 'INVALID_QUERY', 'q không được vượt quá 120 ký tự.');
+      }
+      const district = query.district || '';
+      const active = parseActive(query.is_active);
+      if (typeof query.district !== 'undefined'
+          && (typeof query.district !== 'string' || query.district.length > 120)) {
+        throw failure(400, 'INVALID_QUERY', 'district không hợp lệ.');
+      }
+      const conditions = [];
+      const parameters = [];
+      if (search.trim()) {
+        const escaped = search.trim().replace(/[!%_]/g, '!$&');
+        conditions.push("(f.name LIKE ? ESCAPE '!' OR f.address LIKE ? ESCAPE '!')");
+        parameters.push(`%${escaped}%`, `%${escaped}%`);
+      }
+      if (district) {
+        conditions.push('f.district = ?');
+        parameters.push(district);
+      }
+      if (active !== null) {
+        conditions.push('f.is_active = ?');
+        parameters.push(active);
+      }
+      const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+      const [countRows] = await pool.execute(
+        `SELECT COUNT(*) AS total FROM facilities AS f ${where}`,
+        parameters
+      );
+      const total = Number(countRows[0].total);
+      if (!Number.isSafeInteger(total)) throw new RangeError('Facility count exceeds the supported range.');
+      if (total > 5000) {
+        throw failure(400, 'EXPORT_TOO_MANY_ROWS', 'Quá nhiều dòng, hãy lọc thu hẹp');
+      }
+
+      const [summaryRows] = await pool.execute(
+        `SELECT COUNT(*) AS total_facilities,
+                COALESCE(SUM(CASE WHEN is_active = TRUE THEN 1 ELSE 0 END), 0) AS active_facilities,
+                COALESCE(SUM(CASE WHEN is_active = FALSE THEN 1 ELSE 0 END), 0) AS inactive_facilities,
+                (SELECT COALESCE(ROUND(
+                   100 * SUM(CASE WHEN ts.status = 'BOOKED' THEN 1 ELSE 0 END)
+                     / NULLIF(COUNT(*), 0),
+                   1
+                 ), 0)
+                 FROM time_slots AS ts
+                 INNER JOIN courts AS c ON c.id = ts.court_id
+                 INNER JOIN facilities AS f ON f.id = c.facility_id
+                 WHERE f.is_active = TRUE AND c.is_active = TRUE
+                   AND ts.service_date BETWEEN
+                     DATE_SUB(DATE(DATE_ADD(UTC_TIMESTAMP(3), INTERVAL 7 HOUR)), INTERVAL 6 DAY)
+                     AND DATE(DATE_ADD(UTC_TIMESTAMP(3), INTERVAL 7 HOUR))
+                   AND ts.status IN ('AVAILABLE', 'LOCKED', 'BOOKED')
+                   AND (ts.status <> 'LOCKED' OR ts.lock_expires_at > UTC_TIMESTAMP(3))
+                ) AS avg_fill_rate_percent
+         FROM facilities`
+      );
+      const summary = {
+        total_facilities: Number(summaryRows[0].total_facilities),
+        active_facilities: Number(summaryRows[0].active_facilities),
+        inactive_facilities: Number(summaryRows[0].inactive_facilities),
+        avg_fill_rate_percent: Number(summaryRows[0].avg_fill_rate_percent)
+      };
+      const [facilityRows] = await pool.execute(
+        `SELECT f.id, f.name, f.address, f.district, f.hotline,
+                f.opening_time, f.closing_time, f.is_active,
+                COUNT(DISTINCT c.id) AS court_count,
+                COUNT(DISTINCT CASE
+                  WHEN c.is_active = TRUE AND f.is_active = TRUE THEN c.id
+                END) AS active_court_count
+         FROM facilities AS f
+         LEFT JOIN courts AS c ON c.facility_id = f.id
+         ${where}
+         GROUP BY f.id
+         ORDER BY f.id DESC
+         LIMIT ?`,
+        [...parameters, 5001]
+      );
+      const facilityIds = facilityRows.map((facility) => String(facility.id));
+      const courts = [];
+      if (facilityIds.length) {
+        const placeholders = facilityIds.map(() => '?').join(', ');
+        const [courtRows] = await pool.execute(
+          `SELECT c.id, c.facility_id, c.name, c.price_normal, c.price_peak,
+                  f.name AS facility_name
+           FROM courts AS c
+           INNER JOIN facilities AS f ON f.id = c.facility_id
+           WHERE c.facility_id IN (${placeholders})
+           ORDER BY c.facility_id ASC, c.id ASC
+           LIMIT ?`,
+          [...facilityIds, 5001]
+        );
+        if (courtRows.length > 5000) {
+          throw failure(400, 'EXPORT_TOO_MANY_ROWS', 'Quá nhiều dòng, hãy lọc thu hẹp');
+        }
+        courts.push(...courtRows);
+      }
+      const exported = await createFacilitiesExport({
+        facilities: facilityRows.map((row) => ({
+          ...row,
+          id: String(row.id),
+          is_active: Boolean(row.is_active),
+          court_count: Number(row.court_count),
+          active_court_count: Number(row.active_court_count)
+        })),
+        courts,
+        summary
+      });
+      await transaction((connection) => writeAudit(connection, {
+        adminUserId,
+        action: 'EXPORT_FACILITIES',
+        resourceType: 'facilities_export',
+        resourceId: String(adminUserId),
+        details: {
+          filters: {
+            district: district || null,
+            is_active: active === null ? null : Boolean(active),
+            query_applied: Boolean(search.trim())
+          },
+          row_count: total,
+          court_row_count: courts.length
+        }
+      }));
+      return exported;
     },
 
     async getFacility(rawId) {
@@ -341,6 +606,9 @@ function createAdminFacilitiesService(pool) {
         throw failure(400, 'INVALID_INPUT', 'Danh sách sân không hợp lệ.');
       }
       const courts = (courtsInput || []).map(validateCourt);
+      if (courts.length === 0) {
+        throw failure(400, 'INVALID_INPUT', 'Cần có ít nhất một sân và thông tin giá để tạo khung giờ.');
+      }
       return transaction(async (connection) => {
         const [result] = await connection.execute(
           `INSERT INTO facilities
@@ -354,9 +622,10 @@ function createAdminFacilitiesService(pool) {
             facility.cancellation_policy, facility.is_active]
         );
         const facilityId = String(result.insertId);
+        const hours = normalizedHours(facility.opening_time, facility.closing_time);
         for (const court of courts) {
           await checkCourtName(connection, facilityId, court.name);
-          await connection.execute(
+          const [courtResult] = await connection.execute(
             `INSERT INTO courts
                (facility_id, name, sport_type, price_normal, price_peak, description,
                 is_active, is_seed, created_at, updated_at)
@@ -364,6 +633,14 @@ function createAdminFacilitiesService(pool) {
             [facilityId, court.name, court.sport_type, court.price_normal, court.price_peak,
               court.description, court.is_active]
           );
+            await insertMissingSlotsForCourt(connection, {
+              courtId: courtResult.insertId,
+              firstDate: localDateString(),
+              daysAhead: readSlotDaysAhead(),
+              ...hours,
+              priceNormal: Number(court.price_normal),
+              pricePeak: Number(court.price_peak)
+            });
         }
         await writeAudit(connection, {
           adminUserId, action: 'FACILITY_CREATE', resourceType: 'facility',
@@ -385,11 +662,14 @@ function createAdminFacilitiesService(pool) {
           is_active: Boolean(current.is_active),
           ...input
         }, { allowMissingHours: true });
+        const hoursChanged = String(current.opening_time).slice(0, 8) !== values.opening_time
+          || String(current.closing_time).slice(0, 8) !== values.closing_time;
         if (current.is_active && !values.is_active) {
           const count = await activeBookingCount(connection, { facilityId: id });
           if (count > 0) throw failure(409, 'FACILITY_HAS_ACTIVE_BOOKINGS',
             `Không thể ngừng cơ sở vì còn ${count} đơn hiệu lực.`, { active_bookings: count });
         }
+        if (hoursChanged) await synchronizeFacilityHours(connection, id, values);
         await connection.execute(
           `UPDATE facilities SET name = ?, address = ?, district = ?, opening_time = ?,
              closing_time = ?, hotline = ?, map_url = ?, image_url = ?, amenities = ?,
@@ -409,13 +689,86 @@ function createAdminFacilitiesService(pool) {
       });
     },
 
+    async deleteFacility(rawId, input, adminUserId) {
+      const id = positiveId(rawId, 'facility');
+      requireObjectInput(input);
+      const expected = parseUpdatedAt(input.expected_updated_at);
+      return transaction(async (connection) => {
+        const current = await lockAndCheckUpdatedAt(connection, 'facilities', id, expected);
+        const [courtRows] = await connection.execute(
+          `SELECT id FROM courts WHERE facility_id = ? ORDER BY id ASC`,
+          [id]
+        );
+        const courtIds = courtRows.map((court) => String(court.id));
+        if (courtIds.length) {
+          const placeholders = courtIds.map(() => '?').join(', ');
+          await connection.execute(
+            `SELECT id FROM time_slots
+             WHERE court_id IN (${placeholders})
+             ORDER BY id ASC FOR UPDATE`,
+            courtIds
+          );
+          await connection.execute(
+            `SELECT id FROM courts
+             WHERE id IN (${placeholders})
+             ORDER BY id ASC FOR UPDATE`,
+            courtIds
+          );
+        }
+
+        const [bookingRows] = await connection.execute(
+          `SELECT COUNT(DISTINCT b.id) AS total
+           FROM bookings AS b
+           INNER JOIN booking_slots AS bs ON bs.booking_id = b.id
+           INNER JOIN courts AS c ON c.id = bs.court_id
+           WHERE c.facility_id = ?`,
+          [id]
+        );
+        const bookingCount = Number(bookingRows[0].total);
+        if (bookingCount > 0) {
+          throw failure(
+            409,
+            'FACILITY_HAS_BOOKING_HISTORY',
+            `Cơ sở đã có lịch sử đặt sân (${bookingCount} đơn) nên không thể xóa. Hãy tạm khóa cơ sở thay vì xóa.`,
+            { booking_count: bookingCount }
+          );
+        }
+
+        if (courtIds.length) {
+          const placeholders = courtIds.map(() => '?').join(', ');
+          await connection.execute(
+            `DELETE FROM booking_slots WHERE court_id IN (${placeholders})`,
+            courtIds
+          );
+          await connection.execute(
+            `DELETE FROM time_slots WHERE court_id IN (${placeholders})`,
+            courtIds
+          );
+          await connection.execute(
+            `DELETE FROM courts WHERE id IN (${placeholders})`,
+            courtIds
+          );
+        }
+        await connection.execute('DELETE FROM facilities WHERE id = ?', [id]);
+        await writeAudit(connection, {
+          adminUserId,
+          action: 'DELETE_FACILITY',
+          resourceType: 'facility',
+          resourceId: id,
+          details: { facility_name: current.name }
+        });
+        return { id, name: current.name };
+      });
+    },
+
     async createCourt(input, adminUserId) {
       requireObjectInput(input);
       const facilityId = positiveId(String(input.facility_id), 'facility');
       const values = validateCourt(input);
       return transaction(async (connection) => {
         const [facilities] = await connection.execute(
-          'SELECT id, is_active FROM facilities WHERE id = ? FOR UPDATE', [facilityId]
+          'SELECT id, is_active, opening_time, closing_time FROM facilities WHERE id = ? FOR UPDATE',
+          [facilityId]
         );
         if (!facilities.length) throw failure(404, 'FACILITY_NOT_FOUND', 'Không tìm thấy cơ sở.');
         if (!facilities[0].is_active) throw failure(409, 'FACILITY_INACTIVE', 'Cơ sở đang ngừng hoạt động.');
@@ -429,6 +782,18 @@ function createAdminFacilitiesService(pool) {
             values.price_peak, values.description, values.is_active]
         );
         const id = String(result.insertId);
+        const hours = normalizedHours(facilities[0].opening_time, facilities[0].closing_time);
+        if (!hours) {
+          throw failure(409, 'INVALID_OPENING_HOURS', 'Giờ hoạt động của cơ sở chưa hợp lệ.');
+        }
+        await insertMissingSlotsForCourt(connection, {
+          courtId: id,
+          firstDate: localDateString(),
+          daysAhead: readSlotDaysAhead(),
+          ...hours,
+          priceNormal: Number(values.price_normal),
+          pricePeak: Number(values.price_peak)
+        });
         await writeAudit(connection, {
           adminUserId, action: 'COURT_CREATE', resourceType: 'court', resourceId: id,
           details: { facility_id: facilityId, sport_type: values.sport_type }

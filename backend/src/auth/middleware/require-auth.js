@@ -10,9 +10,15 @@ function createAuthError(status, code, message) {
   return error;
 }
 
+const ACCOUNT_LOCKED_MESSAGE =
+  'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.';
+
 function createRequireAuth({ sessionRepository, cookieName, secureCookie = false }) {
   if (!sessionRepository || typeof sessionRepository.findActiveByTokenHash !== 'function') {
     throw new TypeError('A compatible session repository is required.');
+  }
+  if (typeof sessionRepository.findLockedAccountByTokenHash !== 'function') {
+    throw new TypeError('A compatible locked-account lookup is required.');
   }
 
   return async function requireAuth(request, response, next) {
@@ -24,10 +30,14 @@ function createRequireAuth({ sessionRepository, cookieName, secureCookie = false
     const tokenHash = hashToken(token);
     const session = await sessionRepository.findActiveByTokenHash(tokenHash);
     if (!session) {
+      const lockedAccount = await sessionRepository.findLockedAccountByTokenHash(tokenHash);
+      if (lockedAccount) {
+        return next(createAuthError(401, 'ACCOUNT_LOCKED', ACCOUNT_LOCKED_MESSAGE));
+      }
       return next(createAuthError(401, 'UNAUTHENTICATED', 'Authentication is required.'));
     }
     if (session.account_status !== 'ACTIVE') {
-      return next(createAuthError(403, 'ACCOUNT_LOCKED', 'This account has been locked.'));
+      return next(createAuthError(401, 'ACCOUNT_LOCKED', ACCOUNT_LOCKED_MESSAGE));
     }
 
     request.auth = {

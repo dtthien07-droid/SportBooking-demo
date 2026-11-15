@@ -160,6 +160,8 @@ function createBookingRepository(pool) {
                 c.is_active AS court_is_active,
                 f.id AS facility_id, f.name AS facility_name,
                 f.is_active AS facility_is_active,
+                TIME_FORMAT(f.opening_time, '%H:%i:%s') AS opening_time,
+                TIME_FORMAT(f.closing_time, '%H:%i:%s') AS closing_time,
                 CASE
                   WHEN ts.lock_expires_at IS NOT NULL
                        AND ts.lock_expires_at <= UTC_TIMESTAMP(3)
@@ -567,6 +569,7 @@ function createBookingRepository(pool) {
                 b.match_preference, b.lock_expires_at,
                 p.status AS payment_status, p.amount_due, p.paid_amount,
                 p.refunded_amount, p.payment_option,
+                bt.id AS ticket_id, bt.qr_code, bt.created_at AS ticket_created_at,
                 CASE
                   WHEN b.status != 'PENDING' OR b.lock_expires_at IS NULL THEN NULL
                   ELSE GREATEST(
@@ -582,6 +585,7 @@ function createBookingRepository(pool) {
                 END AS lock_expired
          FROM bookings AS b
          LEFT JOIN payments AS p ON p.booking_id = b.id
+         LEFT JOIN booking_tickets AS bt ON bt.booking_id = b.id
          WHERE b.id = ? AND b.user_id = ?
          LIMIT 1`,
         [bookingId, userId]
@@ -671,6 +675,7 @@ function createBookingRepository(pool) {
         `SELECT b.id, b.booking_code, b.user_id, b.status, b.total_amount, b.created_at,
                 b.lock_expires_at, p.status AS payment_status,
                 p.paid_amount, p.refunded_amount,
+                bt.id AS ticket_id, bt.qr_code, bt.created_at AS ticket_created_at,
                 CASE
                   WHEN b.status != 'PENDING' OR b.lock_expires_at IS NULL THEN NULL
                   ELSE GREATEST(
@@ -685,6 +690,7 @@ function createBookingRepository(pool) {
                 END AS lock_expired
          FROM bookings AS b
          LEFT JOIN payments AS p ON p.booking_id = b.id
+         LEFT JOIN booking_tickets AS bt ON bt.booking_id = b.id
          WHERE ${whereClause}
          ORDER BY b.created_at DESC, b.id DESC
          LIMIT ? OFFSET ?`,

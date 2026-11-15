@@ -17,6 +17,14 @@ function lockReason(body) {
   return body.reason || '';
 }
 
+function sendSpreadsheet(response, result) {
+  response
+    .set('Cache-Control', 'no-store')
+    .type('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    .set('Content-Disposition', `attachment; filename="${result.filename}"`)
+    .send(result.buffer);
+}
+
 function createAdminRouter({
   adminService,
   adminFacilitiesService,
@@ -33,6 +41,13 @@ function createAdminRouter({
 
   router.get('/users', requireAuth, requireAdmin, adminEtag, async (request, response) => {
     response.json(await adminService.listUsers(request.query));
+  });
+
+  router.get('/users/export', requireAuth, requireAdmin, async (request, response) => {
+    sendSpreadsheet(response, await adminService.exportUsers(
+      request.query,
+      request.auth.user.id
+    ));
   });
 
   router.patch('/users/:id/lock', requireAuth, requireAdmin, async (request, response) => {
@@ -57,6 +72,13 @@ function createAdminRouter({
     response.json(await adminFacilitiesService.listFacilities(request.query));
   });
 
+  router.get('/facilities/export', requireAuth, requireAdmin, async (request, response) => {
+    sendSpreadsheet(response, await adminFacilitiesService.exportFacilities(
+      request.query,
+      request.auth.user.id
+    ));
+  });
+
   router.get('/facilities/:id', requireAuth, requireAdmin, adminEtag, async (request, response) => {
     response.json(await adminFacilitiesService.getFacility(request.params.id));
   });
@@ -76,6 +98,14 @@ function createAdminRouter({
     ));
   });
 
+  router.delete('/facilities/:id', requireAuth, requireAdmin, async (request, response) => {
+    response.json(await adminFacilitiesService.deleteFacility(
+      request.params.id,
+      request.body,
+      request.auth.user.id
+    ));
+  });
+
   router.post('/courts', requireAuth, requireAdmin, async (request, response) => {
     response.status(201).json(await adminFacilitiesService.createCourt(
       request.body,
@@ -83,11 +113,40 @@ function createAdminRouter({
     ));
   });
 
+  router.get(
+    '/courts/:id/time-slots/summary',
+    requireAuth,
+    requireAdmin,
+    adminEtag,
+    async (request, response) => {
+      response.json(await adminSlotsService.getMonthlySummary(
+        request.params.id,
+        request.query.month
+      ));
+    }
+  );
+
+  router.get(
+    '/courts/:id/time-slots/export',
+    requireAuth,
+    requireAdmin,
+    async (request, response) => {
+      sendSpreadsheet(response, await adminSlotsService.exportTimeSlots(
+        request.params.id,
+        request.query.from,
+        request.query.to,
+        request.auth.user.id
+      ));
+    }
+  );
+
   router.get('/courts/:id/time-slots', requireAuth, requireAdmin, adminEtag, async (request, response) => {
     response.json(await adminSlotsService.listTimeSlots(
       request.params.id,
       request.query.date,
-      request.query.from_date
+      request.query.from_date,
+      request.query.from,
+      request.query.to
     ));
   });
 
@@ -100,10 +159,19 @@ function createAdminRouter({
   });
 
   router.patch('/courts/:id/prices', requireAuth, requireAdmin, async (request, response) => {
+    if (request.query.dry_run !== undefined
+        && request.query.dry_run !== 'true'
+        && request.query.dry_run !== 'false') {
+      const error = new Error('dry_run phải là true hoặc false.');
+      error.status = 400;
+      error.code = 'INVALID_INPUT';
+      throw error;
+    }
     response.json(await adminSlotsService.updatePrices(
       request.params.id,
       request.body,
-      request.auth.user.id
+      request.auth.user.id,
+      { dryRun: request.query.dry_run === 'true' }
     ));
   });
 
@@ -120,6 +188,17 @@ function createAdminRouter({
     response.json(result);
   });
 
+  router.get('/bookings/export', requireAuth, requireAdmin, async (request, response) => {
+    sendSpreadsheet(response, await adminService.exportBookings(
+      request.query,
+      request.auth.user.id
+    ));
+  });
+
+  router.get('/bookings/:id', requireAuth, requireAdmin, adminEtag, async (request, response) => {
+    response.json(await adminService.getBookingDetail(request.params.id));
+  });
+
   router.post(
     '/bookings/:id/incident-cancellation',
     requireAuth,
@@ -133,6 +212,13 @@ function createAdminRouter({
       response.json(result);
     }
   );
+
+  router.get('/dashboard/export', requireAuth, requireAdmin, async (request, response) => {
+    sendSpreadsheet(response, await adminService.exportDashboard(
+      request.query,
+      request.auth.user.id
+    ));
+  });
 
   router.get('/dashboard', requireAuth, requireAdmin, adminEtag, async (request, response) => {
     const result = await adminService.getDashboard(request.query.range || request.query.period);

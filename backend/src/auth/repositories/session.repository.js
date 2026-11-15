@@ -32,6 +32,18 @@ function createSessionRepository(pool) {
       return rows[0] || null;
     },
 
+    async findLockedAccountByTokenHash(tokenHash) {
+      const [rows] = await pool.execute(
+        `SELECT u.account_status
+         FROM user_sessions AS s
+         INNER JOIN users AS u ON u.id = s.user_id
+         WHERE s.token_hash = ? AND u.account_status = 'ADMIN_LOCKED'
+         LIMIT 1`,
+        [tokenHash]
+      );
+      return rows[0] || null;
+    },
+
     async revokeByTokenHash(tokenHash) {
       const [result] = await pool.execute(
         `UPDATE user_sessions

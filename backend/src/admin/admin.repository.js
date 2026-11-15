@@ -1,5 +1,78 @@
 'use strict';
 
+function escapeLike(value) {
+  return value.replace(/[!%_]/g, (character) => `!${character}`);
+}
+
+function buildBookingWhere({ status, query, facilityId, date }, includeDisplayStatus = false) {
+  const conditions = [];
+  const parameters = [];
+  let bookingTimeJoin = '';
+  if (status) {
+    if (includeDisplayStatus && ['UPCOMING', 'IN_PROGRESS', 'COMPLETED'].includes(status)) {
+      bookingTimeJoin = `LEFT JOIN (
+        SELECT bs.booking_id,
+               MIN(TIMESTAMP(ts.service_date, ts.starts_at)) AS first_slot_start,
+               MAX(CASE
+                 WHEN TIME(ts.ends_at) = '24:00:00'
+                 THEN TIMESTAMP(DATE_ADD(ts.service_date, INTERVAL 1 DAY), '00:00:00')
+                 ELSE TIMESTAMP(ts.service_date, ts.ends_at)
+               END) AS last_slot_end
+        FROM booking_slots AS bs
+        INNER JOIN time_slots AS ts ON ts.id = bs.time_slot_id
+        GROUP BY bs.booking_id
+      ) AS booking_times ON booking_times.booking_id = b.id`;
+      const localNow = 'DATE_ADD(UTC_TIMESTAMP(3), INTERVAL 7 HOUR)';
+      if (status === 'UPCOMING') {
+        conditions.push(`b.status = 'CONFIRMED' AND booking_times.first_slot_start > ${localNow}`);
+      } else if (status === 'IN_PROGRESS') {
+        conditions.push(
+          `b.status = 'CONFIRMED'
+           AND booking_times.first_slot_start <= ${localNow}
+           AND booking_times.last_slot_end > ${localNow}`
+        );
+      } else {
+        conditions.push(
+          `(b.status = 'COMPLETED'
+            OR (b.status = 'CONFIRMED' AND booking_times.last_slot_end <= ${localNow}))`
+        );
+      }
+    } else {
+      conditions.push('b.status = ?');
+      parameters.push(status);
+    }
+  }
+  if (query) {
+    conditions.push("b.booking_code LIKE ? ESCAPE '!'");
+    parameters.push(`%${escapeLike(query)}%`);
+  }
+  if (facilityId || date) {
+    const slotConditions = ['filter_bs.booking_id = b.id'];
+    if (facilityId) {
+      slotConditions.push('filter_c.facility_id = ?');
+      parameters.push(facilityId);
+    }
+    if (date) {
+      slotConditions.push('filter_ts.service_date = ?');
+      parameters.push(date);
+    }
+    conditions.push(
+      `EXISTS (
+         SELECT 1
+         FROM booking_slots AS filter_bs
+         INNER JOIN time_slots AS filter_ts ON filter_ts.id = filter_bs.time_slot_id
+         INNER JOIN courts AS filter_c ON filter_c.id = filter_bs.court_id
+         WHERE ${slotConditions.join(' AND ')}
+       )`
+    );
+  }
+  return {
+    bookingTimeJoin,
+    whereClause: conditions.length ? `WHERE ${conditions.join(' AND ')}` : '',
+    parameters
+  };
+}
+
 function createAdminRepository(pool) {
   if (!pool || typeof pool.execute !== 'function') {
     throw new TypeError('A MySQL-compatible pool is required.');
@@ -23,7 +96,7 @@ function createAdminRepository(pool) {
       }
     },
 
-    async listUsers({ query, status, page, pageSize }) {
+    async listUsers({ query, status, page, pageSize, monthStartUtc, monthEndUtc }) {
       const conditions = [];
       const parameters = [];
       if (status) {
@@ -42,6 +115,18 @@ function createAdminRepository(pool) {
       );
       const total = Number(countRows[0].total);
       if (!Number.isSafeInteger(total)) throw new RangeError('User count exceeds the supported range.');
+      const [summaryRows] = await pool.execute(
+        `SELECT COUNT(*) AS total_users,
+                COALESCE(SUM(CASE WHEN u.account_status = 'ACTIVE' THEN 1 ELSE 0 END), 0) AS active_users,
+                COALESCE(SUM(CASE WHEN u.account_status = 'ADMIN_LOCKED' THEN 1 ELSE 0 END), 0) AS locked_users,
+                COALESCE(SUM(CASE WHEN u.created_at >= ? AND u.created_at < ? THEN 1 ELSE 0 END), 0) AS new_users_this_month
+         FROM users AS u`,
+        [monthStartUtc, monthEndUtc]
+      );
+      const summary = Object.fromEntries(
+        ['total_users', 'active_users', 'locked_users', 'new_users_this_month']
+          .map((key) => [key, Number(summaryRows[0][key])])
+      );
       const [rows] = await pool.execute(
         `SELECT u.id, u.full_name, u.email, u.phone, u.role, u.account_status,
                 u.created_at, u.updated_at,
@@ -73,7 +158,49 @@ function createAdminRepository(pool) {
          LIMIT ? OFFSET ?`,
         [...parameters, pageSize, (page - 1) * pageSize]
       );
-      return { rows, total };
+      return { rows, total, summary };
+    },
+
+    async exportUsers({ query, status, monthStartUtc, monthEndUtc, maxRows }) {
+      const conditions = [];
+      const parameters = [];
+      if (status) {
+        conditions.push('u.account_status = ?');
+        parameters.push(status);
+      }
+      if (query) {
+        conditions.push("(u.full_name LIKE ? ESCAPE '!' OR u.email LIKE ? ESCAPE '!')");
+        parameters.push(`%${escapeLike(query)}%`, `%${escapeLike(query)}%`);
+      }
+      const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+      const [countRows] = await pool.execute(
+        `SELECT COUNT(*) AS total FROM users AS u ${where}`,
+        parameters
+      );
+      const total = Number(countRows[0].total);
+      if (!Number.isSafeInteger(total)) throw new RangeError('User count exceeds the supported range.');
+      const [summaryRows] = await pool.execute(
+        `SELECT COUNT(*) AS total_users,
+                COALESCE(SUM(CASE WHEN account_status = 'ACTIVE' THEN 1 ELSE 0 END), 0) AS active_users,
+                COALESCE(SUM(CASE WHEN account_status = 'ADMIN_LOCKED' THEN 1 ELSE 0 END), 0) AS locked_users,
+                COALESCE(SUM(CASE WHEN created_at >= ? AND created_at < ? THEN 1 ELSE 0 END), 0) AS new_users_this_month
+         FROM users`,
+        [monthStartUtc, monthEndUtc]
+      );
+      const summary = Object.fromEntries(
+        ['total_users', 'active_users', 'locked_users', 'new_users_this_month']
+          .map((key) => [key, Number(summaryRows[0][key])])
+      );
+      if (total > maxRows) return { rows: [], total, summary };
+      const [rows] = await pool.execute(
+        `SELECT u.id, u.full_name, u.email, u.phone, u.account_status, u.created_at
+         FROM users AS u
+         ${where}
+         ORDER BY u.id DESC
+         LIMIT ?`,
+        [...parameters, maxRows]
+      );
+      return { rows, total, summary };
     },
 
     async lockUser(connection, userId) {
@@ -116,40 +243,7 @@ function createAdminRepository(pool) {
     },
 
     async listBookings({ status, query, facilityId, date, page, pageSize }) {
-      const conditions = [];
-      const parameters = [];
-      if (status) {
-        conditions.push('b.status = ?');
-        parameters.push(status);
-      }
-      if (query) {
-        const escapedQuery = query.replace(/[!%_]/g, '!$&');
-        conditions.push("b.booking_code LIKE ? ESCAPE '!'");
-        parameters.push(`%${escapedQuery}%`);
-      }
-      if (facilityId || date) {
-        const slotConditions = ['filter_bs.booking_id = b.id'];
-        if (facilityId) {
-          slotConditions.push('filter_c.facility_id = ?');
-          parameters.push(facilityId);
-        }
-        if (date) {
-          slotConditions.push('filter_ts.service_date = ?');
-          parameters.push(date);
-        }
-        conditions.push(
-          `EXISTS (
-             SELECT 1
-             FROM booking_slots AS filter_bs
-             INNER JOIN time_slots AS filter_ts ON filter_ts.id = filter_bs.time_slot_id
-             INNER JOIN courts AS filter_c ON filter_c.id = filter_bs.court_id
-             WHERE ${slotConditions.join(' AND ')}
-           )`
-        );
-      }
-      const whereClause = conditions.length > 0
-        ? `WHERE ${conditions.join(' AND ')}`
-        : '';
+      const { whereClause, parameters } = buildBookingWhere({ status, query, facilityId, date });
       const [countRows] = await pool.execute(
         `SELECT COUNT(*) AS total
          FROM bookings AS b
@@ -163,6 +257,7 @@ function createAdminRepository(pool) {
 
       const [rows] = await pool.execute(
         `SELECT b.id, b.booking_code, b.status, b.total_amount, b.created_at,
+                (b.lock_expires_at > UTC_TIMESTAMP(3)) AS lock_active,
                 p.status AS payment_status, p.paid_amount, p.refunded_amount,
                 u.id AS owner_id, u.full_name AS owner_full_name,
                 u.email AS owner_email, u.phone AS owner_phone
@@ -175,6 +270,41 @@ function createAdminRepository(pool) {
         [...parameters, pageSize, (page - 1) * pageSize]
       );
 
+      return { rows, total };
+    },
+
+    async exportBookings({ status, query, facilityId, date, maxRows }) {
+      const { bookingTimeJoin, whereClause, parameters } = buildBookingWhere(
+        { status, query, facilityId, date },
+        true
+      );
+      const [countRows] = await pool.execute(
+        `SELECT COUNT(DISTINCT b.id) AS total
+         FROM bookings AS b
+         ${bookingTimeJoin}
+         ${whereClause}`,
+        parameters
+      );
+      const total = Number(countRows[0].total);
+      if (!Number.isSafeInteger(total)) {
+        throw new RangeError('Booking count exceeds the supported range.');
+      }
+      if (total > maxRows) return { rows: [], total };
+      const [rows] = await pool.execute(
+        `SELECT b.id, b.booking_code, b.status, b.total_amount, b.created_at,
+                b.cancelled_by, b.cancellation_reason,
+                p.paid_amount, p.refunded_amount,
+                u.full_name AS owner_full_name, u.phone AS owner_phone,
+                u.email AS owner_email
+         FROM bookings AS b
+         INNER JOIN users AS u ON u.id = b.user_id
+         LEFT JOIN payments AS p ON p.booking_id = b.id
+         ${bookingTimeJoin}
+         ${whereClause}
+         ORDER BY b.created_at DESC, b.id DESC
+         LIMIT ?`,
+        [...parameters, maxRows]
+      );
       return { rows, total };
     },
 
@@ -199,6 +329,23 @@ function createAdminRepository(pool) {
         bookingIds
       );
       return rows;
+    },
+
+    async getBookingDetail(bookingId) {
+      const [rows] = await pool.execute(
+        `SELECT b.id, b.booking_code, b.status, b.total_amount, b.created_at,
+                (b.lock_expires_at > UTC_TIMESTAMP(3)) AS lock_active,
+                b.cancelled_by, b.cancellation_reason,
+                p.status AS payment_status, p.payment_option, p.paid_amount, p.refunded_amount,
+                u.id AS owner_id, u.full_name AS owner_full_name,
+                u.email AS owner_email, u.phone AS owner_phone
+         FROM bookings AS b
+         INNER JOIN users AS u ON u.id = b.user_id
+         LEFT JOIN payments AS p ON p.booking_id = b.id
+         WHERE b.id = ?`,
+        [bookingId]
+      );
+      return rows[0] || null;
     },
 
     async getDashboardBookingCounts(start, end) {
@@ -250,6 +397,58 @@ function createAdminRepository(pool) {
       return rows;
     },
 
+    async getRevenueSeries(start, end, hourly) {
+      const bucketExpression = hourly
+        ? "DATE_FORMAT(DATE_ADD(paid_at, INTERVAL 7 HOUR), '%Y-%m-%d %H:00:00')"
+        : "DATE_FORMAT(DATE_ADD(paid_at, INTERVAL 7 HOUR), '%Y-%m-%d 00:00:00')";
+      const [rows] = await pool.execute(
+        `SELECT ${bucketExpression} AS bucket,
+                COALESCE(SUM(paid_amount - refunded_amount), 0) AS net_revenue
+         FROM payments
+         WHERE paid_at >= ? AND paid_at < ?
+         GROUP BY bucket
+         ORDER BY bucket ASC`,
+        [start, end]
+      );
+      return rows;
+    },
+
+    async getBookingSeries(start, end, hourly) {
+      const bucketExpression = hourly
+        ? "DATE_FORMAT(DATE_ADD(created_at, INTERVAL 7 HOUR), '%Y-%m-%d %H:00:00')"
+        : "DATE_FORMAT(DATE_ADD(created_at, INTERVAL 7 HOUR), '%Y-%m-%d 00:00:00')";
+      const [rows] = await pool.execute(
+        `SELECT ${bucketExpression} AS bucket, COUNT(*) AS bookings
+         FROM bookings
+         WHERE created_at >= ? AND created_at < ?
+         GROUP BY bucket
+         ORDER BY bucket ASC`,
+        [start, end]
+      );
+      return rows;
+    },
+
+    async getDashboardCourtCounts(start, end) {
+      const [rows] = await pool.execute(
+        `SELECT
+           (SELECT COUNT(*) FROM courts WHERE is_active = TRUE) AS courts_active,
+           (SELECT COUNT(*) FROM courts WHERE is_active = FALSE) AS courts_inactive,
+           COUNT(DISTINCT CASE
+             WHEN b.status = 'PENDING' AND b.lock_expires_at > UTC_TIMESTAMP(3)
+               OR b.status = 'CONFIRMED'
+                 AND TIMESTAMP(ts.service_date, ts.ends_at) > DATE_ADD(UTC_TIMESTAMP(3), INTERVAL 7 HOUR)
+             THEN c.id
+           END) AS courts_with_bookings
+         FROM bookings AS b
+         INNER JOIN booking_slots AS bs ON bs.booking_id = b.id
+         INNER JOIN time_slots AS ts ON ts.id = bs.time_slot_id
+         INNER JOIN courts AS c ON c.id = bs.court_id
+         WHERE b.created_at >= ? AND b.created_at < ?`,
+        [start, end]
+      );
+      return rows[0];
+    },
+
     async getDashboardFillRate(fromDate, toDate) {
       const [rows] = await pool.execute(
         `SELECT COUNT(*) AS total_slots,
@@ -292,8 +491,11 @@ function createAdminRepository(pool) {
     async getRecentBookings(limit) {
       const [rows] = await pool.execute(
         `SELECT b.id, b.booking_code, b.status, b.created_at,
-                u.full_name AS owner_name,
-                COALESCE(p.paid_amount, 0) AS paid_amount
+                (b.lock_expires_at > UTC_TIMESTAMP(3)) AS lock_active,
+                u.full_name AS owner_name, u.phone AS owner_phone,
+                p.status AS payment_status, p.payment_option,
+                COALESCE(p.paid_amount, 0) AS paid_amount,
+                COALESCE(p.refunded_amount, 0) AS refunded_amount
          FROM bookings AS b
          INNER JOIN users AS u ON u.id = b.user_id
          LEFT JOIN payments AS p ON p.booking_id = b.id

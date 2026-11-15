@@ -36,13 +36,17 @@ function localDateOffset(days) {
 }
 
 function slotAtLocalOffset(hours) {
-  const localHour = Math.ceil((Date.now() + 7 * 3_600_000) / 3_600_000) * 3_600_000;
-  const start = new Date(localHour + hours * 3_600_000);
+  const start = new Date(Date.now() + 7 * 3_600_000);
+  start.setUTCMinutes(0, 0, 0);
+  start.setUTCHours(start.getUTCHours() + 1 + hours);
   const end = new Date(start.getTime() + 3_600_000);
+  const serviceDate = start.toISOString().slice(0, 10);
   return {
-    serviceDate: start.toISOString().slice(0, 10),
+    serviceDate,
     startsAt: start.toISOString().slice(11, 19),
-    endsAt: end.toISOString().slice(11, 19)
+    endsAt: end.toISOString().slice(0, 10) === serviceDate
+      ? end.toISOString().slice(11, 19)
+      : '24:00:00'
   };
 }
 
@@ -271,7 +275,7 @@ test('notification API and booking events work transactionally over HTTP on spor
         {},
         owner.cookie
       );
-      assert.equal(halfResponse.status, 200);
+      assert.equal(halfResponse.status, 200, await halfResponse.clone().text());
       assert.equal((await halfResponse.json()).refund_percent, 50);
       const halfRows = await notificationsFor(halfRefund.booking_id);
       assert.equal(halfRows.length, 4);

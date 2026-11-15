@@ -28,8 +28,17 @@ test('admin dashboard returns a zero-filled date range and metrics when no data 
       async getDashboardPaymentMetrics() {
         return { gross_paid: '0', refunded: '0' };
       },
+      async getRevenueSeries() {
+        return [];
+      },
+      async getBookingSeries() {
+        return [];
+      },
       async getRevenueByDay() {
         return [];
+      },
+      async getDashboardCourtCounts() {
+        return { courts_active: 0, courts_inactive: 0, courts_with_bookings: 0 };
       },
       async getDashboardFillRate() {
         return { total_slots: 0, booked_slots: 0 };
@@ -61,10 +70,24 @@ test('admin dashboard returns a zero-filled date range and metrics when no data 
       confirmed_bookings: 0,
       cancelled_bookings: 0,
       net_revenue: '0',
+      net_revenue_prev: '0',
       gross_paid: '0',
       refunded: '0',
       fill_rate_percent: 0,
+      courts_active: 0,
+      courts_with_bookings: 0,
+      courts_inactive: 0,
       pending_match_requests: 0
+    },
+    series: {
+      granularity: 'hour',
+      buckets: Array.from({ length: 24 }, (_, hour) => ({
+        start: new Date(Date.parse(
+          `2026-11-12T${String(hour).padStart(2, '0')}:00:00+07:00`
+        )).toISOString(),
+        net_revenue: '0',
+        bookings: 0
+      }))
     },
     revenue_by_day: [{ date: '2026-11-12', net_revenue: '0' }],
     bookings_by_status: {

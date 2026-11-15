@@ -422,7 +422,14 @@ function createBookingsService(repository, {
         for (const slot of requestedSlots) {
           if ((slot.court_is_active !== 1 && slot.court_is_active !== true)
               || (slot.facility_is_active !== 1 && slot.facility_is_active !== true)) {
-            throw createBookingError(409, 'SLOT_UNAVAILABLE', 'Sân hiện không khả dụng.');
+            throw createBookingError(409, 'COURT_INACTIVE', 'Sân hoặc cơ sở đang tạm khóa hoạt động.');
+          }
+          if (slot.starts_at < slot.opening_time || slot.ends_at > slot.closing_time) {
+            throw createBookingError(
+              409,
+              'SLOT_OUTSIDE_OPENING_HOURS',
+              'Khung giờ nằm ngoài giờ hoạt động của cơ sở.'
+            );
           }
           const expiredLock = slot.status === 'LOCKED' && Number(slot.lock_expired) === 1;
           if (slot.status !== 'AVAILABLE' && !expiredLock) {
@@ -595,6 +602,11 @@ function createBookingsService(repository, {
         payment_status: booking.payment_status,
         paid_amount: booking.paid_amount === null ? null : String(booking.paid_amount),
         refunded_amount: booking.refunded_amount === null ? null : String(booking.refunded_amount),
+        ticket: booking.ticket_id === null ? null : {
+          id: String(booking.ticket_id),
+          qr_code: booking.qr_code,
+          created_at: booking.ticket_created_at
+        },
         remaining_seconds: booking.remaining_seconds === null
           ? null
           : asNumber(booking.remaining_seconds),
@@ -688,6 +700,11 @@ function createBookingsService(repository, {
         amount_due: String(booking.amount_due),
         paid_amount: String(booking.paid_amount),
         refunded_amount: String(booking.refunded_amount)
+      },
+      ticket: booking.ticket_id === null ? null : {
+        id: String(booking.ticket_id),
+        qr_code: booking.qr_code,
+        created_at: booking.ticket_created_at
       },
       deposit_amount: ((BigInt(String(booking.total_amount)) + 1n) / 2n).toString(),
       amount_due_at_venue: booking.payment_option === 'DEPOSIT_50'

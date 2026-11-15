@@ -101,7 +101,7 @@ function createApp({ pool, env = process.env } = {}) {
   app.use(express.static(path.resolve(__dirname, '../../frontend'), { index: false }));
 
   app.use((request, response) => {
-    sendError(response, 404, 'NOT_FOUND', 'The requested resource was not found.');
+    sendError(response, 404, 'NOT_FOUND', 'Không tìm thấy đường dẫn yêu cầu.');
   });
 
   app.use((error, request, response, next) => {
@@ -123,7 +123,15 @@ function createApp({ pool, env = process.env } = {}) {
         error.details || {}
       );
     }
-    return sendError(response, 500, 'INTERNAL_ERROR', 'An unexpected error occurred.');
+    if (env.APP_ENV === 'development') {
+      console.error(error.stack || error);
+    }
+    return sendError(
+      response,
+      500,
+      'INTERNAL_ERROR',
+      'Không thể hoàn tất yêu cầu do lỗi hệ thống. Vui lòng thử lại.'
+    );
   });
 
   app.locals.bookingsService = bookingsService;

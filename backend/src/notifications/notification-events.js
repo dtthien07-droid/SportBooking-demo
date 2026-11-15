@@ -96,21 +96,32 @@ async function notifyUserCancellation(connection, booking, refundedAmount) {
   }
 }
 
-async function notifyIncidentCancellation(connection, booking, refundedAmount) {
+async function notifyIncidentCancellation(connection, booking, refundedAmount, cancellationReason) {
   const amount = formatAmount(refundedAmount);
-  const details = bookingDetails(booking);
+  const slots = Array.isArray(booking.slots) ? [...booking.slots] : [];
+  slots.sort((left, right) => (
+    String(left.service_date).localeCompare(String(right.service_date))
+    || String(left.starts_at).localeCompare(String(right.starts_at))
+  ));
+  const first = slots[0];
+  const last = slots[slots.length - 1];
+  const venue = [first?.facility_name, first?.court_name].filter(Boolean).join(' / ');
+  const date = first ? formatDate(first.service_date) : '';
+  const time = first && last
+    ? `${String(first.starts_at).slice(0, 5)}–${String(last.ends_at).slice(0, 5)}`
+    : '';
   await insertNotification(connection, {
     userId: booking.user_id,
     category: 'BOOKING_HOLD',
     title: `Sân gặp sự cố, đơn ${booking.booking_code} bị hủy`,
-    body: `${details}. Đơn bị hủy do sự cố.`,
+    body: `SportBooking xin lỗi vì đã phải hủy đơn ${booking.booking_code} tại ${venue} (${date}, ${time}) do sự cố. Lý do: ${cancellationReason}.`,
     booking
   });
   await insertNotification(connection, {
     userId: booking.user_id,
     category: 'PAYMENT',
-    title: `Hoàn 100% số đã trả: ${amount}`,
-    body: `Đã hoàn 100% số đã trả (${amount}) cho ${details}.`,
+    title: `Hoàn tiền ${amount}`,
+    body: `Đã hoàn 100% số tiền đã thanh toán (${amount}) cho đơn ${booking.booking_code}.`,
     booking
   });
 }

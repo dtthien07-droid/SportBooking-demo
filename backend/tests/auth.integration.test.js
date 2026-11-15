@@ -261,10 +261,25 @@ test('auth integration against sportbooking_test', async (t) => {
       password: newPassword
     });
     assert.equal(adminLockedLogin.status, 403);
+    assert.deepEqual((await adminLockedLogin.json()).error, {
+      code: 'ACCOUNT_LOCKED',
+      message: 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.',
+      details: {}
+    });
     const lockedSessionRequest = await fetch(`${baseUrl}${authPath}/me`, {
       headers: { cookie: initialCookie }
     });
-    assert.equal(lockedSessionRequest.status, 403);
+    assert.equal(lockedSessionRequest.status, 401);
+    assert.deepEqual((await lockedSessionRequest.json()).error, {
+      code: 'ACCOUNT_LOCKED',
+      message: 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.',
+      details: {}
+    });
+    const lockedBookingRequest = await postJson(
+      baseUrl, '/api/v1/bookings', {}, initialCookie
+    );
+    assert.equal(lockedBookingRequest.status, 401);
+    assert.equal((await lockedBookingRequest.json()).error.code, 'ACCOUNT_LOCKED');
 
     await pool.execute(
       `UPDATE users

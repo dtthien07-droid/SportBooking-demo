@@ -28,12 +28,13 @@ function localDateOffset(days) {
 
 async function createFixture(pool, fixture) {
   const suffix = crypto.randomUUID();
+  fixture.name = `API test ${suffix}`;
   const [facilityResult] = await pool.execute(
     `INSERT INTO facilities
        (name, address, district, opening_time, closing_time, amenities,
         is_active, is_seed, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP(3), UTC_TIMESTAMP(3))`,
-    [`API test ${suffix}`, 'API test address', 'API test district', '00:00:00', '24:00:00', '[]', false, false]
+    [fixture.name, 'API test address', 'API test district', '00:00:00', '24:00:00', '[]', false, false]
   );
   fixture.facilityId = facilityResult.insertId;
   const [courtResult] = await pool.execute(
@@ -88,12 +89,13 @@ async function createFixture(pool, fixture) {
   return fixture;
 }
 
-test('facility listing, details, and time slots are authenticated and reflect live availability', async () => {
+test('public facilities require an active facility and court, while slot booking rules stay enforced', async () => {
   const pool = getPool();
   let server;
   let fixture;
   let userId;
   let userEmail;
+  let bookingId;
 
   try {
     const [databaseRows] = await pool.execute('SELECT DATABASE() AS database_name');
@@ -155,6 +157,26 @@ test('facility listing, details, and time slots are authenticated and reflect li
       assert.equal(body.pagination.total, total);
       assert.ok(body.facilities.every((facility) => facility.sports.includes(sport)));
     }
+
+    for (const [query, message] of [
+      ['date=invalid', 'date phải theo định dạng YYYY-MM-DD.'],
+      ['date=2025-02-29', 'Ngày chơi không hợp lệ.'],
+      [`date=${localDateOffset(15)}`, 'Chỉ xem được lịch trong 14 ngày tới.'],
+      ['time_band=midday', 'time_band chỉ nhận morning, afternoon, evening hoặc night.'],
+      ['time_band=morning%2C', 'time_band chỉ nhận morning, afternoon, evening hoặc night.']
+    ]) {
+      const response = await getJson(`/api/v1/facilities?${query}`);
+      assert.equal(response.status, 400);
+      assert.equal((await response.json()).error.message, message);
+    }
+
+    const legacyAmenityFilter = await getJson('/api/v1/facilities?amenity=x&page_size=1');
+    assert.equal(legacyAmenityFilter.status, 200);
+
+    const lastAllowedDateResponse = await getJson(
+      `/api/v1/facilities?date=${localDateOffset(13)}`
+    );
+    assert.equal(lastAllowedDateResponse.status, 200);
 
     const initialListResponse = await getJson('/api/v1/facilities?page_size=1');
     assert.equal(initialListResponse.status, 200);
@@ -230,6 +252,129 @@ test('facility listing, details, and time slots are authenticated and reflect li
       now: new Date().toISOString()
     }));
     assert.equal(soonSlot.unavailable_reason, 'PAST_OR_TOO_SOON');
+
+    const facilitySearch = new URLSearchParams({
+      q: fixture.name,
+      district: 'API test district',
+      sport: 'BADMINTON',
+      page_size: '50'
+    });
+    const filteredNight = await getJson(
+      `/api/v1/facilities?${facilitySearch}&date=${fixture.futureDate}&time_band=night`
+    );
+    assert.equal(filteredNight.status, 200);
+    assert.equal(filteredNight.headers.get('cache-control'), 'no-store');
+    const filteredNightBody = await filteredNight.json();
+    assert.equal(filteredNightBody.pagination.total, 1);
+    assert.equal(filteredNightBody.facilities.length, 1);
+    assert.equal(String(filteredNightBody.facilities[0].id), String(fixture.facilityId));
+
+    const filteredMultipleBands = await getJson(
+      `/api/v1/facilities?${facilitySearch}&date=${fixture.futureDate}&time_band=morning%2Cnight`
+    );
+    assert.equal(filteredMultipleBands.status, 200);
+    assert.equal((await filteredMultipleBands.json()).pagination.total, 1);
+
+    const filteredTimeOnly = await getJson(
+      `/api/v1/facilities?${facilitySearch}&time_band=night`
+    );
+    assert.equal(filteredTimeOnly.status, 200);
+    assert.equal((await filteredTimeOnly.json()).pagination.total, 1);
+
+    const filteredOtherDay = await getJson(
+      `/api/v1/facilities?${facilitySearch}&date=${localDateOffset(2)}&time_band=night`
+    );
+    assert.equal(filteredOtherDay.status, 200);
+    assert.equal((await filteredOtherDay.json()).pagination.total, 0);
+
+    await pool.execute(
+      `UPDATE time_slots
+       SET status = 'BOOKED', lock_expires_at = NULL
+       WHERE court_id = ? AND service_date = ? AND starts_at >= '22:00:00'`,
+      [fixture.courtId, fixture.futureDate]
+    );
+    await pool.execute(
+      `UPDATE time_slots
+       SET status = 'LOCKED', lock_expires_at = DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 1 MINUTE)
+       WHERE court_id = ? AND service_date = ? AND starts_at = '23:00:00'`,
+      [fixture.courtId, fixture.futureDate]
+    );
+    const expiredLockSearch = await getJson(
+      `/api/v1/facilities?${facilitySearch}&date=${fixture.futureDate}&time_band=night`
+    );
+    assert.equal(expiredLockSearch.status, 200);
+    assert.equal((await expiredLockSearch.json()).pagination.total, 1);
+    await pool.execute(
+      `UPDATE time_slots
+       SET lock_expires_at = DATE_ADD(UTC_TIMESTAMP(3), INTERVAL 1 HOUR)
+       WHERE court_id = ? AND service_date = ? AND starts_at = '23:00:00'`,
+      [fixture.courtId, fixture.futureDate]
+    );
+    const noAvailableNight = await getJson(
+      `/api/v1/facilities?${facilitySearch}&date=${fixture.futureDate}&time_band=night`
+    );
+    assert.equal(noAvailableNight.status, 200);
+    assert.equal((await noAvailableNight.json()).pagination.total, 0);
+
+    await pool.execute('UPDATE facilities SET is_active = FALSE WHERE id = ?', [fixture.facilityId]);
+    const facilityPausedListResponse = await getJson(
+      `/api/v1/facilities?q=${encodeURIComponent(fixture.name)}&page_size=50`
+    );
+    assert.equal(facilityPausedListResponse.headers.get('cache-control'), 'no-store');
+    assert.equal((await facilityPausedListResponse.json()).pagination.total, 0);
+    const facilityPausedDetailResponse = await getJson(
+      `/api/v1/facilities/${fixture.facilityId}`
+    );
+    assert.equal(facilityPausedDetailResponse.status, 404);
+    await pool.execute('UPDATE facilities SET is_active = TRUE WHERE id = ?', [fixture.facilityId]);
+
+    await pool.execute('UPDATE courts SET is_active = FALSE WHERE id = ?', [fixture.courtId]);
+    const inactiveListResponse = await getJson(
+      `/api/v1/facilities?q=${encodeURIComponent(fixture.name)}&page_size=50`
+    );
+    assert.equal(inactiveListResponse.status, 200);
+    assert.equal(inactiveListResponse.headers.get('cache-control'), 'no-store');
+    const inactiveList = await inactiveListResponse.json();
+    assert.equal(inactiveList.pagination.total, 0);
+    await pool.execute('UPDATE courts SET is_active = TRUE WHERE id = ?', [fixture.courtId]);
+    await pool.execute('UPDATE facilities SET is_active = FALSE WHERE id = ?', [fixture.facilityId]);
+    const orderedResponse = await getJson('/api/v1/facilities?page_size=50');
+    const orderedFacilities = (await orderedResponse.json()).facilities;
+    assert.ok(orderedFacilities.every(
+      (facility) => facility.is_active && facility.active_court_count > 0
+    ));
+
+    const inactiveDetailResponse = await getJson(`/api/v1/facilities/${fixture.facilityId}`);
+    assert.equal(inactiveDetailResponse.status, 404);
+
+    const inactiveSlotsResponse = await getJson(
+      `/api/v1/courts/${fixture.courtId}/time-slots?date=${fixture.futureDate}`
+    );
+    assert.equal(inactiveSlotsResponse.status, 200);
+    const inactiveSlots = await inactiveSlotsResponse.json();
+    const disabledSlot = inactiveSlots.time_slots.find(
+      (slot) => slot.starts_at === '12:00:00' && slot.status === 'AVAILABLE'
+    );
+    assert.ok(disabledSlot);
+    assert.equal(disabledSlot.is_selectable, false);
+    assert.equal(disabledSlot.unavailable_reason, 'COURT_INACTIVE');
+
+    const inactiveBookingResponse = await fetch(`${baseUrl}/api/v1/bookings`, {
+      method: 'POST',
+      headers: { cookie, 'content-type': 'application/json' },
+      body: JSON.stringify({ slot_ids: [disabledSlot.id], payment_option: 'FULL' })
+    });
+    assert.equal(inactiveBookingResponse.status, 409);
+    assert.equal((await inactiveBookingResponse.json()).error.code, 'COURT_INACTIVE');
+
+    await pool.execute('UPDATE facilities SET is_active = TRUE WHERE id = ?', [fixture.facilityId]);
+    const reopenedBookingResponse = await fetch(`${baseUrl}/api/v1/bookings`, {
+      method: 'POST',
+      headers: { cookie, 'content-type': 'application/json' },
+      body: JSON.stringify({ slot_ids: [disabledSlot.id], payment_option: 'FULL' })
+    });
+    assert.equal(reopenedBookingResponse.status, 201);
+    bookingId = (await reopenedBookingResponse.json()).booking_id;
   } finally {
     if (server) {
       await new Promise((resolve, reject) => {
@@ -237,6 +382,20 @@ test('facility listing, details, and time slots are authenticated and reflect li
       });
     }
     try {
+      if (bookingId) {
+        await pool.execute('DELETE FROM booking_tickets WHERE booking_id = ?', [bookingId]);
+        const [payments] = await pool.execute('SELECT id FROM payments WHERE booking_id = ?', [bookingId]);
+        for (const payment of payments) {
+          await pool.execute('DELETE FROM payment_attempts WHERE payment_id = ?', [payment.id]);
+        }
+        await pool.execute('DELETE FROM booking_slots WHERE booking_id = ?', [bookingId]);
+        await pool.execute(
+          'UPDATE time_slots SET current_booking_id = NULL, lock_expires_at = NULL WHERE current_booking_id = ?',
+          [bookingId]
+        );
+        await pool.execute('DELETE FROM payments WHERE booking_id = ?', [bookingId]);
+        await pool.execute('DELETE FROM bookings WHERE id = ?', [bookingId]);
+      }
       if (fixture?.facilityId) {
         await pool.execute('DELETE FROM facilities WHERE id = ?', [fixture.facilityId]);
       }

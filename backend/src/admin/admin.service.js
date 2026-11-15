@@ -1,5 +1,11 @@
 'use strict';
 
+const {
+  createBookingsExport,
+  createDashboardExport,
+  createUsersExport
+} = require('./bookings-export');
+
 const BOOKING_STATUSES = new Set([
   'PENDING',
   'CONFIRMED',
@@ -7,8 +13,10 @@ const BOOKING_STATUSES = new Set([
   'EXPIRED',
   'CANCELLED'
 ]);
+const EXPORT_STATUSES = new Set([...BOOKING_STATUSES, 'UPCOMING', 'IN_PROGRESS']);
 const DASHBOARD_RANGES = new Set(['today', '7d', '30d']);
 const MAX_PAGE_SIZE = 50;
+const MAX_EXPORT_ROWS = 5000;
 const MAX_UINT64 = 18446744073709551615n;
 const VIETNAM_OFFSET_MS = 7 * 60 * 60 * 1000;
 
@@ -24,6 +32,22 @@ function toIsoUtc(value) {
   const date = value instanceof Date ? value : new Date(value);
   if (!Number.isFinite(date.getTime())) throw new Error('Dữ liệu thời gian từ cơ sở dữ liệu không hợp lệ.');
   return date.toISOString();
+}
+
+function getVietnamMonthStartUtc(currentTime) {
+  if (!(currentTime instanceof Date) || !Number.isFinite(currentTime.getTime())) {
+    throw new TypeError('Thời gian thống kê người dùng phải hợp lệ.');
+  }
+  const vietnamNow = new Date(currentTime.getTime() + VIETNAM_OFFSET_MS);
+  const utcBoundary = (month) => new Date(Date.UTC(
+    vietnamNow.getUTCFullYear(),
+    month,
+    1
+  ) - VIETNAM_OFFSET_MS).toISOString().slice(0, 23).replace('T', ' ');
+  return {
+    start: utcBoundary(vietnamNow.getUTCMonth()),
+    end: utcBoundary(vietnamNow.getUTCMonth() + 1)
+  };
 }
 
 function invalidQuery(message) {
@@ -67,6 +91,27 @@ function parseBookingDate(value) {
   return value;
 }
 
+function parseBookingFilters(query = {}, allowDisplayStatuses = false) {
+  if (!query || typeof query !== 'object' || Array.isArray(query)) {
+    throw invalidQuery('Bộ lọc đơn đặt sân không hợp lệ.');
+  }
+  const status = query.status;
+  const validStatuses = allowDisplayStatuses ? EXPORT_STATUSES : BOOKING_STATUSES;
+  if (status !== undefined && !validStatuses.has(status)) {
+    throw invalidQuery('Trạng thái booking không được hỗ trợ.');
+  }
+  const search = query.q === undefined ? '' : query.q;
+  if (typeof search !== 'string' || search.length > 100) {
+    throw invalidQuery('q phải là chuỗi không quá 100 ký tự.');
+  }
+  return {
+    status: status || null,
+    query: search.trim(),
+    facilityId: parseFacilityId(query.facility_id),
+    date: parseBookingDate(query.date)
+  };
+}
+
 function normalizeBookingId(value) {
   if (typeof value !== 'string' || !/^[1-9]\d*$/.test(value)) {
     throw createAdminError(404, 'BOOKING_NOT_FOUND', 'Không tìm thấy đơn đặt sân.');
@@ -90,12 +135,12 @@ function normalizeCancellationReason(body) {
     throw createAdminError(400, 'INVALID_CANCELLATION', 'Thông tin hủy sự cố không hợp lệ.');
   }
   const reason = body.cancellation_reason;
-  if (typeof reason !== 'string' || reason.trim().length === 0) {
-    throw createAdminError(400, 'INVALID_CANCELLATION_REASON', 'Lý do hủy sự cố là bắt buộc.');
+  if (typeof reason !== 'string') {
+    throw createAdminError(400, 'INVALID_CANCELLATION_REASON', 'Lý do cần từ 3 đến 500 ký tự.');
   }
   const normalizedReason = reason.trim();
-  if (normalizedReason.length > 500) {
-    throw createAdminError(400, 'INVALID_CANCELLATION_REASON', 'Lý do hủy không được vượt quá 500 ký tự.');
+  if (normalizedReason.length < 3 || normalizedReason.length > 500) {
+    throw createAdminError(400, 'INVALID_CANCELLATION_REASON', 'Lý do cần từ 3 đến 500 ký tự.');
   }
   return normalizedReason;
 }
@@ -122,11 +167,16 @@ function getDashboardWindow(period, currentTime) {
     vietnamNow.getUTCMonth(),
     vietnamNow.getUTCDate() + 1
   ));
+  const previousFrom = new Date(from);
+  previousFrom.setUTCDate(previousFrom.getUTCDate() - days);
   return {
     from: fromDate,
     to: toDate,
     start: new Date(Date.parse(`${fromDate}T00:00:00.000+07:00`)),
-    end: new Date(Date.parse(`${endDate.toISOString().slice(0, 10)}T00:00:00.000+07:00`))
+    end: new Date(Date.parse(`${endDate.toISOString().slice(0, 10)}T00:00:00.000+07:00`)),
+    previousStart: new Date(Date.parse(`${previousFrom.toISOString().slice(0, 10)}T00:00:00.000+07:00`)),
+    previousEnd: new Date(Date.parse(`${fromDate}T00:00:00.000+07:00`)),
+    days
   };
 }
 
@@ -162,11 +212,14 @@ function createAdminService({
       const pageSize = parsePageValue(query.page_size, 20, 'page_size', MAX_PAGE_SIZE);
       const maxPage = Math.floor(Number.MAX_SAFE_INTEGER / pageSize) + 1;
       const page = parsePageValue(query.page, 1, 'page', maxPage);
+      const monthWindowUtc = getVietnamMonthStartUtc(now());
       const result = await adminRepository.listUsers({
         query: search.trim(),
         status,
         page,
-        pageSize
+        pageSize,
+        monthStartUtc: monthWindowUtc.start,
+        monthEndUtc: monthWindowUtc.end
       });
       return {
         users: result.rows.map((user) => {
@@ -198,8 +251,55 @@ function createAdminService({
           total: result.total,
           total_pages: Math.ceil(result.total / pageSize)
         },
+        summary: result.summary,
         server_time: now().toISOString()
       };
+    },
+
+    async exportUsers(query = {}, adminUserId) {
+      if (typeof adminRepository.exportUsers !== 'function'
+          || typeof adminRepository.withTransaction !== 'function') {
+        throw new TypeError('Repository Admin chưa hỗ trợ xuất người dùng.');
+      }
+      const status = query.status === undefined || query.status === '' ? null : query.status;
+      if (status !== null && status !== 'ACTIVE' && status !== 'ADMIN_LOCKED') {
+        throw invalidQuery('status phải là ACTIVE hoặc ADMIN_LOCKED.');
+      }
+      const search = query.q === undefined ? '' : query.q;
+      if (typeof search !== 'string' || search.length > 100) {
+        throw invalidQuery('q phải là chuỗi không quá 100 ký tự.');
+      }
+      const monthWindowUtc = getVietnamMonthStartUtc(now());
+      const result = await adminRepository.exportUsers({
+        query: search.trim(),
+        status,
+        monthStartUtc: monthWindowUtc.start,
+        monthEndUtc: monthWindowUtc.end,
+        maxRows: MAX_EXPORT_ROWS
+      });
+      if (result.total > MAX_EXPORT_ROWS) {
+        throw createAdminError(
+          400,
+          'EXPORT_TOO_MANY_ROWS',
+          'Quá nhiều dòng, hãy lọc thu hẹp'
+        );
+      }
+      const exported = await createUsersExport({
+        users: result.rows,
+        summary: result.summary,
+        now: now()
+      });
+      await adminRepository.withTransaction((connection) => writeAudit(connection, {
+        adminUserId,
+        action: 'EXPORT_USERS',
+        resourceType: 'users_export',
+        resourceId: String(adminUserId),
+        details: {
+          filters: { status, query_applied: Boolean(search.trim()) },
+          row_count: result.total
+        }
+      }));
+      return exported;
     },
 
     async setUserLock(rawUserId, locked, adminUserId, reason = '') {
@@ -244,25 +344,13 @@ function createAdminService({
       });
     },
 
-    async listBookings(query) {
-      const status = query.status;
-      if (status !== undefined && !BOOKING_STATUSES.has(status)) {
-        throw invalidQuery('Trạng thái booking không được hỗ trợ.');
-      }
-      const search = query.q === undefined ? '' : query.q;
-      if (typeof search !== 'string' || search.length > 100) {
-        throw invalidQuery('q phải là chuỗi không quá 100 ký tự.');
-      }
+    async listBookings(query = {}) {
+      const filters = parseBookingFilters(query);
       const pageSize = parsePageValue(query.page_size, 10, 'page_size', MAX_PAGE_SIZE);
       const maxPage = Math.floor(Number.MAX_SAFE_INTEGER / pageSize) + 1;
       const page = parsePageValue(query.page, 1, 'page', maxPage);
-      const facilityId = parseFacilityId(query.facility_id);
-      const date = parseBookingDate(query.date);
       const result = await adminRepository.listBookings({
-        status: status || null,
-        query: search.trim(),
-        facilityId,
-        date,
+        ...filters,
         page,
         pageSize
       });
@@ -289,6 +377,8 @@ function createAdminService({
           booking_id: String(booking.id),
           booking_code: booking.booking_code,
           status: booking.status,
+          can_cancel_incident: booking.status === 'CONFIRMED'
+            || (booking.status === 'PENDING' && Number(booking.lock_active) === 1),
           created_at: booking.created_at,
           total_amount: String(booking.total_amount),
           payment_status: booking.payment_status,
@@ -313,19 +403,117 @@ function createAdminService({
       };
     },
 
+    async exportBookings(query = {}, adminUserId) {
+      if (typeof adminRepository.exportBookings !== 'function'
+          || typeof adminRepository.withTransaction !== 'function') {
+        throw new TypeError('Repository Admin chưa hỗ trợ xuất đơn đặt sân.');
+      }
+      const filters = parseBookingFilters(query, true);
+      const result = await adminRepository.exportBookings({
+        ...filters,
+        maxRows: MAX_EXPORT_ROWS
+      });
+      if (result.total > MAX_EXPORT_ROWS) {
+        throw createAdminError(
+          400,
+          'EXPORT_TOO_MANY_ROWS',
+          'Quá nhiều dòng, hãy lọc thu hẹp'
+        );
+      }
+      const bookingIds = result.rows.map((booking) => String(booking.id));
+      const slotRows = await adminRepository.findBookingSlots(bookingIds);
+      const slotsByBookingId = new Map(bookingIds.map((id) => [id, []]));
+      for (const slot of slotRows) {
+        slotsByBookingId.get(String(slot.booking_id)).push(slot);
+      }
+      const currentTime = now();
+      const exported = await createBookingsExport({
+        bookings: result.rows,
+        slotsByBookingId,
+        now: currentTime
+      });
+      await adminRepository.withTransaction((connection) => writeAudit(connection, {
+        adminUserId,
+        action: 'EXPORT_BOOKINGS',
+        resourceType: 'bookings_export',
+        resourceId: String(adminUserId),
+        details: {
+          filters: {
+            status: filters.status,
+            facility_id: filters.facilityId,
+            date: filters.date,
+            query_applied: Boolean(filters.query)
+          },
+          row_count: result.total
+        }
+      }));
+      return exported;
+    },
+
+    async getBookingDetail(rawBookingId) {
+      const bookingId = normalizeBookingId(rawBookingId);
+      const booking = await adminRepository.getBookingDetail(bookingId);
+      if (!booking) {
+        throw createAdminError(404, 'BOOKING_NOT_FOUND', 'Không tìm thấy đơn đặt sân.');
+      }
+      const slots = await adminRepository.findBookingSlots([bookingId]);
+      return {
+        booking: {
+          booking_id: bookingId,
+          booking_code: booking.booking_code,
+          status: booking.status,
+          can_cancel_incident: booking.status === 'CONFIRMED'
+            || (booking.status === 'PENDING' && Number(booking.lock_active) === 1),
+          created_at: toIsoUtc(booking.created_at),
+          total_amount: String(booking.total_amount),
+          payment_status: booking.payment_status,
+          payment_option: booking.payment_option,
+          paid_amount: String(booking.paid_amount || 0),
+          refunded_amount: String(booking.refunded_amount || 0),
+          cancelled_by: booking.cancelled_by,
+          cancellation_reason: booking.cancellation_reason,
+          owner: {
+            user_id: String(booking.owner_id),
+            full_name: booking.owner_full_name,
+            email: booking.owner_email,
+            phone: booking.owner_phone
+          },
+          slots: slots.map((slot) => ({
+            time_slot_id: String(slot.time_slot_id),
+            court_id: String(slot.court_id),
+            facility_id: String(slot.facility_id),
+            facility_name: slot.facility_name,
+            court_name: slot.court_name,
+            sport_type: slot.sport_type,
+            service_date: slot.service_date,
+            starts_at: slot.starts_at,
+            ends_at: slot.ends_at,
+            price_at_booking: String(slot.price_at_booking)
+          }))
+        }
+      };
+    },
+
     async getDashboard(period = 'today') {
       const selectedRange = period || 'today';
       const window = getDashboardWindow(selectedRange, now());
-      const [counts, revenue, revenueByDayRows, fillRate, topCourts, recent] = await Promise.all([
+      const [counts, revenue, previousRevenue, revenueByDayRows, revenueSeriesRows,
+        bookingSeriesRows, fillRate, courtCounts, topCourts, recent] = await Promise.all([
         adminRepository.getDashboardBookingCounts(window.start, window.end),
         adminRepository.getDashboardPaymentMetrics(window.start, window.end),
+        adminRepository.getDashboardPaymentMetrics(window.previousStart, window.previousEnd),
         adminRepository.getRevenueByDay(window.start, window.end),
+        adminRepository.getRevenueSeries(window.start, window.end, selectedRange === 'today'),
+        adminRepository.getBookingSeries(window.start, window.end, selectedRange === 'today'),
         adminRepository.getDashboardFillRate(window.from, window.to),
+        adminRepository.getDashboardCourtCounts(window.start, window.end),
         adminRepository.getTopCourts(window.start, window.end),
         adminRepository.getRecentBookings(5)
       ]);
       const grossPaid = BigInt(String(revenue.gross_paid || 0));
       const refunded = BigInt(String(revenue.refunded || 0));
+      const previousNetRevenue = BigInt(String(previousRevenue.gross_paid || 0))
+        - BigInt(String(previousRevenue.refunded || 0));
       const revenueByDate = new Map(revenueByDayRows.map((row) => [
         String(row.date).slice(0, 10),
         String(row.net_revenue)
@@ -350,6 +538,35 @@ function createAdminService({
         });
       }
       const netRevenue = grossPaid - refunded;
+      const granularity = selectedRange === 'today' ? 'hour' : 'day';
+      const revenueByBucket = new Map(revenueSeriesRows.map((row) => [
+        String(row.bucket),
+        String(row.net_revenue)
+      ]));
+      const bookingsByBucket = new Map(bookingSeriesRows.map((row) => [
+        String(row.bucket),
+        Number(row.bookings)
+      ]));
+      const buckets = [];
+      if (granularity === 'hour') {
+        for (let hour = 0; hour < 24; hour += 1) {
+          const localBucket = `${window.from} ${String(hour).padStart(2, '0')}:00:00`;
+          buckets.push({
+            start: new Date(Date.parse(`${window.from}T${String(hour).padStart(2, '0')}:00:00+07:00`)).toISOString(),
+            net_revenue: revenueByBucket.get(localBucket) || '0',
+            bookings: bookingsByBucket.get(localBucket) || 0
+          });
+        }
+      } else {
+        for (const day of revenueDays) {
+          const localBucket = `${day.date} 00:00:00`;
+          buckets.push({
+            start: new Date(Date.parse(`${day.date}T00:00:00+07:00`)).toISOString(),
+            net_revenue: revenueByBucket.get(localBucket) || '0',
+            bookings: bookingsByBucket.get(localBucket) || 0
+          });
+        }
+      }
       return {
         period: selectedRange,
         range: { from: window.from, to: window.to },
@@ -358,13 +575,18 @@ function createAdminService({
           confirmed_bookings: Number(counts.confirmed_bookings),
           cancelled_bookings: Number(counts.cancelled_bookings),
           net_revenue: netRevenue.toString(),
+          net_revenue_prev: previousNetRevenue.toString(),
           gross_paid: grossPaid.toString(),
           refunded: refunded.toString(),
           fill_rate_percent: Number(fillRate.total_slots) === 0
             ? 0
             : Number((Number(fillRate.booked_slots) * 100 / Number(fillRate.total_slots)).toFixed(2)),
+          courts_active: Number(courtCounts.courts_active),
+          courts_with_bookings: Number(courtCounts.courts_with_bookings),
+          courts_inactive: Number(courtCounts.courts_inactive),
           pending_match_requests: 0
         },
+        series: { granularity, buckets },
         revenue_by_day: revenueDays,
         bookings_by_status: counts.bookings_by_status,
         top_courts: topCourts.map((court) => ({
@@ -380,11 +602,17 @@ function createAdminService({
           status: booking.status,
           created_at: booking.created_at,
           owner_name: booking.owner_name,
+          customer_phone: booking.owner_phone || null,
           facility_name: slotsByBookingId.get(String(booking.id))?.[0]?.facility_name || '',
           court_name: slotsByBookingId.get(String(booking.id))?.[0]?.court_name || '',
           service_date: slotsByBookingId.get(String(booking.id))?.[0]?.service_date || null,
           starts_at: slotsByBookingId.get(String(booking.id))?.[0]?.starts_at || null,
-          paid_amount: String(booking.paid_amount || 0)
+          paid_amount: String(booking.paid_amount || 0),
+          refunded_amount: String(booking.refunded_amount || 0),
+          payment_status: booking.payment_status,
+          payment_option: booking.payment_option,
+          can_cancel_incident: booking.status === 'CONFIRMED'
+            || (booking.status === 'PENDING' && Boolean(booking.lock_active))
         })),
         new_bookings: Number(counts.new_bookings),
         net_revenue: netRevenue.toString(),
@@ -392,6 +620,23 @@ function createAdminService({
         completed_bookings: Number(counts.completed_bookings),
         server_time: now().toISOString()
       };
+    },
+
+    async exportDashboard(query = {}, adminUserId) {
+      if (typeof adminRepository.withTransaction !== 'function') {
+        throw new TypeError('Repository Admin chưa hỗ trợ nhật ký xuất báo cáo.');
+      }
+      const period = query.period || 'today';
+      const dashboard = await this.getDashboard(period);
+      const exported = await createDashboardExport({ dashboard, now: now() });
+      await adminRepository.withTransaction((connection) => writeAudit(connection, {
+        adminUserId,
+        action: 'EXPORT_DASHBOARD',
+        resourceType: 'dashboard_export',
+        resourceId: String(adminUserId),
+        details: { filters: { period }, row_count: 1 }
+      }));
+      return exported;
     },
 
     async cancelBookingForIncident(rawBookingId, body, adminUserId) {
@@ -453,9 +698,19 @@ function createAdminService({
           const notificationSlots = await bookingsRepository.findNotificationSlots(connection, bookingId);
           const notificationBooking = { ...booking, slots: notificationSlots };
           if (booking.status === 'CONFIRMED') {
-            await notifyIncidentCancellation(connection, notificationBooking, refundAmount);
+            await notifyIncidentCancellation(
+              connection,
+              notificationBooking,
+              refundAmount,
+              cancellationReason
+            );
           } else {
-            await notifyPendingIncidentCancellation(connection, notificationBooking);
+            await notifyIncidentCancellation(
+              connection,
+              notificationBooking,
+              refundAmount,
+              cancellationReason
+            );
           }
           await writeAudit(connection, {
             adminUserId,
