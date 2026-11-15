@@ -212,6 +212,7 @@
       cache: 'no-store'
     });
     if (response.status === 401) {
+      if (await window.SportBookingHeaderAuth?.redirectIfAccountLocked(response)) return null;
       loginRedirect();
       return null;
     }
@@ -288,6 +289,7 @@
           cache: 'no-store'
         });
         if (response.status === 401) {
+          if (await window.SportBookingHeaderAuth?.redirectIfAccountLocked(response)) return null;
           loginRedirect();
           return null;
         }
@@ -331,6 +333,7 @@
         cache: 'no-store'
       });
       if (response.status === 401) {
+        if (await window.SportBookingHeaderAuth?.redirectIfAccountLocked(response)) return;
         loginRedirect();
         return;
       }

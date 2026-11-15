@@ -260,28 +260,21 @@
                                 <span class="px-2.5 py-0.5 rounded-full bg-surface-container text-xs text-on-surface-variant font-bold uppercase" id="ticketStatusLabel">--</span>
                             </div>
 
-                            <div id="ticketQrContent" class="bg-surface-container-low rounded-xl p-space-lg flex flex-col md:flex-row items-center gap-space-lg relative" hidden>
+                            <div id="ticketQrContent" class="bg-surface-container-low rounded-xl p-space-lg flex flex-col items-center justify-center gap-space-lg relative" hidden>
                                 <div class="bg-surface-container-lowest p-3 rounded-2xl shadow-sm flex flex-col items-center shrink-0 border border-gray-100 relative">
-                                    <img id="qrCodeImage" alt="Mã Check-in QR" class="w-36 h-36 rounded-xl object-contain shadow-2xs" hidden>
-                                    <span class="text-[11px] text-on-surface-variant mt-2 font-medium" id="qrSubText">Vé không có trong API đơn đặt sân.</span>
+                                    <img id="qrCodeImage" alt="Mã QR vé điện tử" aria-label="Mã QR vé điện tử" class="w-36 h-36 rounded-xl object-contain shadow-2xs" hidden>
+                                    <span class="text-[11px] text-on-surface-variant mt-2 font-medium" id="qrSubText">Mã QR vé điện tử.</span>
+                                    <button class="text-xs text-primary font-bold underline" id="ticketQrRetry" type="button" hidden>Thử lại</button>
                                 </div>
-                                <div class="flex flex-col gap-2 w-full text-left">
-                                    <span class="text-xs text-on-surface-variant uppercase font-bold">Mã dự phòng tại quầy</span>
-                                    <div class="flex items-center gap-2 bg-white px-4 py-2.5 rounded-xl shadow-sm w-fit border border-gray-200">
-                                        <span class="font-mono font-bold text-lg text-primary tracking-widest" id="displayCheckinCode">--</span>
-                                        <button class="p-1 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors cursor-not-allowed opacity-60" title="Sắp có" type="button" disabled>
-                                            <svg class="text-[18px]" data-sb-icon="content_copy"></svg>
-                                        </button>
-                                    </div>
-                                    <div class="bg-amber-50 p-3 rounded-xl text-amber-900 text-xs flex items-start gap-2 border border-amber-100 mt-1" id="ticketInstructionBox">
-                                        <svg class="text-[18px] shrink-0 text-amber-600" data-sb-icon="info"></svg>
-                                        <p class="leading-relaxed" id="ticketInstructionText">
-                                            Thông tin vé sẽ được hiển thị trên trang vé khi có dữ liệu từ hệ thống.
-                                        </p>
-                                    </div>
+                                <div class="bg-amber-50 p-3 rounded-xl text-amber-900 text-xs flex items-start gap-2 border border-amber-100 mt-1 w-full max-w-xl" id="ticketInstructionBox">
+                                    <svg class="text-[18px] shrink-0 text-amber-600" data-sb-icon="info"></svg>
+                                    <p class="leading-relaxed" id="ticketInstructionText">
+                                        Xuất trình vé điện tử cho nhân viên sân.
+                                    </p>
                                 </div>
                                 <p id="ticketMessage" class="text-sm text-on-surface-variant">--</p>
                             </div>
+                            <p id="ticketStateMessage" class="text-sm text-on-surface-variant" role="status" hidden></p>
                         </section>
 
                         <!-- 3. KHỐI MATCHMAKER (GHÉP ĐỐI) -->
@@ -498,7 +491,7 @@
                             </div>
                             <div class="flex flex-col">
                                 <span class="text-sm font-bold text-on-surface">Hỗ Trợ Khách Hàng 24/7</span>
-                                <span class="text-xs text-secondary font-bold hover:underline mt-0.5" aria-disabled="true">--</span>
+                                <a class="text-xs text-secondary font-bold hover:underline mt-0.5" data-support-hotline href="#"></a>
                             </div>
                         </div>
 
@@ -649,29 +642,7 @@
         </div>
     </main>
 
-    <!-- FOOTER ĐỒNG BỘ -->
-    <footer class="w-full bg-[#f1f3ff] border-t border-gray-200 shadow-[0_-1px_6px_rgba(0,0,0,0.02)]">
-        <div class="max-w-[1440px] mx-auto px-margin py-8 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div class="flex flex-col gap-1 text-left">
-                <div class="flex items-center gap-2">
-                    <span class="font-bold text-base text-primary">SportBooking Hà Nội</span>
-                    <span class="text-on-surface-variant text-xs">| Nền tảng đặt sân thể thao thông minh</span>
-                </div>
-                <p class="text-on-surface-variant text-xs">Hệ thống đặt sân thể thao SportBooking Hà Nội - Đặt sân trực tuyến nhanh chóng, tiện lợi &amp; chuẩn xác</p>
-                <p class="text-on-surface text-sm">Hotline hỗ trợ 24/7: <span class="font-bold text-secondary">--</span></p>
-            </div>
-            <div class="flex flex-col md:items-end gap-1.5">
-                <div class="flex flex-wrap items-center gap-3 text-xs text-on-surface-variant">
-                    <span class="hover:text-primary transition-colors" aria-disabled="true" title="Sắp có">Hỗ trợ khách hàng · Sắp có</span>
-                    <span>•</span>
-                    <span class="hover:text-primary transition-colors" aria-disabled="true" title="Sắp có">Điều khoản sử dụng · Sắp có</span>
-                    <span>•</span>
-                    <span class="hover:text-primary transition-colors" aria-disabled="true" title="Sắp có">Chính sách bảo mật · Sắp có</span>
-                </div>
-                <p class="text-xs text-on-surface-variant">© 2026 SportBooking Hà Nội. Tất cả các quyền được bảo lưu.</p>
-            </div>
-        </div>
-    </footer>
+    <div data-shared-footer></div>
 
     <!-- SCRIPT TỰ ĐỘNG NẠP VÀ ĐỒNG BỘ ĐÚNG DỮ LIỆU ĐƠN HÀNG THỰC TẾ -->
     
@@ -683,9 +654,13 @@
     <script src="/shared/header.js"></script>
     <script src="/shared/format.js"></script>
     <script src="/shared/back-nav.js"></script>
+    <script src="/shared/support-constants.js"></script>
+    <script src="/shared/footer.js"></script>
     <script src="/booking/booking-detail-state.js"></script>
     <script src="/booking/booking-history-state.js"></script>
     <script src="/booking/cancellation-dialog.js"></script>
+    <script src="/booking/ticket-data.js"></script>
+    <script src="/assets/qr-code.js"></script>
     <script src="/booking/booking-detail-page.js"></script>
 </body>
 </html>

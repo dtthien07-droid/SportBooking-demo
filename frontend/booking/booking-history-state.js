@@ -90,6 +90,38 @@
     return `Đã hủy đơn ${code}. Hoàn ${new Intl.NumberFormat('vi-VN').format(BigInt(amount))} đ về phương thức thanh toán.`;
   }
 
+  function getTicketPresentation(booking) {
+    if (!booking?.ticket) {
+      return { status: 'not-issued', label: 'Vé: Chưa phát hành', reason: '' };
+    }
+
+    const paymentStatus = booking.payment?.status || booking.payment_status;
+    if (booking.status === 'CANCELLED' || booking.status === 'EXPIRED'
+        || paymentStatus === 'REFUNDED') {
+      const reason = paymentStatus === 'REFUNDED'
+        ? 'Đơn đã hoàn tiền.'
+        : booking.status === 'EXPIRED' ? 'Đơn đã hết hạn.' : 'Đơn đã hủy.';
+      return { status: 'invalid', label: 'Vé: Đã vô hiệu', reason };
+    }
+
+    if (['CONFIRMED', 'COMPLETED'].includes(booking.status) && paymentStatus === 'PAID') {
+      if (typeof booking.ticket.qr_code !== 'string' || !booking.ticket.qr_code.trim()) {
+        return {
+          status: 'invalid',
+          label: 'Vé: Đã vô hiệu',
+          reason: 'Vé thiếu mã QR, vui lòng liên hệ hỗ trợ.'
+        };
+      }
+      return { status: 'valid', label: 'Vé: Đã phát hành', reason: '' };
+    }
+
+    return {
+      status: 'invalid',
+      label: 'Vé: Đã vô hiệu',
+      reason: 'Đơn chưa được xác nhận thanh toán.'
+    };
+  }
+
   function getBookingPresentation(booking, fromPath = '/lich-su-dat-san.html') {
     if (!booking || !displayStatuses.has(booking.display_status_code)) {
       throw new TypeError('Trạng thái hiển thị của đơn đặt sân không hợp lệ.');
@@ -100,12 +132,13 @@
       throw new TypeError('Mã đơn đặt sân không hợp lệ.');
     }
 
+    const ticketPresentation = getTicketPresentation(booking);
     let action;
     let href;
     if (booking.status === 'PENDING' && booking.display_status_code === 'PENDING') {
       action = 'continue-payment';
       href = `/thanh-toan.html?booking_id=${encodeURIComponent(bookingId)}`;
-    } else if (booking.status === 'CONFIRMED') {
+    } else if (ticketPresentation.status === 'valid') {
       action = 'view-ticket';
       href = backNav.buildTicketUrl(bookingId, fromPath);
     } else {
@@ -124,6 +157,7 @@
       label: getBookingStatusLabel(booking.display_status_code),
       action,
       href,
+      ticketPresentation,
       remainingSeconds: booking.status === 'PENDING'
         && booking.display_status_code === 'PENDING'
         && Number.isFinite(remainingSeconds)
@@ -215,6 +249,7 @@
     getBookingErrorAction,
     getBookingErrorView,
     getBookingPresentation,
+    getTicketPresentation,
     canCancelBooking,
     formatStartCountdown,
     getRefundPercentBySeconds,

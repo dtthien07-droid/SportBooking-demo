@@ -10,14 +10,12 @@
   <script src="/shared/icons.js" defer></script>
   <script src="/booking/admin-state.js" defer></script>
   <script src="/admin/admin-shell.js" defer></script>
+  <script src="/admin/export-download.js" defer></script>
   <script src="/admin/admin-api.js" defer></script>
   <script src="/admin/facilities-state.js" defer></script>
   <script src="/shared/header-state.js" defer></script>
   <script src="/shared/header.js" defer></script>
   <script src="/admin/facilities-page.js" defer></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
   <style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style>
   <script src="https://cdn.tailwindcss.com"></script>
   <script id="tailwind-config">tailwind.config = {
@@ -218,55 +216,6 @@
       <nav class="admin-sidebar__nav" aria-label="Điều hướng quản trị" data-admin-sidebar></nav>
     </aside>
     <div class="admin-main admin-main--mockup"><main class="w-full pt-16 bg-surface px-space-lg py-space-lg flex-1"><div class="flex flex-col w-full gap-space-lg relative">
-<!-- Top Stat Highlights Bar -->
-<div class="grid grid-cols-1 md:grid-cols-4 gap-gutter w-full">
-<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex items-center justify-between">
-<div class="flex flex-col">
-<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Tổng số cơ sở</span>
-<span class="font-headline-lg text-headline-lg text-on-surface mt-1" data-admin-facility-total>—</span>
-<span class="font-body-sm text-body-sm text-primary flex items-center gap-1 mt-1 font-semibold">
-<span class="material-symbols-outlined text-[16px]">trending_up</span>Tổng cơ sở theo API
-        </span>
-</div>
-<div class="w-12 h-12 rounded-xl bg-surface-container-high text-primary flex items-center justify-center">
-<span class="material-symbols-outlined text-[26px]">stadium</span>
-</div>
-</div>
-<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex items-center justify-between">
-<div class="flex flex-col">
-<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Sân con đang mở</span>
-<span class="font-headline-lg text-headline-lg text-on-surface mt-1" data-admin-facility-metric>—</span>
-<span class="font-body-sm text-body-sm text-on-surface-variant mt-1">Không có thống kê tổng hợp</span>
-</div>
-<div class="w-12 h-12 rounded-xl bg-surface-container-high text-secondary flex items-center justify-center">
-<span class="material-symbols-outlined text-[26px]">sports_tennis</span>
-</div>
-</div>
-<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex items-center justify-between">
-<div class="flex flex-col">
-<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Đang bảo trì</span>
-<span class="font-headline-lg text-headline-lg text-secondary-container mt-1" data-admin-facility-metric>—</span>
-<span class="font-body-sm text-body-sm text-secondary flex items-center gap-1 mt-1 font-semibold">
-<span class="material-symbols-outlined text-[16px]">build</span>Không có thống kê tổng hợp
-        </span>
-</div>
-<div class="w-12 h-12 rounded-xl bg-surface-container-high text-secondary-container flex items-center justify-center">
-<span class="material-symbols-outlined text-[26px]">handyman</span>
-</div>
-</div>
-<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex items-center justify-between">
-<div class="flex flex-col">
-<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Tỷ lệ lấp đầy TB</span>
-<span class="font-headline-lg text-headline-lg text-primary mt-1" data-admin-facility-metric>—</span>
-<span class="font-body-sm text-body-sm text-primary flex items-center gap-1 mt-1 font-semibold">
-<span class="material-symbols-outlined text-[16px]">bolt</span>Không có thống kê tổng hợp
-        </span>
-</div>
-<div class="w-12 h-12 rounded-xl bg-surface-container-high text-primary flex items-center justify-center">
-<span class="material-symbols-outlined text-[26px]">speed</span>
-</div>
-</div>
-</div>
 <!-- Header Action & Filter Panel -->
 <div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col gap-space-md">
 <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
@@ -279,68 +228,102 @@
 <span class="material-symbols-outlined text-[20px]">add_circle</span>
 <span>Thêm cơ sở / Sân mới</span>
 </button>
-<button class="px-space-md py-2.5 rounded-xl bg-surface-container-high text-on-surface font-label-md text-label-md hover:bg-surface-variant flex items-center gap-2 transition-all" type="button" disabled aria-label="Xuất báo cáo, sắp có">
-<span class="material-symbols-outlined text-[20px]">file_download</span>
-<span>Xuất báo cáo <span class="admin-mockup-soon">Sắp có</span></span>
+<button class="admin-export-btn bg-surface-container-high text-on-surface font-label-md text-label-md hover:bg-surface-variant transition-all" id="facilitiesExport" type="button" aria-label="Xuất báo cáo Excel">
+<svg class="admin-export-btn__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4"/></svg>
+<span data-export-label>Xuất báo cáo Excel</span>
 </button>
 </div>
 </div>
+<p class="admin-notice" id="facilitiesExportStatus" role="status" aria-live="polite" hidden></p>
 <!-- Filter Toolset -->
 <div class="grid grid-cols-1 md:grid-cols-12 gap-space-sm pt-space-xs">
 <!-- Search Input -->
-<div class="md:col-span-5 relative">
+<div class="md:col-span-6 relative">
 <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
 <input class="w-full pl-10 pr-4 py-2.5 bg-surface rounded-xl text-on-surface placeholder:text-on-surface-variant font-body-sm text-body-sm focus:outline-none focus:bg-surface-container-lowest shadow-sm transition-all" id="mockupFacilitySearch" placeholder="Tìm theo tên cơ sở, mã sân, hoặc địa chỉ chi tiết..." type="search" maxlength="100" autocomplete="off" value="">
 </div>
-<!-- Sport Filter -->
-<div class="md:col-span-3">
-<div class="relative">
-<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">sports</span>
-<select class="w-full pl-10 pr-8 py-2.5 bg-surface text-on-surface font-body-sm text-body-sm rounded-xl focus:outline-none appearance-none cursor-pointer shadow-sm" id="mockupFacilitySport" disabled>
-<option value="all">Môn thể thao: Tất cả</option>
-<option selected="" value="badminton">Cầu lông</option>
-<option value="football">Bóng đá mini</option>
-<option value="tennis">Quần vợt / Tennis</option>
-<option value="pickleball">Pickleball</option>
-</select>
-<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px] pointer-events-none">expand_more</span>
-</div>
-</div>
 <!-- District Filter -->
-<div class="md:col-span-2">
+<div class="md:col-span-3">
 <div class="relative">
 <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">location_on</span>
 <input class="w-full pl-10 pr-4 py-2.5 bg-surface text-on-surface placeholder:text-on-surface-variant font-body-sm text-body-sm rounded-xl focus:outline-none appearance-none shadow-sm" id="mockupFacilityDistrict" placeholder="Quận / Huyện">
 </div>
 </div>
 <!-- Status Filter -->
-<div class="md:col-span-2">
+<div class="md:col-span-3">
 <div class="relative">
 <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">tune</span>
 <select class="w-full pl-10 pr-8 py-2.5 bg-surface text-on-surface font-body-sm text-body-sm rounded-xl focus:outline-none appearance-none cursor-pointer shadow-sm" id="mockupFacilityActive">
 <option value="all">Tất cả trạng thái</option>
 <option selected="" value="active">Đang hoạt động</option>
-<option value="inactive">Ngừng hoạt động</option>
+<option value="inactive">Tạm khóa</option>
 </select>
 <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px] pointer-events-none">expand_more</span>
 </div>
 </div>
 </div>
 </div>
+<!-- Top Stat Highlights Bar -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-gutter w-full" data-facility-summary>
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Tổng số cơ sở</span>
+<span class="font-headline-lg text-headline-lg text-on-surface mt-1" data-admin-facility-total>0</span>
+<span class="font-body-sm text-body-sm text-primary flex items-center gap-1 mt-1 font-semibold">
+<span class="material-symbols-outlined text-[16px]">trending_up</span>Tổng cơ sở theo API
+        </span>
+</div>
+<div class="w-12 h-12 rounded-xl bg-surface-container-high text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[26px]">stadium</span>
+</div>
+</div>
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Cơ sở đang mở</span>
+<span class="font-headline-lg text-headline-lg text-on-surface mt-1" data-admin-facility-active-facilities>0</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-1">Theo trạng thái cơ sở</span>
+</div>
+<div class="w-12 h-12 rounded-xl bg-surface-container-high text-secondary flex items-center justify-center">
+<span class="material-symbols-outlined text-[26px]">stadium</span>
+</div>
+</div>
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Cơ sở tạm khóa</span>
+<span class="font-headline-lg text-headline-lg text-secondary-container mt-1" data-admin-facility-inactive-facilities>0</span>
+<span class="font-body-sm text-body-sm text-secondary flex items-center gap-1 mt-1 font-semibold">
+<span class="material-symbols-outlined text-[16px]">build</span>Theo trạng thái cơ sở
+        </span>
+</div>
+<div class="w-12 h-12 rounded-xl bg-surface-container-high text-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-[26px]">handyman</span>
+</div>
+</div>
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Tỷ lệ lấp đầy 7 ngày</span>
+<span class="font-headline-lg text-headline-lg text-primary mt-1" data-admin-facility-fill-rate>0%</span>
+<span class="font-body-sm text-body-sm text-primary flex items-center gap-1 mt-1 font-semibold">
+<span class="material-symbols-outlined text-[16px]">bolt</span>Trên sân đang hoạt động
+        </span>
+</div>
+<div class="w-12 h-12 rounded-xl bg-surface-container-high text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[26px]">speed</span>
+</div>
+</div>
+</div>
 <!-- Facilities Data Table -->
-<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden" data-facility-table>
 <div class="overflow-x-auto">
 <table class="w-full text-left border-collapse">
 <thead>
 <tr class="bg-surface-container-high/60 font-label-md text-label-md text-on-surface-variant">
-<th class="py-3.5 px-space-md">Mã sân</th>
+<th class="py-3.5 px-space-md">Mã cơ sở</th>
 <th class="py-3.5 px-space-md min-w-[280px]">Cơ sở &amp; Hình ảnh</th>
-<th class="py-3.5 px-space-md">Môn thể thao</th>
 <th class="py-3.5 px-space-md min-w-[220px]">Địa chỉ</th>
 <th class="py-3.5 px-space-md">Giờ hoạt động</th>
 <th class="py-3.5 px-space-md text-center">Sân con</th>
 <th class="py-3.5 px-space-md">Hotline</th>
-<th class="py-3.5 px-space-md">Đơn giá TB</th>
 <th class="py-3.5 px-space-md text-center">Trạng thái</th>
 <th class="py-3.5 px-space-md text-right">Thao tác</th>
 </tr>
@@ -665,14 +648,40 @@
 <div class="grid grid-cols-2 gap-space-md">
 <div class="relative">
 <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">wb_twilight</span>
-<input class="w-full pl-10 pr-3 py-2.5 bg-surface text-on-surface font-body-sm text-body-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-sm" data-facility-field="opening_time" type="time" value="">
+<input class="w-full pl-10 pr-3 py-2.5 bg-surface text-on-surface font-body-sm text-body-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-sm" data-facility-field="opening_time" type="time" step="3600" value="">
 </div>
 <div class="relative">
 <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">bedtime</span>
-<input class="w-full pl-10 pr-3 py-2.5 bg-surface text-on-surface font-body-sm text-body-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-sm" data-facility-field="closing_time" type="time" value="">
+<input class="w-full pl-10 pr-3 py-2.5 bg-surface text-on-surface font-body-sm text-body-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-sm" data-facility-field="closing_time" type="text" inputmode="numeric" pattern="(?:[01]\d|2[0-3]):00|24:00" placeholder="HH:00 hoặc 24:00" value="">
 </div>
 </div>
+<p class="text-body-sm text-error" data-facility-error="opening_time" role="alert" hidden></p>
+<p class="text-body-sm text-error" data-facility-error="closing_time" role="alert" hidden></p>
 </div>
+<section id="newFacilityCourtFields" class="space-y-2 rounded-xl bg-surface-container-low p-space-md">
+<div>
+<h3 class="font-label-md text-label-md text-on-surface font-semibold">Sân đầu tiên</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Nhập tên sân, môn thể thao và giá để tạo khung giờ đặt sân.</p>
+</div>
+<label class="block font-label-md text-label-md text-on-surface" for="firstCourtName">Tên sân</label>
+<input id="firstCourtName" class="w-full px-3 py-2.5 bg-surface text-on-surface font-body-sm text-body-sm rounded-xl shadow-sm" required minlength="2" maxlength="120">
+<label class="block font-label-md text-label-md text-on-surface" for="firstCourtSport">Môn thể thao</label>
+<select id="firstCourtSport" class="w-full px-3 py-2.5 bg-surface text-on-surface font-body-sm text-body-sm rounded-xl shadow-sm">
+<option value="FOOTBALL_MINI">Bóng đá mini</option>
+<option value="BADMINTON" selected>Cầu lông</option>
+<option value="PICKLEBALL">Pickleball</option>
+</select>
+<div class="grid grid-cols-2 gap-space-md">
+<div>
+<label class="block font-label-md text-label-md text-on-surface" for="firstCourtNormalPrice">Giá thường (VND)</label>
+<input id="firstCourtNormalPrice" class="w-full px-3 py-2.5 bg-surface text-on-surface font-body-sm text-body-sm rounded-xl shadow-sm" type="number" min="0" step="1" required>
+</div>
+<div>
+<label class="block font-label-md text-label-md text-on-surface" for="firstCourtPeakPrice">Giá giờ vàng (VND)</label>
+<input id="firstCourtPeakPrice" class="w-full px-3 py-2.5 bg-surface text-on-surface font-body-sm text-body-sm rounded-xl shadow-sm" type="number" min="0" step="1" required>
+</div>
+</div>
+</section>
 <!-- Field 5: Facility Amenities (Checkboxes with Icons) -->
 <div class="space-y-2">
 <label class="block font-label-md text-label-md text-on-surface">
@@ -833,12 +842,13 @@
           <select id="facilityActive">
             <option value="">Tất cả</option>
             <option value="true">Đang hoạt động</option>
-            <option value="false">Ngừng hoạt động</option>
+            <option value="false">Tạm khóa</option>
           </select>
           <button class="admin-button admin-button--primary" type="submit">Tìm kiếm</button>
           <button id="resetFacilityFilters" class="admin-button admin-button--quiet" type="button">Đặt lại</button>
         </form>
         <p id="facilitiesStatus" class="admin-dashboard-message" role="status" aria-live="polite">Đang tải cơ sở...</p>
+        <div id="facilityMutationBanner" class="admin-notice" role="status" aria-live="polite" hidden></div>
         <div class="admin-table-scroll">
           <table class="admin-facility-table">
             <thead><tr>
@@ -913,7 +923,7 @@
               <div><label for="courtPeakPrice">Giá giờ vàng (VND)</label><input id="courtPeakPrice" name="price_peak" type="number" min="0" step="1" required></div>
             </div>
             <label for="courtDescription">Mô tả sân</label><textarea id="courtDescription" name="description" rows="2"></textarea>
-            <label class="admin-facility-active"><input id="courtIsActive" name="is_active" type="checkbox" checked> Đang hoạt động</label>
+            <label class="admin-facility-active"><input id="courtIsActive" name="is_active" type="checkbox" checked> <span id="courtActiveLabel">Đang hoạt động</span></label>
             <p id="courtFormError" class="admin-dialog__error" role="alert" hidden></p>
             <div class="admin-facility-form__actions">
               <button id="cancelCourtEdit" class="admin-button admin-button--quiet" type="button">Hủy</button>

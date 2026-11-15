@@ -108,7 +108,7 @@
                         <svg class="text-secondary text-[20px]" data-sb-icon="calendar_today"></svg>
                         <div class="flex flex-col flex-1">
                             <span class="text-[11px] uppercase font-bold text-gray-500">Ngày chơi</span>
-                            <input type="date" name="date" id="paramDate" class="bg-transparent text-sm font-semibold text-on-surface focus:outline-none cursor-pointer w-full" disabled>
+                            <input type="date" name="date" id="paramDate" class="bg-transparent text-sm font-semibold text-on-surface focus:outline-none cursor-pointer w-full" lang="vi">
                         </div>
                     </div>
 
@@ -117,8 +117,8 @@
                         <svg class="text-secondary text-[20px]" data-sb-icon="schedule"></svg>
                         <div class="flex flex-col flex-1">
                             <span class="text-[11px] uppercase font-bold text-gray-500">Khung giờ</span>
-                            <select name="time_slot" id="timeSlotSelect" class="bg-transparent text-sm font-semibold text-on-surface focus:outline-none cursor-pointer w-full" disabled>
-                                <option value="" selected>-- Tất cả khung giờ --</option>
+                            <select name="time_band" id="timeSlotSelect" class="bg-transparent text-sm font-semibold text-on-surface focus:outline-none cursor-pointer w-full">
+                                <option value="" selected>Tất cả khung giờ</option>
                                 <option value="morning">Sáng (05:00 - 12:00)</option>
                                 <option value="afternoon">Chiều (12:00 - 17:00)</option>
                                 <option value="evening">Tối giờ vàng (17:00 - 22:00)</option>
@@ -148,8 +148,6 @@
                                 Đặt lại bộ lọc
                             </button>
                         </div>
-                        <p class="text-xs text-on-surface-variant">Ngày, khung giờ và tiện ích hiện chưa được API hỗ trợ.</p>
-
                         <!-- Môn thể thao -->
                         <div class="flex flex-col gap-2">
                             <span class="text-xs font-bold uppercase text-gray-500">Môn thể thao</span>
@@ -173,41 +171,23 @@
                         <div class="flex flex-col gap-2">
                             <span class="text-xs font-bold uppercase text-gray-500">Khung giờ</span>
                             <label class="flex items-center gap-2 p-1.5 hover:bg-surface-container rounded-lg cursor-pointer">
-                                <input class="filter-slot-check w-4 h-4 rounded text-primary accent-primary" type="checkbox" value="morning" disabled>
+                                <input class="filter-slot-check w-4 h-4 rounded text-primary accent-primary" type="checkbox" value="morning">
                                 <span class="text-sm">Sáng (05:00 - 12:00)</span>
                             </label>
                             <label class="flex items-center gap-2 p-1.5 hover:bg-surface-container rounded-lg cursor-pointer">
-                                <input class="filter-slot-check w-4 h-4 rounded text-primary accent-primary" type="checkbox" value="afternoon" disabled>
+                                <input class="filter-slot-check w-4 h-4 rounded text-primary accent-primary" type="checkbox" value="afternoon">
                                 <span class="text-sm">Chiều (12:00 - 17:00)</span>
                             </label>
                             <label class="flex items-center gap-2 p-1.5 hover:bg-surface-container rounded-lg cursor-pointer">
-                                <input class="filter-slot-check w-4 h-4 rounded text-secondary accent-secondary" type="checkbox" value="evening" disabled>
+                                <input class="filter-slot-check w-4 h-4 rounded text-secondary accent-secondary" type="checkbox" value="evening">
                                 <span class="text-sm font-semibold text-secondary">Tối giờ vàng (17:00 - 22:00)</span>
                             </label>
                             <label class="flex items-center gap-2 p-1.5 hover:bg-surface-container rounded-lg cursor-pointer">
-                                <input class="filter-slot-check w-4 h-4 rounded text-primary accent-primary" type="checkbox" value="night" disabled>
+                                <input class="filter-slot-check w-4 h-4 rounded text-primary accent-primary" type="checkbox" value="night">
                                 <span class="text-sm">Đêm (22:00 - 23:59)</span>
                             </label>
                         </div>
 
-                        <hr>
-
-                        <!-- Tiện ích -->
-                        <div class="flex flex-col gap-2">
-                            <span class="text-xs font-bold uppercase text-gray-500">Tiện ích</span>
-                            <label class="flex items-center gap-2 p-1.5 hover:bg-surface-container rounded-lg cursor-pointer">
-                                <input id="amenityWc" class="filter-amenity-check w-4 h-4 rounded text-primary accent-primary" type="checkbox" value="wc" disabled>
-                                <span class="text-sm">Nhà vệ sinh sạch sẽ</span>
-                            </label>
-                            <label class="flex items-center gap-2 p-1.5 hover:bg-surface-container rounded-lg cursor-pointer">
-                                <input id="amenityParking" class="filter-amenity-check w-4 h-4 rounded text-primary accent-primary" type="checkbox" value="parking" disabled>
-                                <span class="text-sm">Bãi đỗ ô tô / xe máy</span>
-                            </label>
-                            <label class="flex items-center gap-2 p-1.5 hover:bg-surface-container rounded-lg cursor-pointer">
-                                <input id="amenityWifi" class="filter-amenity-check w-4 h-4 rounded text-primary accent-primary" type="checkbox" value="wifi" disabled>
-                                <span class="text-sm">Wifi miễn phí / Căng tin</span>
-                            </label>
-                        </div>
                     </div>
                 </aside>
 
@@ -241,32 +221,11 @@
         </section>
     </main>
 
-    <!-- FOOTER -->
-    <footer class="w-full bg-[#f1f3ff] border-t border-gray-200 shadow-[0_-1px_6px_rgba(0,0,0,0.02)]">
-        <div class="max-w-[1440px] mx-auto px-margin py-8 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div class="flex flex-col gap-1 text-left">
-                <div class="flex items-center gap-2">
-                    <span class="font-bold text-base text-primary">SportBooking Hà Nội</span>
-                    <span class="text-on-surface-variant text-xs">| Nền tảng đặt sân thể thao thông minh</span>
-                </div>
-                <p class="text-on-surface-variant text-xs">Hệ thống đặt sân thể thao SportBooking Hà Nội - Đặt sân trực tuyến nhanh chóng, tiện lợi &amp; chuẩn xác</p>
-                <p class="text-on-surface text-sm">Hotline hỗ trợ 24/7: <span class="font-bold text-secondary">1900 8899</span></p>
-            </div>
-            <div class="flex flex-col md:items-end gap-1.5">
-                <div class="flex flex-wrap items-center gap-3 text-xs text-on-surface-variant">
-                    <a class="hover:text-primary transition-colors" href="#">Hỗ trợ khách hàng</a>
-                    <span>•</span>
-                    <a class="hover:text-primary transition-colors" href="#">Điều khoản sử dụng</a>
-                    <span>•</span>
-                    <a class="hover:text-primary transition-colors" href="#">Chính sách bảo mật</a>
-                </div>
-                <p class="text-xs text-on-surface-variant">© 2026 SportBooking Hà Nội. Tất cả các quyền được bảo lưu.</p>
-            </div>
-        </div>
-    </footer>
+    <div data-shared-footer></div>
 
     <!-- SCRIPT TẢI DANH SÁCH VÀ XỬ LÝ BỘ LỌC -->
     <script src="/shared/header-state.js" defer></script><script src="/shared/header.js" defer></script><script src="/shared/facilities-api.js" defer></script>
-    <script src="/shared/format.js" defer></script><script src="/tim-san.js" defer></script>
+    <script src="/shared/search-filters.js" defer></script>
+    <script src="/shared/format.js" defer></script><script src="/shared/support-constants.js" defer></script><script src="/shared/footer.js" defer></script><script src="/tim-san.js" defer></script>
 </body>
 </html>

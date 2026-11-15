@@ -86,6 +86,12 @@
     ].join('\n');
   }
 
+  function buildTicketQrPayload(booking, facilityData) {
+    const facility = facilityData?.facility || facilityData || {};
+    const facilityName = String(facility.name || booking?.slots?.[0]?.facility_name || '').trim();
+    return buildQrPayload({ ...booking, facility_name: facilityName });
+  }
+
   function buildTicketViewModel(booking, userData, facilityData) {
     if (!booking || !['CONFIRMED', 'COMPLETED'].includes(booking.status)) {
       throw new TypeError('Đơn đặt sân không có vé hợp lệ.');
@@ -162,7 +168,7 @@
     if (!statusLabels[statusCode]) {
       throw new TypeError('Trạng thái hiển thị của vé không hợp lệ.');
     }
-    const qrPayload = buildQrPayload({ ...booking, facility_name: facilityName });
+    const qrPayload = buildTicketQrPayload(booking, facilityData);
 
     return {
       bookingCode: booking.booking_code,
@@ -201,5 +207,11 @@
     return `${new Intl.NumberFormat('vi-VN').format(BigInt(value))} đ`;
   }
 
-  return { buildQrPayload, buildTicketViewModel, decideTicketAction, formatMoney };
+  return {
+    buildQrPayload,
+    buildTicketQrPayload,
+    buildTicketViewModel,
+    decideTicketAction,
+    formatMoney
+  };
 }));

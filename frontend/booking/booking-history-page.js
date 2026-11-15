@@ -149,22 +149,32 @@
   }
 
   function formatDate(value) {
+    if (value === null || value === undefined || value === '') return '--';
     const dateText = String(value || '').slice(0, 10);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dateText)) {
       throw new TypeError('Ngày trong đơn đặt sân không hợp lệ.');
     }
+    const date = new Date(`${dateText}T12:00:00+07:00`);
+    if (Number.isNaN(date.getTime())) return '--';
     return new Intl.DateTimeFormat('vi-VN', {
       timeZone: 'Asia/Ho_Chi_Minh',
       day: '2-digit',
       month: '2-digit',
       year: 'numeric'
-    }).format(new Date(`${dateText}T12:00:00+07:00`));
+    }).format(date);
   }
 
   function formatTime(value) {
+    if (value === null || value === undefined || value === '') return '--';
     const match = /^(\d{2}:\d{2})(?::\d{2})?$/.exec(String(value || ''));
     if (!match) throw new TypeError('Khung giờ trong đơn đặt sân không hợp lệ.');
     return match[1];
+  }
+
+  function displayText(value, fallback = '--') {
+    if (typeof value !== 'string' && typeof value !== 'number') return fallback;
+    const text = String(value);
+    return text.trim() ? text : fallback;
   }
 
   function sportPresentation(value) {
@@ -288,13 +298,26 @@
     node.title = `${node.dataset.statusLabel} · Còn lại ${state.formatCountdown(remaining)} để thanh toán`;
   }
 
+  function createBookingFallbackCard(booking) {
+    const fallback = document.createElement('article');
+    const bookingCode = displayText(
+      booking?.booking_code,
+      booking?.booking_id ? `#${booking.booking_id}` : 'Đơn đặt sân'
+    );
+    fallback.className = 'booking-card bg-surface-container-lowest rounded-2xl border border-gray-100 p-4';
+    fallback.dataset.bookingId = String(booking?.booking_id || '');
+    fallback.setAttribute('role', 'status');
+    fallback.textContent = `${bookingCode} · Không hiển thị được chi tiết`;
+    return fallback;
+  }
+
   function createBookingCard(booking, facilityData) {
-    if (!Array.isArray(booking.slots) || booking.slots.length === 0) {
-      throw new TypeError('Đơn đặt sân không có khung giờ.');
-    }
+    const slots = Array.isArray(booking?.slots)
+      ? booking.slots.filter((slot) => slot && typeof slot === 'object')
+      : [];
     const fromPath = currentPagePath();
     const presentation = state.getBookingPresentation(booking, fromPath);
-    const firstSlot = booking.slots[0];
+    const firstSlot = slots[0] || {};
     const card = elements.template.content.firstElementChild.cloneNode(true);
     const detailUrl = window.SportBookingBackNav.buildDetailUrl(booking.booking_id, fromPath);
     const sport = sportPresentation(firstSlot.sport_type);
@@ -304,6 +327,7 @@
     const timeIcon = card.querySelector('[data-time-icon]');
     const status = card.querySelector('[data-status-badge]');
     const statusIcon = card.querySelector('[data-status-icon]');
+    const ticketStatus = card.querySelector('[data-ticket-status]');
     const primaryAction = card.querySelector('[data-primary-action]');
     const primaryActionIcon = card.querySelector('[data-primary-action-icon]');
     const detailActionIcon = card.querySelector('[data-detail-action-icon]');
@@ -311,31 +335,35 @@
     const soonAction = card.querySelector('[data-soon-action]');
     const cancelAction = card.querySelector('[data-cancel-action]');
     const facility = facilityData?.facility;
-    const facilityName = facility?.name || firstSlot.facility_name || '--';
-    const courtName = firstSlot.court_name || '--';
+    const facilityName = displayText(facility?.name, displayText(firstSlot.facility_name));
+    const courtName = displayText(firstSlot.court_name);
     const showCourtName = courtName !== '--'
       && courtName.trim().toLowerCase() !== facilityName.trim().toLowerCase();
 
     card.dataset.status = booking.display_status_code;
     card.dataset.bookingId = String(booking.booking_id);
-    card.dataset.category = firstSlot.sport_type || '';
-    card.querySelector('[data-booking-code]').textContent = booking.booking_code || '--';
+    card.dataset.category = displayText(firstSlot.sport_type, '');
+    card.querySelector('[data-booking-code]').textContent = displayText(booking.booking_code);
     card.querySelector('[data-court-name]').textContent = courtName;
     card.querySelector('[data-court-name]').hidden = !showCourtName;
     card.querySelector('[data-court-separator]').hidden = !showCourtName;
     card.querySelector('[data-facility-name]').textContent = facilityName;
     image.alt = facilityName;
     const facilityAddress = card.querySelector('[data-facility-address]');
-    facilityAddress.textContent = facility?.address || '--';
-    facilityAddress.title = facility?.address || '';
-    const formattedDate = booking.slots
+    facilityAddress.textContent = displayText(facility?.address);
+    facilityAddress.title = displayText(facility?.address, '');
+    const formattedDate = slots
       .map((slot) => formatDate(slot.service_date))
       .filter((date, index, dates) => dates.indexOf(date) === index)
-      .join(' – ');
+      .join(' – ') || '--';
     card.querySelector('[data-date]').textContent = formattedDate;
-    card.querySelector('[data-time-range]').textContent = booking.slots
-      .map((slot) => `${formatTime(slot.starts_at)} – ${formatTime(slot.ends_at)}`)
-      .join(', ');
+    card.querySelector('[data-time-range]').textContent = slots
+      .map((slot) => {
+        const start = formatTime(slot.starts_at);
+        const end = formatTime(slot.ends_at);
+        return start === '--' || end === '--' ? '--' : `${start} – ${end}`;
+      })
+      .join(', ') || '--';
     const amount = card.querySelector('[data-paid-amount]');
     amount.textContent = formatMoney(booking.paid_amount);
     window.SportBookingIcons.setIcon(card.querySelector('[data-sport-icon]'), sport.icon);
@@ -372,6 +400,9 @@
     statusLabel.textContent = presentation.label;
     status.dataset.statusLabel = presentation.label;
     status.classList.add(...statusClasses(booking.display_status_code).split(' '));
+    ticketStatus.textContent = presentation.ticketPresentation.label;
+    ticketStatus.dataset.ticketStatus = presentation.ticketPresentation.status;
+    ticketStatus.title = presentation.ticketPresentation.reason || presentation.ticketPresentation.label;
     const statusIcons = {
       PENDING: ['timer', 'text-secondary'],
       EXPIRED: ['timer', 'text-gray-400'],
@@ -485,8 +516,24 @@
 
   async function renderBookings(bookings, requestSequence) {
     const cards = await Promise.all(bookings.map(async (booking) => {
-      const facilityData = await getFacility(booking.slots?.[0]?.facility_id);
-      return createBookingCard(booking, facilityData);
+      let facilityData = null;
+      try {
+        facilityData = await getFacility(booking?.slots?.[0]?.facility_id);
+      } catch (error) {
+        console.error(
+          `Không thể tải thông tin cơ sở của đơn ${booking?.booking_id || '(không rõ mã)'}.`,
+          error
+        );
+      }
+      try {
+        return createBookingCard(booking, facilityData);
+      } catch (error) {
+        console.error(
+          `Không thể hiển thị đơn đặt sân ${booking?.booking_id || '(không rõ mã)'}.`,
+          { error, booking }
+        );
+        return createBookingFallbackCard(booking);
+      }
     }));
     if (requestSequence !== current.requestSequence) return false;
     elements.list.replaceChildren(...cards);
@@ -536,6 +583,7 @@
       const rendered = await renderBookings(result.bookings, requestSequence);
       if (!rendered) return;
       elements.loading.hidden = true;
+      elements.errorMessage.textContent = '';
       elements.error.hidden = true;
       elements.empty.hidden = true;
       renderPagination(result.pagination);

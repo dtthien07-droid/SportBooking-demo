@@ -6,6 +6,7 @@ const path = require('node:path');
 const test = require('node:test');
 const {
   buildQrPayload,
+  buildTicketQrPayload,
   buildTicketViewModel,
   decideTicketAction,
   formatMoney
@@ -102,6 +103,18 @@ test('builds the ticket from real booking fields and merges adjacent slots', () 
   ].join('\n'));
   assert.equal(model.qrPayload.split('\n')[1], `Mã đơn: ${createBooking().booking_code}`);
   assert.doesNotMatch(model.qrPayload, /http|geo:|12 Phố Mẫu|Hà Nội|Người đặt thật|0838|user@example/i);
+});
+
+test('builds the shared QR payload from the canonical facility name', () => {
+  const booking = createBooking();
+  booking.slots = booking.slots.map((slot) => ({
+    ...slot,
+    facility_name: 'Tên cơ sở cũ trong đơn'
+  }));
+  const expected = buildQrPayload({ ...booking, facility_name: facilityData.facility.name });
+
+  assert.equal(buildTicketQrPayload(booking, facilityData), expected);
+  assert.equal(buildTicketViewModel(booking, userData, facilityData).qrPayload, expected);
 });
 
 test('QR payload omits private data and truncates facility name to 40 characters', () => {

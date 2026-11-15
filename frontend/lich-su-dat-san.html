@@ -261,6 +261,7 @@
                                 <div class="flex flex-wrap items-center justify-between gap-2">
                                     <div class="flex items-center gap-2">
                                         <span data-booking-code data-field="booking-code" class="font-mono bg-surface-container px-2 py-0.5 rounded text-xs text-on-surface-variant font-bold">--</span>
+                                        <span data-ticket-status class="text-xs font-semibold text-on-surface-variant" title="">Vé: Chưa phát hành</span>
                                         <span data-court-separator class="text-outline-variant">•</span>
                                         <span data-court-name data-field="court" class="text-sm text-primary font-bold">--</span>
                                     </div>
@@ -461,38 +462,17 @@
         </div>
     </main>
 
-    <!-- FOOTER ĐỒNG BỘ -->
-    <footer class="w-full bg-[#f1f3ff] border-t border-gray-200 shadow-[0_-1px_6px_rgba(0,0,0,0.02)]">
-        <div class="max-w-[1440px] mx-auto px-margin py-8 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div class="flex flex-col gap-1 text-left">
-                <div class="flex items-center gap-2">
-                    <span class="font-bold text-base text-primary">SportBooking Hà Nội</span>
-                    <span class="text-on-surface-variant text-xs">| Nền tảng đặt sân thể thao thông minh</span>
-                </div>
-                <p class="text-on-surface-variant text-xs">Hệ thống đặt sân thể thao SportBooking Hà Nội - Đặt sân trực tuyến nhanh chóng, tiện lợi &amp; chuẩn xác</p>
-                <p class="text-on-surface text-sm">Hotline hỗ trợ 24/7: <span class="font-bold text-secondary">1900 8899</span></p>
-            </div>
-            <div class="flex flex-col md:items-end gap-1.5">
-                <div class="flex flex-wrap items-center gap-3 text-xs text-on-surface-variant">
-                    <span class="hover:text-primary transition-colors" aria-disabled="true" title="Sắp có">Hỗ trợ khách hàng · Sắp có</span>
-                    <span>•</span>
-                    <span class="hover:text-primary transition-colors" aria-disabled="true" title="Sắp có">Điều khoản sử dụng · Sắp có</span>
-                    <span>•</span>
-                    <span class="hover:text-primary transition-colors" aria-disabled="true" title="Sắp có">Chính sách bảo mật · Sắp có</span>
-                </div>
-                <p class="text-xs text-on-surface-variant">© 2026 SportBooking Hà Nội. Tất cả các quyền được bảo lưu.</p>
-            </div>
-        </div>
-    </footer>
+    <div data-shared-footer></div>
 
     
 
-    
     
 <script src="/booking/bookings-api.js"></script>
     <script src="/shared/header-state.js"></script>
     <script src="/shared/header.js"></script>
     <script src="/shared/back-nav.js"></script>
+    <script src="/shared/support-constants.js"></script>
+    <script src="/shared/footer.js"></script>
     <script src="/booking/booking-history-state.js"></script>
     <script src="/booking/cancellation-dialog.js"></script>
     <script src="/booking/booking-history-page.js"></script>

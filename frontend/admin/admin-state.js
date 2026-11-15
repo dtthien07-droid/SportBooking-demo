@@ -167,6 +167,13 @@
     return query;
   }
 
+  function buildExportFilters(filterState) {
+    if (!filterState?.applied) {
+      throw new TypeError('An admin filter state is required.');
+    }
+    return buildQuery({ ...filterState.applied, page: undefined });
+  }
+
   function serializeFilterState(applied) {
     const params = new URLSearchParams();
     if (applied.status) params.set('status', applied.status);
@@ -407,6 +414,7 @@
     USER_HOME,
     applyDraftFilters,
     buildQuery,
+    buildExportFilters,
     canCancelIncident,
     countDisplayStatuses,
     createFilterState,

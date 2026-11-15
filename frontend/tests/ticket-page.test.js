@@ -5,12 +5,17 @@ const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
 const vm = require('node:vm');
+const { TextEncoder } = require('node:util');
 const TicketData = require('../booking/ticket-data.js');
 const BackNav = require('../shared/back-nav.js');
 
 const frontendRoot = path.resolve(__dirname, '..');
 const pageSource = fs.readFileSync(path.join(frontendRoot, 'booking', 'ticket-page.js'), 'utf8');
 const pageHtml = fs.readFileSync(path.join(frontendRoot, 've-dien-tu.html'), 'utf8');
+const qrCodeSource = fs.readFileSync(path.join(frontendRoot, 'assets', 'qr-code.js'), 'utf8');
+const qrCodeWindow = {};
+vm.runInNewContext(qrCodeSource, { window: qrCodeWindow, TextEncoder });
+const QRCode = qrCodeWindow.SportBookingQRCode;
 
 const booking = {
   booking_id: '42',
@@ -108,7 +113,7 @@ function createPageHarness({
     SportBookingQRCode: {
       toSvg(payload) {
         qrPayloads.push(payload);
-        return '<svg aria-label="local qr"></svg>';
+        return QRCode.toSvg(payload);
       }
     }
   };
@@ -163,6 +168,7 @@ test('loads API data and renders one local QR plus all ticket fields', async () 
     facility_name: 'Cơ sở thật'
   });
   assert.equal(page.qrPayloads[0], expectedQrPayload);
+  assert.equal(page.elements.get('bookingQr').innerHTML, QRCode.toSvg(expectedQrPayload));
   assert.equal(expectedQrPayload, [
     'SPORTBOOKING',
     'Mã đơn: SPB-20261120-ABCDE2',

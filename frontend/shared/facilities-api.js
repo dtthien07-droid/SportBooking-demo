@@ -10,9 +10,11 @@
     });
 
     const response = await fetch(`/api/v1/facilities?${query}`, {
-      credentials: 'same-origin'
+      credentials: 'same-origin',
+      cache: 'no-store'
     });
     if (response.status === 401) {
+      if (await window.SportBookingHeaderAuth?.redirectIfAccountLocked(response)) return null;
       window.location.assign('/dang-nhap.html');
       return null;
     }

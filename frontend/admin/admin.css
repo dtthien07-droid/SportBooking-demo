@@ -148,6 +148,16 @@ body.admin-body {
   color: #64748B;
   font-size: 12px;
 }
+.admin-facility-empty-courts {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 3px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--admin-surface-container-low);
+  color: var(--admin-on-surface-variant);
+  font-size: 11px;
+}
 .admin-dashboard-columns {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -681,6 +691,71 @@ body.admin-body {
 [data-field="status"][data-status="COMPLETED"] [data-field="status-dot"] { background: #475569; }
 [data-field="status"][data-status="CANCELLED"] [data-field="status-dot"],
 [data-field="status"][data-status="EXPIRED"] [data-field="status-dot"] { background: #f43f5e; }
+.admin-export-btn {
+  box-sizing: border-box;
+  display: inline-flex;
+  width: 200px;
+  min-width: 200px;
+  max-width: 100%;
+  height: 40px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 8px;
+  white-space: nowrap;
+  line-height: 1;
+  cursor: pointer;
+}
+.admin-export-btn__icon {
+  display: block;
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.admin-export-btn [data-export-label] {
+  flex: none;
+  white-space: nowrap;
+}
+.slots-page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.slots-page-actions .slots-page-action--soon {
+  display: inline-flex;
+  height: 40px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.slots-page-primary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.slots-page-primary-actions .slots-page-action--save {
+  box-sizing: border-box;
+  display: inline-flex;
+  min-height: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 8px;
+  white-space: nowrap;
+  line-height: 1;
+  cursor: pointer;
+}
+.slots-page-action--save .material-symbols-outlined { line-height: 1; }
 .admin-button {
   display: inline-flex;
   min-height: 38px;
@@ -829,6 +904,20 @@ body.admin-body {
   outline-offset: 2px;
 }
 
+@media (min-width: 1440px) {
+  .slots-page-header.slots-page-header {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .slots-page-title { white-space: nowrap; }
+  .slots-page-header .slots-page-actions { flex-wrap: nowrap; }
+  .slots-page-header .slots-page-actions .slots-page-action--soon {
+    padding-right: 4px;
+    padding-left: 4px;
+  }
+  .slots-page-primary-actions { flex-wrap: nowrap; }
+}
 @media (max-width: 900px) {
   .admin-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .admin-shell { display: block; }

@@ -32,7 +32,11 @@
     matchTime: document.getElementById('displayMatchTime'),
     hotline: document.getElementById('venueHotline'),
     qrContent: document.getElementById('ticketQrContent'),
+    qrImage: document.getElementById('qrCodeImage'),
+    qrSubText: document.getElementById('qrSubText'),
+    ticketQrRetry: document.getElementById('ticketQrRetry'),
     qrMessage: document.getElementById('ticketMessage'),
+    ticketStateMessage: document.getElementById('ticketStateMessage'),
     ticketStatus: document.getElementById('ticketStatusLabel'),
     paymentTotal: document.getElementById('priceCourtTotal'),
     paymentGrandTotal: document.getElementById('priceFinalTotal'),
@@ -209,8 +213,13 @@
     setText(elements.transactionId, '--');
   }
 
-  function renderTicketAndActions(booking, presentation) {
-    elements.qrContent.hidden = true;
+  function renderTicketAndActions(booking, presentation, facilityData) {
+    const ticketPresentation = presentation.ticketPresentation;
+    elements.qrContent.hidden = ticketPresentation.status !== 'valid';
+    elements.qrImage.hidden = true;
+    elements.qrImage.removeAttribute('src');
+    elements.ticketQrRetry.hidden = true;
+    elements.ticketStateMessage.hidden = true;
     elements.pendingNotice.hidden = presentation.action !== 'continue-payment';
     elements.continuePayment.hidden = presentation.action !== 'continue-payment';
     elements.openTicket.hidden = presentation.action !== 'view-ticket';
@@ -227,24 +236,42 @@
 
     if (presentation.action === 'continue-payment') {
       elements.continuePayment.href = presentation.href;
-      elements.ticketStatus.textContent = 'Chưa phát hành';
+      elements.ticketStatus.textContent = 'CHƯA PHÁT HÀNH';
       elements.qrMessage.textContent = 'Đơn đang chờ thanh toán; không hiển thị mã QR.';
+      elements.ticketStateMessage.textContent = 'Vé điện tử sẽ được phát hành sau khi thanh toán thành công.';
+      elements.ticketStateMessage.hidden = false;
       startCountdown(presentation.remainingSeconds);
       return;
     }
 
     window.clearInterval(countdownTimer);
     elements.pendingNotice.hidden = true;
-    elements.ticketStatus.textContent = booking.status === 'CONFIRMED' ? 'Vé đặt sân' : 'Chưa phát hành';
-    if (presentation.action === 'view-ticket') {
+    if (ticketPresentation.status === 'valid') {
+      elements.ticketStatus.textContent = 'ĐÃ PHÁT HÀNH';
+      elements.qrMessage.textContent = 'Xuất trình mã QR này cho nhân viên sân.';
       elements.openTicket.href = presentation.href;
-      elements.qrMessage.textContent = 'Mở vé để xem thông tin sử dụng.';
-    } else if (booking.display_status_code === 'EXPIRED') {
-      elements.qrMessage.textContent = 'Đơn đã hết hạn thanh toán; không có vé.';
-    } else if (booking.display_status_code === 'CANCELLED') {
-      elements.qrMessage.textContent = 'Đơn đã hủy; không có vé.';
+      try {
+        const payload = window.SportBookingTicketData.buildTicketQrPayload(booking, facilityData);
+        const svg = window.SportBookingQRCode.toSvg(payload);
+        elements.qrImage.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+        elements.qrImage.hidden = false;
+        elements.qrSubText.textContent = 'Mã QR vé điện tử.';
+      } catch (error) {
+        console.error('Không thể tạo mã QR cho vé đặt sân.', error);
+        elements.qrImage.hidden = true;
+        elements.qrImage.removeAttribute('src');
+        elements.qrSubText.textContent =
+          'Không thể hiển thị mã QR lúc này. Vui lòng tải lại trang.';
+        elements.ticketQrRetry.hidden = false;
+      }
+    } else if (ticketPresentation.status === 'invalid') {
+      elements.ticketStatus.textContent = 'VÉ ĐÃ VÔ HIỆU';
+      elements.ticketStateMessage.textContent = ticketPresentation.reason;
+      elements.ticketStateMessage.hidden = false;
     } else {
-      elements.qrMessage.textContent = 'Đơn đã hoàn thành.';
+      elements.ticketStatus.textContent = 'CHƯA PHÁT HÀNH';
+      elements.ticketStateMessage.textContent = 'Đơn đặt sân này chưa có vé điện tử.';
+      elements.ticketStateMessage.hidden = false;
     }
   }
 
@@ -291,7 +318,7 @@
     setText(elements.orderTime, window.SportBookingFormat.formatVietnamDateTime(booking.created_at));
     renderFacility(booking, facilityData?.facility);
     renderPayment(booking);
-    renderTicketAndActions(booking, presentation);
+    renderTicketAndActions(booking, presentation, facilityData);
     elements.cancelAction.hidden = !state.canCancelBooking(booking);
     if (!elements.cancelAction.hidden) {
       elements.cancelAction.disabled = false;
@@ -306,6 +333,7 @@
   }
 
   function showError(error) {
+    console.error('Không thể tải chi tiết đơn đặt sân.', error);
     const view = state.getBookingErrorView(error?.status);
     if (view.action === 'login') {
       const returnTo = `${window.location.pathname}${window.location.search}${window.location.hash}`;
@@ -317,9 +345,25 @@
     elements.loading.hidden = true;
     elements.content.hidden = true;
     elements.errorTitle.textContent = view.title;
-    elements.errorMessage.textContent = view.action === 'not-found' ? '' : error?.message || view.message;
+    elements.errorMessage.textContent = view.action === 'not-found'
+      ? ''
+      : getUserFacingErrorMessage(error);
     elements.retry.hidden = !view.showRetry;
     elements.error.hidden = false;
+  }
+
+  function getUserFacingErrorMessage(error) {
+    if (error?.status === 403) return 'Bạn không có quyền xem đơn đặt sân này.';
+    if (error?.status === 409) return 'Trạng thái đơn đặt sân đã thay đổi. Vui lòng tải lại trang.';
+    if (error?.status === 429) return 'Hệ thống đang xử lý nhiều yêu cầu. Vui lòng thử lại sau.';
+    if (Number(error?.status) >= 500) {
+      return 'Hệ thống đang gặp sự cố khi tải đơn đặt sân. Vui lòng thử lại sau.';
+    }
+    if (error?.status) return 'Không thể tải thông tin đơn đặt sân. Vui lòng thử lại.';
+    if (error?.name === 'TypeError') {
+      return 'Không thể hiển thị thông tin đơn đặt sân. Vui lòng tải lại trang.';
+    }
+    return 'Không thể kết nối để tải đơn đặt sân. Vui lòng kiểm tra kết nối và thử lại.';
   }
 
   async function loadBooking({ quiet = false, forceRefresh = false } = {}) {
@@ -365,6 +409,7 @@
   }
 
   elements.retry.addEventListener('click', () => loadBooking());
+  elements.ticketQrRetry.addEventListener('click', () => window.location.reload());
   elements.cancelAction.addEventListener('click', () => cancellationDialog.open(bookingId));
   loadBooking();
 })();

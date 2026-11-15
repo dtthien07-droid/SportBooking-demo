@@ -31,6 +31,7 @@
     }
 
     if (response.status === 401) {
+      if (await window.SportBookingHeaderAuth?.redirectIfAccountLocked(response)) return null;
       redirectToLogin();
       return null;
     }
@@ -73,6 +74,7 @@
       credentials: 'same-origin'
     });
     if (response.status === 401) {
+      if (await window.SportBookingHeaderAuth?.redirectIfAccountLocked(response)) return false;
       redirectToLogin();
       return false;
     }

@@ -10,13 +10,12 @@
   <script src="/shared/icons.js" defer></script>
   <script src="/booking/admin-state.js" defer></script>
   <script src="/admin/admin-shell.js" defer></script>
+  <script src="/admin/export-download.js" defer></script>
   <script src="/admin/admin-api.js" defer></script>
   <script src="/shared/header-state.js" defer></script>
   <script src="/shared/header.js" defer></script>
   <script src="/admin/users-page.js" defer></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+
   <style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style>
   <script src="https://cdn.tailwindcss.com"></script>
   <script id="tailwind-config">tailwind.config = {
@@ -227,62 +226,63 @@
 <h1 class="font-headline-lg text-headline-lg text-on-surface">Quản lý người dùng &amp; Hội viên</h1>
 <p class="font-body-md text-body-md text-on-surface-variant">Giám sát hồ sơ thể thao, lịch sử tham gia trận, điểm uy tín và thực thi chế tài cộng đồng.</p>
 </div>
-<div class="flex items-center gap-3">
-<button class="flex items-center gap-2 px-space-md py-2.5 rounded-xl bg-surface-container-high text-on-surface font-label-md text-label-md hover:bg-surface-variant transition-all shadow-sm" disabled type="button" aria-label="Xuất dữ liệu, sắp có">
-<span class="material-symbols-outlined text-[20px]">file_download</span>
-<span>Xuất dữ liệu <span class="admin-mockup-soon">Sắp có</span></span>
+<div class="flex items-center gap-3 flex-wrap max-w-full">
+<button class="admin-export-btn bg-surface-container-high text-on-surface font-label-md text-label-md hover:bg-surface-variant transition-all shadow-sm" id="usersExport" type="button" aria-label="Xuất báo cáo Excel">
+<svg class="admin-export-btn__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4"/></svg>
+<span data-export-label>Xuất báo cáo Excel</span>
 </button>
 <button class="flex items-center gap-2 px-space-md py-2.5 rounded-xl bg-primary text-on-primary font-label-md text-label-md hover:bg-primary-container transition-all shadow-sm" disabled type="button" aria-label="Thêm người dùng mới, sắp có">
-<span class="material-symbols-outlined text-[20px]">person_add</span>
+<svg class="text-[20px]" data-sb-icon="person_add" aria-hidden="true"></svg>
 <span>Thêm người dùng mới <span class="admin-mockup-soon">Sắp có</span></span>
 </button>
 </div>
 </div>
+<p class="admin-notice" id="usersExportStatus" role="status" aria-live="polite" hidden></p>
 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-space-md">
 <div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col justify-between relative overflow-hidden group">
 <div class="absolute -right-4 -top-4 w-24 h-24 bg-primary/5 rounded-full blur-xl group-hover:scale-125 transition-transform duration-500"></div>
 <div class="flex items-center justify-between">
 <span class="font-label-md text-label-md text-on-surface-variant">Tổng người dùng</span>
 <div class="w-10 h-10 rounded-xl bg-surface-container-high text-primary flex items-center justify-center">
-<span class="material-symbols-outlined text-[22px]">groups</span>
+<svg class="text-[22px]" data-sb-icon="groups" aria-hidden="true"></svg>
 </div>
 </div>
 <div class="mt-4 flex flex-col gap-1">
-<span class="font-display-lg text-display-lg text-on-surface font-bold tracking-tight" data-admin-users-total>—</span>
+<span class="font-display-lg text-display-lg text-on-surface font-bold tracking-tight" data-admin-users-total>0</span>
 <div class="flex items-center gap-1.5 text-primary">
-<span class="material-symbols-outlined text-[16px]">trending_up</span>
-<span class="font-label-sm text-label-sm font-semibold">Tổng tài khoản theo dữ liệu API</span>
+<svg class="text-[16px]" data-sb-icon="trending_up" aria-hidden="true"></svg>
+<span class="font-label-sm text-label-sm font-semibold">Tính trên toàn bộ tài khoản</span>
 </div>
 </div>
 </div>
 <div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col justify-between relative overflow-hidden group">
 <div class="absolute -right-4 -top-4 w-24 h-24 bg-primary-container/10 rounded-full blur-xl group-hover:scale-125 transition-transform duration-500"></div>
 <div class="flex items-center justify-between">
-<span class="font-label-md text-label-md text-on-surface-variant">Hội viên đang hoạt động</span>
+<span class="font-label-md text-label-md text-on-surface-variant">Đang hoạt động</span>
 <div class="w-10 h-10 rounded-xl bg-primary-fixed/30 text-primary flex items-center justify-center">
-<span class="material-symbols-outlined text-[22px]">verified_user</span>
+<svg class="text-[22px]" data-sb-icon="verified_user" aria-hidden="true"></svg>
 </div>
 </div>
 <div class="mt-4 flex flex-col gap-1">
-<span class="font-display-lg text-display-lg text-primary font-bold tracking-tight" data-admin-users-unavailable>—</span>
+<span class="font-display-lg text-display-lg text-primary font-bold tracking-tight" data-admin-user-summary="active_users">0</span>
 <div class="flex items-center gap-1.5 text-on-surface-variant">
-<span class="font-label-sm text-label-sm">Không có thống kê tổng hợp</span>
+<span class="font-label-sm text-label-sm">Tính trên toàn bộ tài khoản</span>
 </div>
 </div>
 </div>
 <div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col justify-between relative overflow-hidden group">
 <div class="absolute -right-4 -top-4 w-24 h-24 bg-error/5 rounded-full blur-xl group-hover:scale-125 transition-transform duration-500"></div>
 <div class="flex items-center justify-between">
-<span class="font-label-md text-label-md text-on-surface-variant">Bị khóa / Vi phạm</span>
+<span class="font-label-md text-label-md text-on-surface-variant">Bị khóa</span>
 <div class="w-10 h-10 rounded-xl bg-error-container text-on-error-container flex items-center justify-center">
-<span class="material-symbols-outlined text-[22px]">gavel</span>
+<svg class="text-[22px]" data-sb-icon="gavel" aria-hidden="true"></svg>
 </div>
 </div>
 <div class="mt-4 flex flex-col gap-1">
-<span class="font-display-lg text-display-lg text-error font-bold tracking-tight" data-admin-users-unavailable>—</span>
+<span class="font-display-lg text-display-lg text-error font-bold tracking-tight" data-admin-user-summary="locked_users">0</span>
 <div class="flex items-center gap-1.5 text-error">
-<span class="material-symbols-outlined text-[16px]">priority_high</span>
-<span class="font-label-sm text-label-sm font-semibold">Không có thống kê tổng hợp</span>
+<svg class="text-[16px]" data-sb-icon="priority_high" aria-hidden="true"></svg>
+<span class="font-label-sm text-label-sm font-semibold">Tính trên toàn bộ tài khoản</span>
 </div>
 </div>
 </div>
@@ -291,14 +291,14 @@
 <div class="flex items-center justify-between">
 <span class="font-label-md text-label-md text-on-surface-variant">Thành viên mới trong tháng</span>
 <div class="w-10 h-10 rounded-xl bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center">
-<span class="material-symbols-outlined text-[22px]">person_add_alt</span>
+<svg class="text-[22px]" data-sb-icon="person_add_alt" aria-hidden="true"></svg>
 </div>
 </div>
 <div class="mt-4 flex flex-col gap-1">
-<span class="font-display-lg text-display-lg text-secondary font-bold tracking-tight" data-admin-users-unavailable>—</span>
+<span class="font-display-lg text-display-lg text-secondary font-bold tracking-tight" data-admin-user-summary="new_users_this_month">0</span>
 <div class="flex items-center gap-1.5 text-secondary">
-<span class="material-symbols-outlined text-[16px]">auto_graph</span>
-<span class="font-label-sm text-label-sm font-semibold">Không có thống kê tổng hợp</span>
+<svg class="text-[16px]" data-sb-icon="auto_graph" aria-hidden="true"></svg>
+<span class="font-label-sm text-label-sm font-semibold">Tính từ ngày 1 tháng hiện tại (UTC+7)</span>
 </div>
 </div>
 </div>
@@ -306,35 +306,35 @@
 <div class="bg-surface-container-lowest p-space-md md:p-space-lg rounded-xl shadow-sm flex flex-col gap-space-md">
 <div class="grid grid-cols-1 md:grid-cols-12 gap-space-md items-center">
 <div class="md:col-span-5 relative">
-<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+<svg class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]" data-sb-icon="search" aria-hidden="true"></svg>
 <input class="w-full pl-10 pr-4 py-2.5 bg-surface-container-low text-on-surface placeholder:text-on-surface-variant font-body-sm text-body-sm rounded-xl focus:outline-none focus:bg-surface-container-lowest shadow-sm transition-all" id="mockupUserSearch" placeholder="Tìm theo mã số, họ tên, email, SĐT..." type="search" maxlength="100" autocomplete="off">
 </div>
 <div class="md:col-span-3">
 <div class="relative">
-<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">badge</span>
+<svg class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]" data-sb-icon="badge" aria-hidden="true"></svg>
 <select class="w-full pl-10 pr-8 py-2.5 bg-surface-container-low text-on-surface font-body-sm text-body-sm rounded-xl appearance-none focus:outline-none focus:bg-surface-container-lowest shadow-sm transition-all" id="mockupUserRoleFilter" disabled>
 <option value="">Tất cả vai trò</option>
 <option value="player">Khách chơi cá nhân</option>
 <option value="captain">Đội trưởng / Tìm đối</option>
 <option value="owner">Chủ sân liên kết</option>
 </select>
-<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px] pointer-events-none">expand_more</span>
+<svg class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px] pointer-events-none" data-sb-icon="expand_more" aria-hidden="true"></svg>
 </div>
 </div>
 <div class="md:col-span-3">
 <div class="relative">
-<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">toggle_on</span>
+<svg class="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]" data-sb-icon="toggle_on" aria-hidden="true"></svg>
 <select class="w-full pl-10 pr-8 py-2.5 bg-surface-container-low text-on-surface font-body-sm text-body-sm rounded-xl appearance-none focus:outline-none focus:bg-surface-container-lowest shadow-sm transition-all" id="mockupUserStatusFilter">
 <option value="">Tất cả trạng thái</option>
 <option value="active">Đang hoạt động</option>
 <option value="banned">Bị khóa / Tạm dừng</option>
 </select>
-<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px] pointer-events-none">expand_more</span>
+<svg class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px] pointer-events-none" data-sb-icon="expand_more" aria-hidden="true"></svg>
 </div>
 </div>
 <div class="md:col-span-1 flex justify-end">
 <button class="w-10 h-10 rounded-xl bg-surface-container-high hover:bg-surface-variant text-on-surface flex items-center justify-center transition-all shadow-sm" title="Làm mới bộ lọc" type="button">
-<span class="material-symbols-outlined text-[20px]">restart_alt</span>
+<svg class="text-[20px]" data-sb-icon="restart_alt" aria-hidden="true"></svg>
 </button>
 </div>
 </div>
@@ -360,14 +360,14 @@
 <div class="relative flex-shrink-0">
 <img class="w-11 h-11 rounded-full object-cover shadow-sm" data-alt="Chân dung nam thanh niên vận động viên bóng đá nghiệp dư Việt Nam mỉm cười tự tin ngoài trời, ánh sáng tự nhiên, trang phục thể thao hiện đại phong cách năng động." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDR3hTi6jjRhX8ySsgfxog4Ms4HAxck-oxOOrvMWNMJJXMlTTz0VfcCeIyr2oz44WBdatWLMenwpqnJ0A5LqQbFyxMKQIdpP8qbT2yb9gjyG15opylVp37u89Z19PwfGHt7XY0A2c4QfjpEloO0dRvOeJ9TXulWd-qYsGhKWHa4jF65nAIe-KycaZtMJJqAWXHzAoKMQMWNVjkceyeF6nIA_Pkp3WvzctiXfclzriNPIbShupbm3Z-O">
 <span class="absolute -bottom-1 -right-1 w-4 h-4 bg-primary text-on-primary rounded-full flex items-center justify-center text-[10px]" title="Đã xác minh KYC">
-<span class="material-symbols-outlined text-[10px]">check</span>
+<svg class="text-[10px]" data-sb-icon="check" aria-hidden="true"></svg>
 </span>
 </div>
 <div class="flex flex-col min-w-0">
 <div class="flex items-center gap-2">
 <span class="font-headline-sm text-body-lg font-semibold truncate text-on-surface">Lê Hoàng Nam</span>
 <span class="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-sm text-[10px] font-bold tracking-wide flex items-center gap-1 shadow-sm">
-<span class="material-symbols-outlined text-[12px] text-secondary">workspace_premium</span>
+<svg class="text-[12px] text-secondary" data-sb-icon="workspace_premium" aria-hidden="true"></svg>
                       VIP GOLD
                     </span>
 </div>
@@ -379,7 +379,7 @@
 <td class="py-space-md px-space-md">
 <div class="flex flex-col gap-1">
 <div class="flex items-center gap-1.5 text-on-surface">
-<span class="material-symbols-outlined text-[16px] text-tertiary">male</span>
+<svg class="text-[16px] text-tertiary" data-sb-icon="male" aria-hidden="true"></svg>
 <span class="font-medium">Nam</span>
 </div>
 <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm w-fit">
@@ -396,7 +396,7 @@
 <td class="py-space-md px-space-md text-center">
 <div class="flex flex-col items-center gap-1">
 <div class="flex items-center gap-1 text-primary font-bold font-label-md text-label-md">
-<span class="material-symbols-outlined text-[16px]">verified</span>
+<svg class="text-[16px]" data-sb-icon="verified" aria-hidden="true"></svg>
 <span>99%</span>
 </div>
 <span class="text-[10px] text-on-surface-variant">Không bùng cọc</span>
@@ -414,10 +414,10 @@
 <td class="py-space-md px-space-lg text-right whitespace-nowrap">
 <div class="flex items-center justify-end gap-2">
 <button class="p-2 rounded-xl bg-surface-container-high text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-all" title="Lịch sử giao dịch &amp; hóa đơn">
-<span class="material-symbols-outlined text-[18px]">receipt_long</span>
+<svg class="text-[18px]" data-sb-icon="receipt_long" aria-hidden="true"></svg>
 </button>
 <button class="px-3 py-1.5 rounded-xl bg-error/10 hover:bg-error text-error hover:text-on-error font-label-sm text-label-sm font-semibold transition-all flex items-center gap-1 shadow-sm">
-<span class="material-symbols-outlined text-[16px]">block</span>
+<svg class="text-[16px]" data-sb-icon="block" aria-hidden="true"></svg>
                   Khóa
                 </button>
 </div>
@@ -429,7 +429,7 @@
 <div class="relative flex-shrink-0">
 <img class="w-11 h-11 rounded-full object-cover grayscale shadow-sm" data-alt="Chân dung góc cạnh người đàn ông trẻ tập thể thao tại nhà thi đấu cầu lông, ánh sáng mạnh từ trần sân thi đấu, biểu cảm trầm ngâm." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCytGfWfssqlih7qhEV5hczSrkr502wDlVVHz7rK4xSCpymJfwpMZHc8BSbZ78VCoaPaRQrDizAndcejHRZDeoHThkGb1U515u4iOSyDi3yyW2xyH8Y6qxMEJflMXMngpLFVjANL3bidXjGsW95EDZOS15vGj0XGhW9kqGS03CD_FEWEeaWvMAxQZoNfCNfWGkZCBilI7hc7iHaXVrMKd5k-IWoJehz0MAaq-HuUtfYBdeDg4vTrQ1G">
 <span class="absolute -bottom-1 -right-1 w-4 h-4 bg-error text-on-error rounded-full flex items-center justify-center text-[10px]">
-<span class="material-symbols-outlined text-[10px]">warning</span>
+<svg class="text-[10px]" data-sb-icon="warning" aria-hidden="true"></svg>
 </span>
 </div>
 <div class="flex flex-col min-w-0">
@@ -447,7 +447,7 @@
 <td class="py-space-md px-space-md">
 <div class="flex flex-col gap-1">
 <div class="flex items-center gap-1.5 text-on-surface">
-<span class="material-symbols-outlined text-[16px] text-tertiary">male</span>
+<svg class="text-[16px] text-tertiary" data-sb-icon="male" aria-hidden="true"></svg>
 <span class="font-medium">Nam</span>
 </div>
 <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm w-fit">
@@ -464,7 +464,7 @@
 <td class="py-space-md px-space-md text-center">
 <div class="flex flex-col items-center gap-1">
 <div class="flex items-center gap-1 text-error font-bold font-label-md text-label-md">
-<span class="material-symbols-outlined text-[16px]">warning_amber</span>
+<svg class="text-[16px]" data-sb-icon="warning_amber" aria-hidden="true"></svg>
 <span>54%</span>
 </div>
 <span class="text-[10px] text-error font-medium">Bùng 3 lượt cọc</span>
@@ -482,10 +482,10 @@
 <td class="py-space-md px-space-lg text-right whitespace-nowrap">
 <div class="flex items-center justify-end gap-2">
 <button class="p-2 rounded-xl bg-surface-container-high text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-all" title="Lịch sử giao dịch &amp; hóa đơn">
-<span class="material-symbols-outlined text-[18px]">receipt_long</span>
+<svg class="text-[18px]" data-sb-icon="receipt_long" aria-hidden="true"></svg>
 </button>
 <button class="px-3 py-1.5 rounded-xl bg-primary-fixed/50 hover:bg-primary text-on-primary-fixed-variant hover:text-on-primary font-label-sm text-label-sm font-semibold transition-all flex items-center gap-1 shadow-sm">
-<span class="material-symbols-outlined text-[16px]">lock_open</span>
+<svg class="text-[16px]" data-sb-icon="lock_open" aria-hidden="true"></svg>
                   Mở khóa
                 </button>
 </div>
@@ -501,7 +501,7 @@
 <div class="flex items-center gap-2">
 <span class="font-headline-sm text-body-lg font-semibold truncate text-on-surface">Trần Thị Mai Phương</span>
 <span class="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-sm text-[10px] font-bold tracking-wide flex items-center gap-1 shadow-sm">
-<span class="material-symbols-outlined text-[12px] text-secondary">workspace_premium</span>
+<svg class="text-[12px] text-secondary" data-sb-icon="workspace_premium" aria-hidden="true"></svg>
                       VIP GOLD
                     </span>
 </div>
@@ -513,7 +513,7 @@
 <td class="py-space-md px-space-md">
 <div class="flex flex-col gap-1">
 <div class="flex items-center gap-1.5 text-on-surface">
-<span class="material-symbols-outlined text-[16px] text-secondary">female</span>
+<svg class="text-[16px] text-secondary" data-sb-icon="female" aria-hidden="true"></svg>
 <span class="font-medium">Nữ</span>
 </div>
 <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm w-fit">
@@ -530,7 +530,7 @@
 <td class="py-space-md px-space-md text-center">
 <div class="flex flex-col items-center gap-1">
 <div class="flex items-center gap-1 text-primary font-bold font-label-md text-label-md">
-<span class="material-symbols-outlined text-[16px]">verified</span>
+<svg class="text-[16px]" data-sb-icon="verified" aria-hidden="true"></svg>
 <span>100%</span>
 </div>
 <span class="text-[10px] text-on-surface-variant">Chuẩn giờ 100%</span>
@@ -548,10 +548,10 @@
 <td class="py-space-md px-space-lg text-right whitespace-nowrap">
 <div class="flex items-center justify-end gap-2">
 <button class="p-2 rounded-xl bg-surface-container-high text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-all" title="Lịch sử giao dịch &amp; hóa đơn">
-<span class="material-symbols-outlined text-[18px]">receipt_long</span>
+<svg class="text-[18px]" data-sb-icon="receipt_long" aria-hidden="true"></svg>
 </button>
 <button class="px-3 py-1.5 rounded-xl bg-error/10 hover:bg-error text-error hover:text-on-error font-label-sm text-label-sm font-semibold transition-all flex items-center gap-1 shadow-sm">
-<span class="material-symbols-outlined text-[16px]">block</span>
+<svg class="text-[16px]" data-sb-icon="block" aria-hidden="true"></svg>
                   Khóa
                 </button>
 </div>
@@ -578,7 +578,7 @@
 <td class="py-space-md px-space-md">
 <div class="flex flex-col gap-1">
 <div class="flex items-center gap-1.5 text-on-surface">
-<span class="material-symbols-outlined text-[16px] text-tertiary">male</span>
+<svg class="text-[16px] text-tertiary" data-sb-icon="male" aria-hidden="true"></svg>
 <span class="font-medium">Nam</span>
 </div>
 <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm w-fit">
@@ -595,7 +595,7 @@
 <td class="py-space-md px-space-md text-center">
 <div class="flex flex-col items-center gap-1">
 <div class="flex items-center gap-1 text-primary font-bold font-label-md text-label-md">
-<span class="material-symbols-outlined text-[16px]">verified</span>
+<svg class="text-[16px]" data-sb-icon="verified" aria-hidden="true"></svg>
 <span>95%</span>
 </div>
 <span class="text-[10px] text-on-surface-variant">Uy tín tiêu chuẩn</span>
@@ -613,10 +613,10 @@
 <td class="py-space-md px-space-lg text-right whitespace-nowrap">
 <div class="flex items-center justify-end gap-2">
 <button class="p-2 rounded-xl bg-surface-container-high text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-all" title="Lịch sử giao dịch &amp; hóa đơn">
-<span class="material-symbols-outlined text-[18px]">receipt_long</span>
+<svg class="text-[18px]" data-sb-icon="receipt_long" aria-hidden="true"></svg>
 </button>
 <button class="px-3 py-1.5 rounded-xl bg-error/10 hover:bg-error text-error hover:text-on-error font-label-sm text-label-sm font-semibold transition-all flex items-center gap-1 shadow-sm">
-<span class="material-symbols-outlined text-[16px]">block</span>
+<svg class="text-[16px]" data-sb-icon="block" aria-hidden="true"></svg>
                   Khóa
                 </button>
 </div>
@@ -631,7 +631,7 @@
       </span>
 <div class="flex items-center gap-2">
 <button class="w-9 h-9 rounded-xl bg-surface-container-high text-on-surface-variant flex items-center justify-center hover:bg-surface-variant disabled:opacity-50" disabled data-admin-page="previous" type="button">
-<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+<svg class="text-[18px]" data-sb-icon="chevron_left" aria-hidden="true"></svg>
 </button>
 <button class="w-9 h-9 bg-primary text-on-primary font-label-sm text-label-sm font-bold flex items-center justify-center shadow-sm" data-admin-page-number="1" type="button">1</button>
 <button class="w-9 h-9 bg-surface-container-low text-on-surface hover:bg-surface-container-high font-label-sm text-label-sm font-semibold flex items-center justify-center" data-admin-page-number="2" type="button">2</button>
@@ -639,7 +639,7 @@
 <span class="text-on-surface-variant px-1 font-label-md" data-admin-page-ellipsis>...</span>
 <button class="w-9 h-9 bg-surface-container-low text-on-surface hover:bg-surface-container-high font-label-sm text-label-sm font-semibold flex items-center justify-center" data-admin-page-number="last" type="button">—</button>
 <button class="w-9 h-9 bg-surface-container-high text-on-surface flex items-center justify-center hover:bg-surface-variant shadow-sm" data-admin-page="next" type="button">
-<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+<svg class="text-[18px]" data-sb-icon="chevron_right" aria-hidden="true"></svg>
 </button>
 </div>
 </div>
@@ -648,14 +648,14 @@
 <div class="bg-surface-container-lowest w-full max-w-lg rounded-xl shadow-xl overflow-hidden flex flex-col relative animate-in fade-in zoom-in-95 duration-200">
 <div class="p-space-lg bg-error-container text-on-error-container flex items-start gap-space-md relative">
 <div class="w-12 h-12 rounded-xl bg-error text-on-error flex items-center justify-center flex-shrink-0 shadow-sm">
-<span class="material-symbols-outlined text-[28px]">gavel</span>
+<svg class="text-[28px]" data-sb-icon="gavel" aria-hidden="true"></svg>
 </div>
 <div class="flex flex-col gap-1 pr-6">
 <span class="font-label-sm text-label-sm font-bold uppercase tracking-wider text-error">Hành động chế tài</span>
 <h2 class="font-headline-md text-headline-md font-bold text-on-error-container leading-tight" id="userLockTitle">Bạn có chắc chắn muốn khóa tài khoản này?</h2>
 </div>
 <button class="absolute top-4 right-4 text-on-error-container hover:text-error transition-colors p-1 rounded-lg" type="button" data-user-modal-close>
-<span class="material-symbols-outlined text-[20px]">close</span>
+<svg class="text-[20px]" data-sb-icon="close" aria-hidden="true"></svg>
 </button>
 </div>
 <div class="p-space-lg flex flex-col gap-space-md">
@@ -665,50 +665,26 @@
 <span class="font-label-sm text-label-sm font-bold text-error bg-error-container/50 px-2 py-0.5 rounded" id="modal-user-id">Mã: —</span>
 </div>
 <div class="flex items-center gap-2">
-<span class="material-symbols-outlined text-[20px] text-on-surface">person</span>
+<svg class="text-[20px] text-on-surface" data-sb-icon="person" aria-hidden="true"></svg>
 <span class="font-headline-sm text-body-lg font-bold text-on-surface" id="modal-user-name">—</span>
 </div>
 <p class="text-body-sm text-error font-medium flex items-center gap-1.5" id="modal-user-violation">
-<span class="material-symbols-outlined text-[16px]">report</span>
+<svg class="text-[16px]" data-sb-icon="report" aria-hidden="true"></svg>
 <span id="userLockStatusText">Trạng thái tài khoản</span>
           </p>
 </div>
-<div class="flex flex-col gap-2">
-<label class="font-label-md text-label-md text-on-surface font-semibold">Chọn thời hạn khóa tài khoản <span class="admin-mockup-soon">Sắp có</span></label>
-<div class="grid grid-cols-3 gap-2">
-<label class="cursor-pointer">
-<input checked="" class="peer sr-only" name="ban-period" type="radio" value="7" disabled>
-<div class="p-2.5 rounded-xl bg-surface-container-low text-center peer-checked:bg-error peer-checked:text-on-error font-label-md text-label-md font-semibold transition-all shadow-sm">
-                7 ngày
-              </div>
-</label>
-<label class="cursor-pointer">
-<input class="peer sr-only" name="ban-period" type="radio" value="30" disabled>
-<div class="p-2.5 rounded-xl bg-surface-container-low text-center peer-checked:bg-error peer-checked:text-on-error font-label-md text-label-md font-semibold transition-all shadow-sm">
-                30 ngày
-              </div>
-</label>
-<label class="cursor-pointer">
-<input class="peer sr-only" name="ban-period" type="radio" value="forever" disabled>
-<div class="p-2.5 rounded-xl bg-surface-container-low text-center peer-checked:bg-error peer-checked:text-on-error font-label-md text-label-md font-semibold transition-all shadow-sm">
-                Vĩnh viễn
-              </div>
-</label>
-</div>
-</div>
-<div class="flex flex-col gap-2">
-<label class="font-label-md text-label-md text-on-surface font-semibold">Lý do khóa tài khoản &amp; Ghi chú kiểm duyệt</label>
+<div class="flex flex-col gap-2" id="userLockReasonField">
+<label class="font-label-md text-label-md text-on-surface font-semibold">Lý do khóa (tùy chọn)</label>
 <textarea class="w-full p-3 rounded-xl bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none focus:bg-surface-container-lowest shadow-sm transition-all resize-none" id="userLockReason" maxlength="300" placeholder="Nhập lý do cụ thể gửi thông báo tới người dùng..." rows="3"></textarea>
 <p id="userLockError" class="text-body-sm text-error" role="alert" hidden></p>
-<span class="text-[11px] text-on-surface-variant">Lý do này sẽ được gửi qua thông báo đẩy và email của tài khoản.</span>
-</div>
+<span class="text-[11px] text-on-surface-variant"><span id="userLockReasonCount">0</span>/300 ký tự</span>
 </div>
 <div class="p-space-lg bg-surface-container-low flex items-center justify-end gap-3">
 <button class="px-space-md py-2.5 rounded-xl bg-surface-container-high hover:bg-surface-variant text-on-surface font-label-md text-label-md font-semibold transition-all" type="button" data-user-modal-close>
           Hủy bỏ
         </button>
 <button class="px-space-lg py-2.5 rounded-xl bg-error hover:bg-on-error-container text-on-error font-label-md text-label-md font-bold transition-all shadow-md flex items-center gap-2" id="confirmUserLock" type="button">
-<span class="material-symbols-outlined text-[18px]">lock</span>
+<svg class="text-[18px]" data-sb-icon="lock" aria-hidden="true"></svg>
           Xác nhận khóa tài khoản
         </button>
 </div>
@@ -727,7 +703,7 @@
           <select id="userStatus">
             <option value="">Tất cả</option>
             <option value="ACTIVE">Đang hoạt động</option>
-            <option value="ADMIN_LOCKED">Đã khóa</option>
+            <option value="ADMIN_LOCKED">Bị khóa</option>
           </select>
           <button class="admin-button admin-button--primary" type="submit">Tìm kiếm</button>
           <button id="resetUserFilters" class="admin-button admin-button--quiet" type="button">Đặt lại</button>

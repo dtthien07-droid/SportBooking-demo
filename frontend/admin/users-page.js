@@ -4,7 +4,10 @@
   const state = window.SportBookingAdminState;
   const shell = window.SportBookingAdminShell;
   const api = window.SportBookingAdminApi;
-  if (!state || !shell || !api) throw new Error('Thiếu cấu hình trang người dùng.');
+  const exportDownload = window.SportBookingExportDownload;
+  if (!state || !shell || !api || !exportDownload) {
+    throw new Error('Thiếu cấu hình trang người dùng.');
+  }
   shell.mountAdminShell({ active: 'users' });
   const el = {
     guard: document.getElementById('adminGuard'),
@@ -21,10 +24,14 @@
     summary: document.getElementById('userPaginationSummary'),
     previous: document.getElementById('previousUsersPage'),
     next: document.getElementById('nextUsersPage'),
+    exportButton: document.getElementById('usersExport'),
+    exportStatus: document.getElementById('usersExportStatus'),
     modal: document.getElementById('ban-modal'),
     title: document.getElementById('userLockTitle'),
     description: document.getElementById('userLockStatusText'),
     reason: document.getElementById('userLockReason'),
+    reasonCount: document.getElementById('userLockReasonCount'),
+    reasonField: document.getElementById('userLockReasonField'),
     error: document.getElementById('userLockError'),
     confirm: document.getElementById('confirmUserLock')
   };
@@ -38,6 +45,7 @@
   let requestId = 0;
   let latestUsers = [];
   let latestTotal = 0;
+  let latestSummary = null;
 
   const loadingRow = document.createElement('tr');
   const loadingCell = make('td', 'Đang tải người dùng...');
@@ -108,12 +116,14 @@
     }
   }
 
-  function renderMockupUsers(users, total) {
+  function renderMockupUsers(users, total, summary) {
     const body = el.rows;
     const count = document.querySelector('[data-admin-users-total]');
-    if (count) count.textContent = new Intl.NumberFormat('vi-VN').format(total);
-    document.querySelectorAll('[data-admin-users-unavailable]').forEach((metric) => {
-      metric.textContent = '—';
+    if (count) count.textContent = new Intl.NumberFormat('vi-VN').format(summary.total_users);
+    document.querySelectorAll('[data-admin-user-summary]').forEach((metric) => {
+      metric.textContent = new Intl.NumberFormat('vi-VN').format(
+        summary[metric.dataset.adminUserSummary]
+      );
     });
     const range = document.querySelector('[data-admin-user-pagination-range]');
     const paginationTotal = document.querySelector('[data-admin-user-pagination-total]');
@@ -175,7 +185,12 @@
 
       const joinedDate = user.created_at ? new Date(user.created_at) : null;
       const joined = make('td', joinedDate && !Number.isNaN(joinedDate.getTime())
-        ? new Intl.DateTimeFormat('vi-VN').format(joinedDate)
+        ? new Intl.DateTimeFormat('vi-VN', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          timeZone: 'Asia/Ho_Chi_Minh'
+        }).format(joinedDate)
         : '—');
       joined.className = 'py-space-md px-space-md whitespace-nowrap text-on-surface-variant';
       row.append(joined);
@@ -183,7 +198,7 @@
       const statusCell = document.createElement('td');
       statusCell.className = 'py-space-md px-space-md whitespace-nowrap';
       const isActive = user.account_status === 'ACTIVE';
-      const status = make('span', isActive ? 'Đang hoạt động' : 'Đã bị khóa');
+      const status = make('span', isActive ? 'Đang hoạt động' : 'Bị khóa');
       status.className = isActive
         ? 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary-fixed/40 text-on-primary-fixed-variant font-label-sm text-label-sm font-semibold'
         : 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm font-semibold';
@@ -194,23 +209,18 @@
 
       const actions = document.createElement('td');
       actions.className = 'py-space-md px-space-lg text-right whitespace-nowrap';
-      const history = document.createElement('button');
-      history.type = 'button';
-      history.disabled = true;
-      history.title = 'Lịch sử giao dịch · Sắp có';
-      history.setAttribute('aria-label', history.title);
-      history.className = 'p-2 rounded-xl bg-surface-container-high text-on-surface-variant transition-all';
-      history.append(make('span', 'receipt_long'));
-      history.firstElementChild.className = 'material-symbols-outlined text-[18px]';
-      actions.append(history);
       if (String(user.id) !== currentUserId) {
-        const button = make('button', user.account_status === 'ACTIVE' ? 'Khóa' : 'Mở khóa');
+        const locking = user.account_status === 'ACTIVE';
+        const button = document.createElement('button');
         button.type = 'button';
-        button.className = user.account_status === 'ACTIVE'
+        button.className = locking
           ? 'px-3 py-1.5 rounded-xl bg-error/10 hover:bg-error text-error hover:text-on-error font-label-sm font-semibold transition-all inline-flex items-center gap-1'
           : 'px-3 py-1.5 rounded-xl bg-primary/10 hover:bg-primary text-primary hover:text-on-primary font-label-sm font-semibold transition-all inline-flex items-center gap-1';
-          button.prepend(make('span', user.account_status === 'ACTIVE' ? 'block' : 'lock_open'));
-          button.firstElementChild.className = 'material-symbols-outlined text-[16px]';
+        button.append(
+          window.SportBookingIcons.createIcon(locking ? 'lock' : 'lock_open', 'h-4 w-4'),
+          document.createTextNode(locking ? 'Khóa' : 'Mở khóa')
+        );
+        if (!locking) button.classList.add('text-primary');
         button.addEventListener('click', () => openLockDialog(user));
         actions.append(button);
       }
@@ -269,6 +279,12 @@
       const result = await api.getUsers({ ...applied, page_size: 20 });
       if (id !== requestId) return;
       if (!Array.isArray(result.users) || !result.pagination) throw new Error('Danh sách người dùng không hợp lệ.');
+      if (!result.summary
+          || ['total_users', 'active_users', 'locked_users', 'new_users_this_month']
+            .some((key) => !Number.isSafeInteger(Number(result.summary[key]))
+              || Number(result.summary[key]) < 0)) {
+        throw new Error('Số liệu tổng quan người dùng không hợp lệ.');
+      }
       pageCount = Math.max(1, Number(result.pagination.total_pages) || 1);
       latestTotal = Number(result.pagination.total) || 0;
       if (applied.page > pageCount) {
@@ -279,11 +295,12 @@
       updateMockupPagination();
       el.message.textContent = 'Dữ liệu tài khoản được cập nhật tự động.';
       latestUsers = result.users;
-      renderMockupUsers(result.users, latestTotal);
+      latestSummary = result.summary;
+      renderMockupUsers(result.users, latestTotal, result.summary);
     } catch (error) {
       if (error.status === 401) window.location.replace('/dang-nhap.html');
       else if (error.status === 403) window.location.replace(state.USER_HOME);
-      else el.message.textContent = 'Không thể tải danh sách người dùng.';
+      else if (!isPolling) el.message.textContent = 'Không thể tải danh sách người dùng.';
       if (isPolling) throw error;
     }
   }
@@ -294,26 +311,40 @@
     el.title.textContent = locking ? 'Khóa tài khoản' : 'Mở khóa tài khoản';
     document.getElementById('modal-user-id').textContent = `Mã: ${user.id}`;
     document.getElementById('modal-user-name').textContent = user.full_name;
-    el.description.textContent = `Trạng thái hiện tại: ${locking ? 'Đang hoạt động' : 'Đã bị khóa'}`;
+    el.description.textContent = `Trạng thái hiện tại: ${locking ? 'Đang hoạt động' : 'Bị khóa'}`;
     el.reason.value = '';
+    el.reasonField.hidden = !locking;
     el.error.hidden = true;
-    el.confirm.textContent = locking ? 'Xác nhận khóa' : 'Xác nhận mở khóa';
+    el.confirm.className = locking
+      ? 'px-space-lg py-2.5 rounded-xl bg-error hover:bg-on-error-container text-on-error font-label-md text-label-md font-bold transition-all shadow-md flex items-center gap-2'
+      : 'px-space-lg py-2.5 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md font-bold transition-all shadow-md flex items-center gap-2';
+    el.confirm.replaceChildren(
+      window.SportBookingIcons.createIcon(locking ? 'lock' : 'lock_open', 'h-4 w-4'),
+      document.createTextNode(locking ? 'Xác nhận khóa' : 'Xác nhận mở khóa')
+    );
     el.modal.hidden = false;
-    el.reason.focus();
+    updateLockDialogState();
+    if (locking) el.reason.focus();
+    else el.confirm.focus();
+  }
+
+  function updateLockDialogState() {
+    if (el.reasonCount) el.reasonCount.textContent = String(el.reason.value.length);
+    el.confirm.disabled = !state.canSubmitLock(el.reason.value, pending);
   }
 
   function closeModal() {
     if (pending) return;
     el.modal.hidden = true;
     selectedUser = null;
-    renderMockupUsers(latestUsers, latestTotal);
+    renderMockupUsers(latestUsers, latestTotal, latestSummary);
     polling?.refreshNow();
   }
 
   async function submitLock() {
-    if (!selectedUser || pending) return;
+    if (!selectedUser || !state.canSubmitLock(el.reason.value, pending)) return;
     pending = true;
-    el.confirm.disabled = true;
+    updateLockDialogState();
     el.error.hidden = true;
     try {
       await api.setUserLock(selectedUser.id, selectedUser.account_status === 'ACTIVE', el.reason.value.trim());
@@ -331,7 +362,7 @@
       }
     } finally {
       pending = false;
-      el.confirm.disabled = false;
+      updateLockDialogState();
     }
   }
 
@@ -341,6 +372,11 @@
     api.clearCache();
     loadUsers();
   });
+  el.exportButton.addEventListener('click', () => exportDownload.download(
+    el.exportButton,
+    el.exportStatus,
+    () => api.exportUsers({ q: applied.q, status: applied.status })
+  ));
   const mockupSearch = document.getElementById('mockupUserSearch');
   const mockupStatus = document.getElementById('mockupUserStatusFilter');
   const mockupRole = document.getElementById('mockupUserRoleFilter');
@@ -411,6 +447,7 @@
     if (applied.page < pageCount) { applied.page += 1; loadUsers(); }
   });
   el.confirm.addEventListener('click', submitLock);
+  el.reason.addEventListener('input', updateLockDialogState);
   document.querySelectorAll('[data-user-modal-close]').forEach((button) => {
     button.addEventListener('click', closeModal);
   });

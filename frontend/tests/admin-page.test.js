@@ -60,7 +60,7 @@ test('booking statuses use full Vietnamese labels', () => {
     EXPIRED: 'Hết hạn',
     CANCELLED: 'Đã hủy',
     UPCOMING: 'Sắp tới',
-    IN_PROGRESS: 'Đang diễn ra'
+    IN_PROGRESS: 'Đang trong trận'
   };
   for (const [status, label] of Object.entries(expected)) {
     assert.equal(adminState.getBookingStatusLabel(status), label);

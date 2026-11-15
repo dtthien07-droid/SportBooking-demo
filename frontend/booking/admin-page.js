@@ -19,30 +19,12 @@
   const paginationSummary = document.getElementById('paginationSummary');
   const previousPage = document.getElementById('previousPage');
   const nextPage = document.getElementById('nextPage');
-  const modal = document.getElementById('cancellationModal');
-  const dialog = document.getElementById('cancellationDialog');
-  const cancellationForm = document.getElementById('cancellationForm');
-  const cancellationReason = document.getElementById('cancellationReason');
-  const cancellationReasonCount = document.getElementById('cancellationReasonCount');
-  const cancellationError = document.getElementById('cancellationError');
-  const confirmCancellation = document.getElementById('confirmCancellation');
-
   const pageSize = 10;
   const listState = { page: 1, totalPages: 1, query: '', status: '' };
-  let activeBooking = null;
-  let previousFocus = null;
-  let previousBodyOverflow = '';
-  let cancellationInProgress = false;
+  let incidentDialog = null;
   let searchTimer = null;
   let bookingsRequestId = 0;
   let dashboardRequestId = 0;
-
-  const cancellationSubmitter = state.createIncidentCancellationSubmitter(
-    (bookingId, body) => requestJson(
-      `/api/v1/admin/bookings/${encodeURIComponent(bookingId)}/incident-cancellation`,
-      { method: 'POST', body: JSON.stringify(body) }
-    )
-  );
 
   function addScript(source) {
     return new Promise((resolve, reject) => {
@@ -92,7 +74,7 @@
       result = null;
     }
     if (!response.ok) {
-      const error = new Error('REQUEST_FAILED');
+      const error = new Error(result?.error?.message || 'Yêu cầu chưa thể hoàn tất.');
       error.status = response.status;
       error.code = result?.error?.code || result?.code;
       throw error;
@@ -253,21 +235,23 @@
     addCell(row, bookingSchedule(booking));
 
     const statusCell = document.createElement('td');
+    const displayStatus = state.getDisplayStatus(booking);
     const statusModifier = {
       PENDING: 'pending',
-      CONFIRMED: 'confirmed',
+      UPCOMING: 'confirmed',
+      IN_PROGRESS: 'confirmed',
       COMPLETED: 'completed',
       EXPIRED: 'expired',
       CANCELLED: 'cancelled'
-    }[booking.status] || 'unknown';
+    }[displayStatus] || 'unknown';
     const status = makeElement('span', `admin-status admin-status--${statusModifier}`,
-      state.getBookingStatusLabel(booking.status));
+      state.getBookingStatusLabel(displayStatus));
     statusCell.append(status);
     row.append(statusCell);
 
     addCell(row, state.formatMoney(booking.paid_amount ?? '0'));
     const actions = document.createElement('td');
-    if (state.canCancelIncident(booking.status)) {
+    if (booking.can_cancel_incident) {
       const cancel = makeElement('button', 'admin-button admin-button--danger admin-table__cancel', 'Hủy do sự cố');
       cancel.type = 'button';
       cancel.addEventListener('click', () => openCancellation(booking, cancel));
@@ -327,141 +311,8 @@
     return Promise.all([loadDashboard(), loadBookings()]);
   }
 
-  function formatBookingOwner(booking) {
-    const owner = booking.owner || {};
-    return owner.full_name || owner.email || owner.phone || 'Chưa cập nhật';
-  }
-
   function openCancellation(booking, trigger) {
-    if (!state.canCancelIncident(booking.status)) return;
-    activeBooking = booking;
-    previousFocus = trigger;
-    cancellationInProgress = false;
-    document.querySelectorAll('[data-modal-close]').forEach((button) => {
-      button.disabled = false;
-    });
-    document.getElementById('modalBookingCode').textContent = booking.booking_code || '--';
-    document.getElementById('modalOwner').textContent = formatBookingOwner(booking);
-    document.getElementById('modalFacility').textContent = facilityNames(booking);
-    document.getElementById('modalSchedule').textContent = bookingSchedule(booking);
-    document.getElementById('modalPaidAmount').textContent = state.formatMoney(booking.paid_amount ?? '0');
-    document.getElementById('cancellationPolicy').textContent = booking.status === 'PENDING'
-      ? 'Đơn chưa thanh toán, không phát sinh hoàn'
-      : 'Đơn đã xác nhận sẽ hoàn 100% số đã trả';
-    cancellationReason.value = '';
-    cancellationReasonCount.textContent = '0/500 ký tự';
-    cancellationError.hidden = true;
-    cancellationError.textContent = '';
-    cancellationReason.removeAttribute('aria-invalid');
-    modal.hidden = false;
-    previousBodyOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    document.addEventListener('keydown', onModalKeydown);
-    window.requestAnimationFrame(() => cancellationReason.focus());
-  }
-
-  function closeCancellation() {
-    if (modal.hidden || cancellationInProgress) return;
-    modal.hidden = true;
-    document.body.style.overflow = previousBodyOverflow;
-    document.removeEventListener('keydown', onModalKeydown);
-    activeBooking = null;
-    if (previousFocus?.isConnected) previousFocus.focus();
-  }
-
-  function modalFocusableElements() {
-    return [...dialog.querySelectorAll(
-      'button:not([disabled]), textarea:not([disabled]), input:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'
-    )].filter((element) => !element.hidden);
-  }
-
-  function onModalKeydown(event) {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      if (cancellationInProgress) return;
-      closeCancellation();
-      return;
-    }
-    if (event.key !== 'Tab') return;
-    const focusable = modalFocusableElements();
-    if (focusable.length === 0) {
-      event.preventDefault();
-      dialog.focus();
-      return;
-    }
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  }
-
-  function showCancellationError(message) {
-    cancellationError.hidden = false;
-    cancellationError.textContent = message;
-    cancellationReason.setAttribute('aria-invalid', 'true');
-  }
-
-  async function submitCancellation(event) {
-    event.preventDefault();
-    const reason = cancellationReason.value;
-    if (!state.isValidCancellationReason(reason)) {
-      showCancellationError('Vui lòng nhập lý do hủy, tối đa 500 ký tự.');
-      cancellationReason.focus();
-      return;
-    }
-    if (!activeBooking) return;
-
-    const booking = activeBooking;
-    cancellationError.hidden = true;
-    cancellationError.textContent = '';
-    cancellationReason.removeAttribute('aria-invalid');
-    cancellationInProgress = true;
-    document.querySelectorAll('[data-modal-close]').forEach((button) => {
-      button.disabled = true;
-    });
-    confirmCancellation.disabled = true;
-    confirmCancellation.textContent = 'Đang xử lý...';
-    try {
-      const result = await cancellationSubmitter(booking.booking_id, reason);
-      if (result.status === 'invalid') {
-        showCancellationError('Vui lòng nhập lý do hủy, tối đa 500 ký tự.');
-        return;
-      }
-      if (result.status === 'in-progress') {
-        showCancellationError('Yêu cầu đang được xử lý. Vui lòng chờ.');
-        return;
-      }
-      const bookingCode = booking.booking_code || '';
-      cancellationInProgress = false;
-      closeCancellation();
-      showNotice(`Đã hủy đơn ${bookingCode} do sự cố.`, 'success');
-      await loadAll();
-    } catch (error) {
-      if (error?.status === 401) {
-        redirectToLogin();
-        return;
-      }
-      if (error?.status === 409) {
-        cancellationInProgress = false;
-        closeCancellation();
-        showNotice(errorMessage(error), 'error');
-        await loadAll();
-        return;
-      }
-      showCancellationError(errorMessage(error));
-    } finally {
-      cancellationInProgress = false;
-      document.querySelectorAll('[data-modal-close]').forEach((button) => {
-        button.disabled = false;
-      });
-      confirmCancellation.disabled = false;
-      confirmCancellation.textContent = 'Xác nhận hủy';
-    }
+    incidentDialog?.open(booking, trigger);
   }
 
   async function authorize() {
@@ -522,16 +373,27 @@
     listState.page += 1;
     loadBookings();
   });
-  cancellationForm.addEventListener('submit', submitCancellation);
-  cancellationReason.addEventListener('input', () => {
-    cancellationReasonCount.textContent = `${cancellationReason.value.length}/500 ký tự`;
-    if (cancellationReason.value.trim()) {
-      cancellationError.hidden = true;
-      cancellationReason.removeAttribute('aria-invalid');
+  incidentDialog = window.SportBookingIncidentCancelDialog.mount({
+    document,
+    onSubmit: (booking, reason) => requestJson(
+      `/api/v1/admin/bookings/${encodeURIComponent(booking.booking_id)}/incident-cancellation`,
+      { method: 'POST', body: JSON.stringify({ cancellation_reason: reason }) }
+    ),
+    onError: async (error) => {
+      if (error?.status === 401) {
+        redirectToLogin();
+        return true;
+      }
+      if (error?.status === 409) {
+        showNotice(errorMessage(error), 'error');
+        await loadAll();
+      }
+      return false;
+    },
+    onSuccess: async (result, booking) => {
+      showNotice(`Đã hủy đơn ${booking.booking_code}. Hoàn ${state.formatMoney(result.refunded_amount)}.`, 'success');
+      await loadAll();
     }
-  });
-  document.querySelectorAll('[data-modal-close]').forEach((button) => {
-    button.addEventListener('click', closeCancellation);
   });
   guardRetry.addEventListener('click', initialize);
   initialize();

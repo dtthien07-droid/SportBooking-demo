@@ -22,6 +22,9 @@
         ...options.headers
       }
     });
+    if (await window.SportBookingHeaderAuth?.redirectIfAccountLocked(response)) {
+      return null;
+    }
     if (response.status === 204) {
       return null;
     }
@@ -132,8 +135,10 @@
     } else if (error.status === 401) {
       setFieldError(form, 'password', 'Email hoặc mật khẩu không chính xác.');
       showNotice('Không thể đăng nhập bằng thông tin này. Hãy kiểm tra email và mật khẩu.');
+    } else if (error.status === 403 && error.code === 'ACCOUNT_LOCKED') {
+      showNotice('Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.');
     } else if (error.status === 403) {
-      showNotice('Tài khoản đã bị quản trị viên khóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.');
+      showNotice('Không thể đăng nhập bằng tài khoản này. Vui lòng liên hệ quản trị viên để được hỗ trợ.');
     } else if (error.status === 423) {
       showNotice('Tài khoản đang tạm khóa do nhập sai mật khẩu quá nhiều lần. Vui lòng thử lại sau 15 phút.');
     } else {
@@ -217,7 +222,9 @@
 
   function showQueryNotice() {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('accessDenied') === '1') {
+    if (params.get('locked') === '1') {
+      showNotice('Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.');
+    } else if (params.get('accessDenied') === '1') {
       showNotice('Bạn không có quyền truy cập');
     } else if (params.get('registered') === '1') {
       showNotice('Tài khoản đã được tạo. Đăng nhập để tiếp tục.', 'success');

@@ -4,8 +4,9 @@
   const state = window.SportBookingAdminState;
   const shell = window.SportBookingAdminShell;
   const api = window.SportBookingAdminApi;
+  const exportDownload = window.SportBookingExportDownload;
   const facilityState = window.SportBookingAdminFacilitiesState;
-  if (!state || !shell || !api || !facilityState) {
+  if (!state || !shell || !api || !exportDownload || !facilityState) {
     throw new Error('Thiếu cấu hình trang cơ sở và sân.');
   }
   shell.mountAdminShell({ active: 'facilities' });
@@ -22,9 +23,12 @@
     reset: document.getElementById('resetFacilityFilters'),
     rows: document.getElementById('facilityRows'),
     status: document.getElementById('facilitiesStatus'),
+    banner: document.getElementById('facilityMutationBanner'),
     summary: document.getElementById('facilityPaginationSummary'),
     previous: document.getElementById('previousFacilitiesPage'),
     next: document.getElementById('nextFacilitiesPage'),
+    exportButton: document.getElementById('facilitiesExport'),
+    exportStatus: document.getElementById('facilitiesExportStatus'),
     add: document.getElementById('addFacility'),
     dialog: document.getElementById('facilityDialog'),
     title: document.getElementById('facilityDialogTitle'),
@@ -32,6 +36,7 @@
     drawer: document.getElementById('facility-drawer'),
     drawerTitle: document.querySelector('#facility-drawer h2'),
     drawerSave: document.getElementById('save-facility-drawer-btn'),
+    drawerSaveLabel: document.querySelector('#save-facility-drawer-btn span:last-child'),
     form: document.getElementById('facilityForm'),
     formError: document.getElementById('facilityFormError'),
     courtsSection: document.getElementById('facilityCourts'),
@@ -71,11 +76,18 @@
   let appliedFilters = { ...draftFilters, page: 1 };
   let latestFacilities = [];
   let latestTotal = 0;
+  let latestSummary = {
+    total_facilities: 0,
+    active_facilities: 0,
+    inactive_facilities: 0,
+    avg_fill_rate_percent: 0
+  };
   let currentFacility = null;
   let polling = null;
   let pageCount = 1;
   let requestId = 0;
   let pending = false;
+  let facilityStatusUpdates = 0;
 
   function node(tag, text = '') {
     const element = document.createElement(tag);
@@ -85,11 +97,18 @@
 
   const initialFacilityRow = document.createElement('tr');
   const initialFacilityCell = node('td', 'Đang tải danh sách cơ sở...');
-  initialFacilityCell.colSpan = 10;
+  initialFacilityCell.colSpan = 8;
   initialFacilityCell.className = 'py-6 text-center text-on-surface-variant';
   initialFacilityRow.append(initialFacilityCell);
   document.getElementById('mockupFacilityRows')?.replaceChildren(initialFacilityRow);
-
+  document.querySelectorAll('span.material-symbols-outlined').forEach((span) => {
+    const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    const classes = span.className.split(/\s+/)
+      .filter((name) => name && name !== 'material-symbols-outlined');
+    if (classes.length) icon.setAttribute('class', classes.join(' '));
+    window.SportBookingIcons.setIcon(icon, span.textContent.trim());
+    span.replaceWith(icon);
+  });
   function formatMoney(value) {
     return `${new Intl.NumberFormat('vi-VN').format(Number(value) || 0)} đ`;
   }
@@ -126,6 +145,12 @@
       const row = document.createElement('tr');
       const identity = node('td');
       identity.append(node('strong', facility.name), node('span', `${facility.address} · ${facility.district}`));
+      if (facilityState.buildFacilityRowModel(facility).no_courts) {
+        const noCourts = node('span', 'Chưa có sân');
+        noCourts.className = 'admin-facility-empty-courts';
+        noCourts.setAttribute('data-no-courts', '');
+        identity.append(noCourts);
+      }
       row.append(identity);
       const hours = facility.opening_time && facility.closing_time
         ? `${facilityState.formatHours(facility.opening_time)} - ${facilityState.formatHours(facility.closing_time)}`
@@ -133,25 +158,37 @@
       row.append(node('td', hours));
       row.append(node('td', `${facility.active_court_count}/${facility.court_count}`));
       row.append(node('td', facility.active_booking_count));
-      const status = node('td', facility.is_active ? 'Đang hoạt động' : 'Ngừng hoạt động');
+      const status = node('td');
       status.className = 'admin-facility-status';
       status.dataset.active = String(facility.is_active);
+      status.append(node('span', facility.is_active ? 'Đang hoạt động' : 'Tạm khóa'));
+      const statusToggle = node('input');
+      statusToggle.type = 'checkbox';
+      statusToggle.checked = Boolean(facility.is_active);
+      statusToggle.dataset.facilityId = String(facility.id);
+      statusToggle.setAttribute(
+        'aria-label',
+        `${facility.is_active ? 'Tạm khóa' : 'Mở lại'} ${facility.name}`
+      );
+      statusToggle.addEventListener('change', toggleFacility);
+      status.append(statusToggle);
       row.append(status);
       const actions = node('td');
       actions.className = 'admin-facility-actions';
-      const edit = node('button', 'Chỉnh sửa');
+      const edit = node('button', 'Sửa');
       edit.type = 'button';
       edit.className = 'admin-button admin-button--quiet';
+      edit.prepend(window.SportBookingIcons.createIcon('edit', 'w-4 h-4'));
       edit.addEventListener('click', () => openFacilityDialog(facility.id));
-      const courts = node('button', 'Xem sân');
-      courts.type = 'button';
-      courts.className = 'admin-button admin-button--quiet';
-      courts.addEventListener('click', () => openFacilityDialog(facility.id));
-      const toggle = node('button', facility.is_active ? 'Ngừng hoạt động' : 'Mở hoạt động');
-      toggle.type = 'button';
-      toggle.className = facility.is_active ? 'admin-button admin-button--danger' : 'admin-button admin-button--primary';
-      toggle.addEventListener('click', () => toggleFacility(facility));
-      actions.append(edit, courts, toggle);
+      actions.append(edit);
+      const remove = node('button', 'Xóa');
+      remove.type = 'button';
+      remove.className = 'admin-button admin-button--danger';
+      remove.prepend(window.SportBookingIcons.createIcon('delete', 'w-4 h-4'));
+      remove.title = 'Xóa cơ sở';
+      remove.setAttribute('aria-label', `Xóa cơ sở ${facility.name}`);
+      remove.addEventListener('click', () => deleteFacility(facility));
+      actions.append(remove);
       row.append(actions);
       return row;
     });
@@ -168,11 +205,6 @@
   function renderMockupFacilities(facilities, total) {
     const body = document.getElementById('mockupFacilityRows');
     if (!body) return;
-    const totalLabel = document.querySelector('[data-admin-facility-total]');
-    if (totalLabel) totalLabel.textContent = new Intl.NumberFormat('vi-VN').format(total);
-    document.querySelectorAll('[data-admin-facility-metric]').forEach((metric) => {
-      metric.textContent = '—';
-    });
     const range = document.querySelector('[data-admin-facility-pagination-range]');
     const paginationTotal = document.querySelector('[data-admin-facility-pagination-total]');
     if (range) {
@@ -180,8 +212,23 @@
       range.textContent = `${first} - ${Math.min(first + facilities.length - 1, total)}`;
     }
     if (paginationTotal) paginationTotal.textContent = new Intl.NumberFormat('vi-VN').format(total);
-    const rows = facilities.map((facility) => {
+    const rows = facilities.map(buildMockupFacilityRow);
+    if (!rows.length) {
       const row = document.createElement('tr');
+      const cell = node('td', 'Không có cơ sở phù hợp.');
+      cell.colSpan = 8;
+      cell.className = 'py-6 text-center text-on-surface-variant';
+      row.append(cell);
+      rows.push(row);
+    }
+    body.replaceChildren(...rows);
+    window.SportBookingIcons?.renderAll(body);
+  }
+
+  function buildMockupFacilityRow(facility) {
+      const model = facilityState.buildFacilityRowModel(facility);
+      const row = document.createElement('tr');
+      row.dataset.facilityId = model.id;
       row.className = 'hover:bg-surface-container-low transition-colors';
 
       const code = node('td', String(facility.id));
@@ -202,8 +249,7 @@
         img.className = 'w-full h-full rounded-xl object-cover';
         image.append(img);
       } else {
-        const icon = node('span', 'stadium');
-        icon.className = 'material-symbols-outlined text-primary';
+        const icon = window.SportBookingIcons.createIcon('stadium', 'text-primary');
         image.append(icon);
       }
       const details = document.createElement('div');
@@ -213,31 +259,31 @@
       const address = node('span', `${facility.address} · ${facility.district}`);
       address.className = 'font-body-sm text-body-sm text-on-surface-variant truncate';
       details.append(name, address);
+      if (model.no_courts) {
+        const noCourts = node('span', 'Chưa có sân');
+        noCourts.className = 'text-xs text-on-surface-variant';
+        noCourts.setAttribute('data-no-courts', '');
+        details.append(noCourts);
+      }
       identityGroup.append(image, details);
       identity.append(identityGroup);
       row.append(identity);
-
-      const sport = node('td', '—');
-      sport.className = 'py-4 px-space-md text-on-surface-variant';
-      sport.title = 'Không có môn thể thao tổng hợp trong danh sách cơ sở.';
-      row.append(sport);
 
       const addressCell = node('td');
       addressCell.className = 'py-4 px-space-md text-on-surface-variant max-w-[220px]';
       const addressWrapper = node('div');
       addressWrapper.className = 'flex items-start gap-1 min-w-0';
-      const placeIcon = node('span', 'place');
-      placeIcon.className = 'material-symbols-outlined text-[16px] shrink-0 mt-0.5';
+      const placeIcon = window.SportBookingIcons.createIcon(
+        'place',
+        'text-[16px] shrink-0 mt-0.5'
+      );
       const addressText = node('span', facility.address || '—');
       addressText.className = 'line-clamp-2 break-words';
       addressWrapper.append(placeIcon, addressText);
       addressCell.append(addressWrapper);
       row.append(addressCell);
 
-      const hours = facility.opening_time && facility.closing_time
-        ? `${facilityState.formatHours(facility.opening_time)} - ${facilityState.formatHours(facility.closing_time)}`
-        : 'Chưa thiết lập';
-      const hoursCell = node('td', hours);
+      const hoursCell = node('td', model.hours);
       hoursCell.className = 'py-4 px-space-md font-label-md text-label-md text-on-surface whitespace-nowrap';
       row.append(hoursCell);
 
@@ -250,22 +296,18 @@
       hotline.title = facility.hotline || '';
       row.append(hotline);
 
-      const price = node('td', '—');
-      price.className = 'py-4 px-space-md text-on-surface-variant';
-      price.title = 'Không có giá tổng hợp trong danh sách cơ sở.';
-      row.append(price);
-
       const status = document.createElement('td');
       status.className = 'py-4 px-space-md text-center';
+      const statusText = node('span', model.status_text);
+      statusText.className = 'mr-2';
+      status.append(statusText);
       const toggle = document.createElement('input');
       toggle.type = 'checkbox';
-      toggle.checked = Boolean(facility.is_active);
+      toggle.checked = model.is_active;
       toggle.className = 'sr-only peer';
-      toggle.setAttribute('aria-label', `${facility.is_active ? 'Ngừng' : 'Mở'} hoạt động ${facility.name}`);
-      toggle.addEventListener('change', async () => {
-        const updated = await toggleFacility(facility);
-        if (!updated) toggle.checked = Boolean(facility.is_active);
-      });
+      toggle.dataset.facilityId = model.id;
+      toggle.setAttribute('aria-label', model.toggle_label);
+      toggle.addEventListener('change', toggleFacility);
       const toggleLabel = document.createElement('label');
       toggleLabel.className = 'relative inline-flex items-center cursor-pointer';
       const toggleTrack = node('div');
@@ -276,42 +318,41 @@
 
       const actions = document.createElement('td');
       actions.className = 'py-4 px-space-md text-right';
-      const edit = node('button', 'edit');
+      const edit = node('button', 'Sửa');
       edit.type = 'button';
-      edit.className = 'w-8 h-8 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface';
-      edit.title = 'Chỉnh sửa chi tiết';
-      edit.setAttribute('aria-label', `Chỉnh sửa ${facility.name}`);
+      edit.className = 'inline-flex items-center gap-2 rounded-lg bg-surface-container px-3 py-2 text-on-surface hover:bg-surface-container-high';
+      edit.prepend(window.SportBookingIcons.createIcon('edit', 'w-4 h-4'));
+      edit.title = 'Sửa cơ sở';
+      edit.setAttribute('aria-label', `Sửa ${facility.name}`);
       edit.addEventListener('click', () => openFacilityDialog(facility.id));
-      const schedule = document.createElement('a');
-      schedule.href = `quan-tri-khung-gio-gia.html?facility=${encodeURIComponent(facility.id)}`;
-      schedule.className = edit.className;
-      schedule.title = 'Xem khung giờ và bảng giá';
-      schedule.setAttribute('aria-label', schedule.title + ` của ${facility.name}`);
-      schedule.append(node('span', 'calendar_view_week'));
-      schedule.firstElementChild.className = 'material-symbols-outlined text-[18px]';
-      const remove = document.createElement('button');
+      actions.append(edit);
+      const remove = node('button', 'Xóa');
       remove.type = 'button';
-      remove.disabled = true;
-      remove.className = 'w-8 h-8 rounded-lg bg-surface-container text-error';
-      remove.title = 'Xóa cơ sở · Sắp có';
-      remove.setAttribute('aria-label', remove.title);
-      const removeIcon = node('span', 'delete');
-      removeIcon.className = 'material-symbols-outlined text-[18px]';
-      remove.append(removeIcon);
-      actions.append(edit, schedule, remove);
+      remove.className = 'inline-flex items-center gap-2 rounded-lg border border-error/30 bg-error-container px-3 py-2 text-error hover:bg-error-container/80';
+      remove.prepend(window.SportBookingIcons.createIcon('delete', 'w-4 h-4'));
+      remove.title = 'Xóa cơ sở';
+      remove.setAttribute('aria-label', `Xóa cơ sở ${facility.name}`);
+      remove.addEventListener('click', () => deleteFacility(facility));
+      actions.append(remove);
       row.append(actions);
       return row;
-    });
-    if (!rows.length) {
-      const row = document.createElement('tr');
-      const cell = node('td', 'Không có cơ sở phù hợp.');
-      cell.colSpan = 10;
-      cell.className = 'py-6 text-center text-on-surface-variant';
-      row.append(cell);
-      rows.push(row);
+  }
+
+  function renderSummary(summary = latestSummary) {
+    const values = facilityState.updateFacilitySummary(summary);
+    latestSummary = values;
+    const number = new Intl.NumberFormat('vi-VN');
+    const total = document.querySelector('[data-admin-facility-total]');
+    const active = document.querySelector('[data-admin-facility-active-facilities]');
+    const inactive = document.querySelector('[data-admin-facility-inactive-facilities]');
+    const fillRate = document.querySelector('[data-admin-facility-fill-rate]');
+    if (total) total.textContent = number.format(values.total_facilities);
+    if (active) active.textContent = number.format(values.active_facilities);
+    if (inactive) inactive.textContent = number.format(values.inactive_facilities);
+    if (fillRate) {
+      fillRate.textContent = `${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 1 })
+        .format(values.avg_fill_rate_percent)}%`;
     }
-    body.replaceChildren(...rows);
-    window.SportBookingIcons?.renderAll(body);
   }
 
   function updateMockupPagination() {
@@ -338,9 +379,14 @@
     const id = ++requestId;
     try {
       const result = await api.listAdminFacilities({ ...appliedFilters, page_size: 20 });
-      if (id !== requestId) return;
+      if (id !== requestId) return false;
       if (!Array.isArray(result.facilities) || !result.pagination) {
         throw new Error('Danh sách cơ sở không hợp lệ.');
+      }
+      if (!result.summary || [
+        'total_facilities', 'active_facilities', 'inactive_facilities', 'avg_fill_rate_percent'
+      ].some((key) => !Number.isFinite(Number(result.summary[key])))) {
+        throw new Error('Số liệu tổng hợp cơ sở không hợp lệ.');
       }
       pageCount = Math.max(1, Number(result.pagination.total_pages) || 1);
       if (appliedFilters.page > pageCount) {
@@ -349,17 +395,25 @@
       }
       latestFacilities = result.facilities;
       latestTotal = Number(result.pagination.total) || 0;
+      renderSummary({
+        total_facilities: Number(result.summary.total_facilities),
+        active_facilities: Number(result.summary.active_facilities),
+        inactive_facilities: Number(result.summary.inactive_facilities),
+        avg_fill_rate_percent: Number(result.summary.avg_fill_rate_percent)
+      });
       if (el.drawerBackdrop.hidden) renderFacilities(latestFacilities, latestTotal);
       el.summary.textContent = `Trang ${appliedFilters.page} / ${pageCount} · ${result.pagination.total} cơ sở`;
       el.previous.disabled = appliedFilters.page <= 1;
       el.next.disabled = appliedFilters.page >= pageCount;
       updateMockupPagination();
       el.status.textContent = 'Danh sách được cập nhật tự động.';
+      return true;
     } catch (error) {
       if (error.status === 401) window.location.replace('/dang-nhap.html');
       else if (error.status === 403) window.location.replace(state.USER_HOME);
-      else el.status.textContent = error.message || 'Không thể tải danh sách cơ sở.';
+      else if (!isPolling) el.status.textContent = error.message || 'Không thể tải danh sách cơ sở.';
       if (isPolling) throw error;
+      return false;
     }
   }
 
@@ -381,6 +435,9 @@
     document.getElementById('courtIsActive').checked = court.is_active !== false;
     el.courtForm.dataset.courtId = court.id || '';
     el.courtForm.dataset.updatedAt = court.updated_at || '';
+    el.courtForm.dataset.isActive = String(court.is_active !== false);
+    document.getElementById('courtActiveLabel').textContent =
+      court.is_active === false ? 'Tạm khóa' : 'Đang hoạt động';
     el.courtFormTitle.textContent = court.id ? 'Chỉnh sửa sân' : 'Thêm sân';
     el.courtError.hidden = true;
     el.courtForm.hidden = false;
@@ -394,7 +451,7 @@
       const details = node('div');
       details.append(
         node('strong', court.name),
-        node('span', `${court.sport_type} · ${formatMoney(court.price_normal)} - ${formatMoney(court.price_peak)} · ${court.is_active ? 'Đang hoạt động' : 'Ngừng hoạt động'}`)
+        node('span', `${court.sport_type} · ${formatMoney(court.price_normal)} - ${formatMoney(court.price_peak)} · ${court.is_active ? 'Đang hoạt động' : 'Tạm khóa'}`)
       );
       const edit = node('button', 'Sửa');
       edit.type = 'button';
@@ -451,10 +508,43 @@
     return facilityState.normalizeFacilityForm(values);
   }
 
+  function readFirstCourtForm() {
+    return facilityState.normalizeCourtForm({
+      name: document.getElementById('firstCourtName').value,
+      sport_type: document.getElementById('firstCourtSport').value,
+      price_normal: document.getElementById('firstCourtNormalPrice').value,
+      price_peak: document.getElementById('firstCourtPeakPrice').value,
+      description: '',
+      is_active: true
+    });
+  }
+
+  function clearFacilityErrors() {
+    document.getElementById('facilityDrawerError').hidden = true;
+    for (const error of document.querySelectorAll('[data-facility-error]')) error.hidden = true;
+  }
+
+  function showFacilityError(error) {
+    const field = error.field || error.details?.field;
+    const fieldError = field
+      ? document.querySelector(`[data-facility-error="${field}"]`)
+      : null;
+    if (fieldError) {
+      fieldError.textContent = error.message;
+      fieldError.hidden = false;
+      document.querySelector(`[data-facility-field="${field}"]`)?.focus();
+      return;
+    }
+    const drawerError = document.getElementById('facilityDrawerError');
+    drawerError.textContent = error.message || 'Không thể lưu cơ sở.';
+    drawerError.hidden = false;
+  }
+
   async function openFacilityDialog(id = '') {
+    clearFacilityErrors();
     el.formError.hidden = true;
     el.courtForm.hidden = true;
-    document.getElementById('facilityDrawerError').hidden = true;
+    document.getElementById('newFacilityCourtFields').hidden = Boolean(id);
     if (!id) {
       currentFacility = null;
       el.drawerTitle.textContent = 'Thêm / Chỉnh sửa cơ sở thể thao';
@@ -463,6 +553,10 @@
         hotline: '', map_url: '', image_url: '', amenities: [], description: '',
         rules: '', cancellation_policy: '', is_active: true
       });
+      document.getElementById('firstCourtName').value = '';
+      document.getElementById('firstCourtSport').value = 'BADMINTON';
+      document.getElementById('firstCourtNormalPrice').value = '';
+      document.getElementById('firstCourtPeakPrice').value = '';
       el.drawerBackdrop.hidden = false;
       document.querySelector('[data-facility-field="name"]').focus();
       return;
@@ -480,49 +574,294 @@
     }
   }
 
-  async function toggleFacility(facility) {
-    const next = !facility.is_active;
-    if (!window.confirm(`${next ? 'Mở lại' : 'Ngừng'} hoạt động cơ sở “${facility.name}”?`)) return false;
+  function confirmStatusChange({ resource, name, next }) {
+    return new Promise((resolve) => {
+      const previousFocus = document.activeElement;
+      const modal = document.createElement('div');
+      modal.className = 'admin-modal';
+      const dialog = document.createElement('section');
+      dialog.className = 'admin-dialog';
+      dialog.setAttribute('role', 'dialog');
+      dialog.setAttribute('aria-modal', 'true');
+      dialog.setAttribute('aria-labelledby', 'facilityStatusConfirmationTitle');
+      const header = document.createElement('header');
+      header.className = 'admin-dialog__header';
+      const title = document.createElement('h2');
+      title.id = 'facilityStatusConfirmationTitle';
+      title.textContent = next ? `Mở lại ${resource}` : `Tạm khóa ${resource}`;
+      const body = document.createElement('div');
+      body.className = 'admin-dialog__body';
+      const description = document.createElement('p');
+      description.className = 'admin-dialog__description';
+      description.textContent = `${next ? 'Bạn muốn mở lại' : 'Bạn muốn tạm khóa'} ${resource} “${name}”?`;
+      body.append(description);
+      const footer = document.createElement('footer');
+      footer.className = 'admin-dialog__footer';
+      const cancel = node('button', 'Hủy');
+      cancel.type = 'button';
+      cancel.className = 'admin-button admin-button--quiet';
+      const confirm = node('button', next ? 'Mở lại' : 'Tạm khóa');
+      confirm.type = 'button';
+      confirm.className = next
+        ? 'admin-button admin-button--quiet'
+        : 'admin-button admin-button--danger';
+      footer.append(cancel, confirm);
+      header.append(title);
+      dialog.append(header, body, footer);
+      modal.append(dialog);
+      document.body.append(modal);
+
+      function close(accepted) {
+        document.removeEventListener('keydown', onKeydown);
+        modal.remove();
+        if (previousFocus?.isConnected) previousFocus.focus();
+        resolve(accepted);
+      }
+
+      function onKeydown(event) {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          close(false);
+        } else if (event.key === 'Tab') {
+          event.preventDefault();
+          (document.activeElement === cancel ? confirm : cancel).focus();
+        }
+      }
+
+      modal.addEventListener('click', (event) => {
+        if (event.target === modal) close(false);
+      });
+      cancel.addEventListener('click', () => close(false));
+      confirm.addEventListener('click', () => close(true));
+      document.addEventListener('keydown', onKeydown);
+      cancel.focus();
+    });
+  }
+
+  function confirmFacilityDeletion(facility) {
+    const model = facilityState.buildFacilityDeleteConfirmation(facility);
+    return new Promise((resolve) => {
+      const previousFocus = document.activeElement;
+      const modal = document.createElement('div');
+      modal.className = 'admin-modal';
+      const dialog = document.createElement('section');
+      dialog.className = 'admin-dialog';
+      dialog.setAttribute('role', 'dialog');
+      dialog.setAttribute('aria-modal', 'true');
+      dialog.setAttribute('aria-labelledby', 'facilityDeleteConfirmationTitle');
+      const header = document.createElement('header');
+      header.className = 'admin-dialog__header';
+      const title = node('h2', model.title);
+      title.id = 'facilityDeleteConfirmationTitle';
+      const body = document.createElement('div');
+      body.className = 'admin-dialog__body';
+      const description = node('p', model.description);
+      description.className = 'admin-dialog__description';
+      body.append(description);
+      const footer = document.createElement('footer');
+      footer.className = 'admin-dialog__footer';
+      const keep = node('button', model.keep_label);
+      keep.type = 'button';
+      keep.className = 'admin-button admin-button--quiet';
+      const confirm = node('button', model.confirm_label);
+      confirm.type = 'button';
+      confirm.className = 'admin-button admin-button--danger';
+      footer.append(keep, confirm);
+      header.append(title);
+      dialog.append(header, body, footer);
+      modal.append(dialog);
+      document.body.append(modal);
+
+      function close(accepted) {
+        document.removeEventListener('keydown', onKeydown);
+        modal.remove();
+        if (previousFocus?.isConnected) previousFocus.focus();
+        resolve(accepted);
+      }
+
+      function onKeydown(event) {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          close(false);
+        } else if (event.key === 'Tab') {
+          event.preventDefault();
+          (document.activeElement === keep ? confirm : keep).focus();
+        }
+      }
+
+      modal.addEventListener('click', (event) => {
+        if (event.target === modal) close(false);
+      });
+      keep.addEventListener('click', () => close(false));
+      confirm.addEventListener('click', () => close(true));
+      document.addEventListener('keydown', onKeydown);
+      keep.focus();
+    });
+  }
+
+  function showFacilityMutationBanner(message, isError = false) {
+    el.banner.textContent = message;
+    el.banner.dataset.kind = isError ? 'error' : 'success';
+    el.banner.hidden = false;
+  }
+
+  async function deleteFacility(facility) {
+    if (!await confirmFacilityDeletion(facility)) return false;
+    facilityStatusUpdates += 1;
     try {
+      await api.deleteAdminFacility(facility.id, {
+        expected_updated_at: facility.updated_at
+      });
+      latestFacilities = latestFacilities.filter(
+        (item) => String(item.id) !== String(facility.id)
+      );
+      latestTotal = Math.max(0, latestTotal - 1);
+      renderFacilities(latestFacilities, latestTotal);
+      const refreshed = await loadFacilities();
+      showFacilityMutationBanner(`Đã xóa cơ sở ${facility.name}`);
+      if (!refreshed) {
+        el.status.textContent = 'Đã xóa cơ sở nhưng không thể làm mới số liệu; hãy thử tải lại.';
+      }
+      return true;
+    } catch (error) {
+      showFacilityMutationBanner(error.message || 'Không thể xóa cơ sở.', true);
+      return false;
+    } finally {
+      facilityStatusUpdates -= 1;
+    }
+  }
+
+  function facilityMatchesFilters(facility) {
+    if (appliedFilters.district && facility.district !== appliedFilters.district) return false;
+    if (appliedFilters.is_active !== ''
+        && Boolean(facility.is_active) !== (appliedFilters.is_active === 'true')) return false;
+    const query = String(appliedFilters.q || '').trim().toLocaleLowerCase('vi');
+    return !query || `${facility.name} ${facility.address}`.toLocaleLowerCase('vi').includes(query);
+  }
+
+  function updateFacilityRow(facility) {
+    const index = latestFacilities.findIndex((item) => String(item.id) === String(facility.id));
+    if (index >= 0) latestFacilities[index] = facility;
+
+    const body = document.getElementById('mockupFacilityRows');
+    if (!body) return;
+    const row = [...body.querySelectorAll('tr[data-facility-id]')].find(
+      (item) => item.dataset.facilityId === String(facility.id)
+    );
+    if (row) {
+      if (facilityMatchesFilters(facility)) row.replaceWith(buildMockupFacilityRow(facility));
+      else row.remove();
+    }
+    if (body.children.length === 0) {
+      const emptyRow = document.createElement('tr');
+      const cell = node('td', 'Không có cơ sở phù hợp.');
+      cell.colSpan = 8;
+      cell.className = 'py-6 text-center text-on-surface-variant';
+      emptyRow.append(cell);
+      body.append(emptyRow);
+    }
+    window.SportBookingIcons?.renderAll(body);
+  }
+
+  async function toggleFacility(event) {
+    const control = event.currentTarget;
+    const facility = facilityState.findFacilityForToggleEvent(event, latestFacilities);
+    if (!facility) {
+      control.checked = false;
+      el.status.textContent = 'Không xác định được cơ sở cần cập nhật.';
+      return false;
+    }
+    const next = !facility.is_active;
+    if (!await confirmStatusChange({ resource: 'cơ sở', name: facility.name, next })) {
+      control.checked = Boolean(facility.is_active);
+      return false;
+    }
+    try {
+      facilityStatusUpdates += 1;
       await api.updateAdminFacility(facility.id, {
         expected_updated_at: facility.updated_at,
         is_active: next
       });
-      polling?.refreshNow();
-      return true;
     } catch (error) {
+      control.checked = Boolean(facility.is_active);
       el.status.textContent = error.message || 'Không thể cập nhật trạng thái cơ sở.';
       return false;
+    } finally {
+      facilityStatusUpdates -= 1;
     }
+
+    const successMessage = `${next ? 'Đã mở lại' : 'Đã tạm khóa'} ${facility.name}`;
+    facility.is_active = next;
+    control.checked = next;
+    el.status.textContent = successMessage;
+    updateFacilityRow({
+      ...facility,
+      active_court_count: next ? Number(facility.active_court_count) : 0
+    });
+    try {
+      const [detail, list] = await Promise.all([
+        api.getAdminFacility(facility.id),
+        api.listAdminFacilities({ page: 1, page_size: 1 })
+      ]);
+      const updatedFacility = {
+        ...facility,
+        ...detail.facility,
+        id: String(facility.id),
+        court_count: detail.courts.length,
+        active_court_count: detail.courts.filter((court) => court.is_active).length
+      };
+      renderSummary(list.summary);
+      updateFacilityRow(updatedFacility);
+      el.status.textContent = successMessage;
+    } catch (error) {
+      el.status.textContent = `${successMessage}; không thể làm mới số liệu: ${error.message}`;
+      polling?.refreshNow();
+    }
+    return true;
   }
 
   async function saveFacility(event) {
     event?.preventDefault();
     if (pending) return;
-    const drawerError = document.getElementById('facilityDrawerError');
-    drawerError.hidden = true;
+    clearFacilityErrors();
+    let suppressRefresh = false;
     try {
       const values = readDrawerFacilityForm();
+      const updating = Boolean(currentFacility);
+      const firstCourt = updating ? null : readFirstCourtForm();
+      const facilityName = values.name;
       pending = true;
-      const result = currentFacility
+      el.drawerSave.disabled = true;
+      el.drawerSaveLabel.textContent = 'Đang lưu...';
+      facilityStatusUpdates += 1;
+      suppressRefresh = true;
+      const result = updating
         ? await api.updateAdminFacility(currentFacility.id, {
           ...values,
           expected_updated_at: currentFacility.updated_at
         })
-        : await api.createAdminFacility(values);
-      if (currentFacility) {
-        await openFacilityDialog(currentFacility.id);
+        : await api.createAdminFacility({ ...values, courts: [firstCourt] });
+      const facilityId = currentFacility?.id || result.id || result.facility?.id;
+      if (!facilityId) throw new Error('Máy chủ không trả về mã cơ sở sau khi lưu.');
+      el.drawerBackdrop.hidden = true;
+      el.dialog.hidden = true;
+      currentFacility = null;
+      el.courtForm.hidden = true;
+      const refreshed = await loadFacilities();
+      if (refreshed) {
+        el.status.textContent = updating
+          ? `Đã cập nhật ${facilityName}`
+          : `Đã lưu cơ sở ${facilityName}`;
       } else {
-        const createdId = result.id || result.facility?.id;
-        if (!createdId) throw new Error('Cơ sở đã lưu nhưng máy chủ không trả về mã cơ sở.');
-        await openFacilityDialog(createdId);
+        el.status.textContent = `Đã lưu ${facilityName}, nhưng không thể làm mới danh sách và số liệu.`;
       }
-      polling?.refreshNow();
     } catch (error) {
-      drawerError.textContent = error.message || 'Không thể lưu cơ sở.';
-      drawerError.hidden = false;
+      showFacilityError(error);
     } finally {
+      if (suppressRefresh) facilityStatusUpdates -= 1;
       pending = false;
+      el.drawerSave.disabled = false;
+      el.drawerSaveLabel.textContent = 'Lưu thông tin cơ sở';
     }
   }
 
@@ -537,8 +876,19 @@
       }
       values.is_active = document.getElementById('courtIsActive').checked;
       const normalized = facilityState.normalizeCourtForm(values);
-      pending = true;
       const id = el.courtForm.dataset.courtId;
+      if (id && String(normalized.is_active) !== el.courtForm.dataset.isActive
+          && !await confirmStatusChange({
+            resource: 'sân',
+            name: values.name,
+            next: normalized.is_active
+          })) {
+        document.getElementById('courtIsActive').checked = el.courtForm.dataset.isActive === 'true';
+        document.getElementById('courtActiveLabel').textContent =
+          el.courtForm.dataset.isActive === 'true' ? 'Đang hoạt động' : 'Tạm khóa';
+        return;
+      }
+      pending = true;
       if (id) {
         await api.updateAdminCourt(id, {
           ...normalized,
@@ -653,8 +1003,21 @@
     if (appliedFilters.page < pageCount) { appliedFilters.page += 1; loadFacilities(); }
   });
   el.add.addEventListener('click', () => openFacilityDialog());
+  el.exportButton.addEventListener('click', () => exportDownload.download(
+    el.exportButton,
+    el.exportStatus,
+    () => api.exportFacilities({
+      q: appliedFilters.q,
+      district: appliedFilters.district,
+      is_active: appliedFilters.is_active
+    })
+  ));
   el.form.addEventListener('submit', saveFacility);
   el.addCourt.addEventListener('click', () => fillCourtForm());
+  document.getElementById('courtIsActive').addEventListener('change', (event) => {
+    document.getElementById('courtActiveLabel').textContent =
+      event.target.checked ? 'Đang hoạt động' : 'Tạm khóa';
+  });
   el.courtForm.addEventListener('submit', saveCourt);
   el.cancelCourt.addEventListener('click', () => { el.courtForm.hidden = true; });
   document.querySelectorAll('[data-facility-dialog-close]').forEach((button) => {
@@ -664,7 +1027,9 @@
     if (event.key === 'Escape' && !el.drawerBackdrop.hidden) closeDialog();
   });
   el.guardRetry.addEventListener('click', initialize);
-  window.addEventListener('admin-data-changed', () => polling?.refreshNow());
+  window.addEventListener('admin-data-changed', () => {
+    if (facilityStatusUpdates === 0) polling?.refreshNow();
+  });
   window.addEventListener('pagehide', () => polling?.stop(), { once: true });
 
   async function initialize() {

@@ -1,6 +1,17 @@
 'use strict';
 
 (() => {
+  const supportHotline = window.SportBookingConstants?.SUPPORT_HOTLINE;
+  if (!supportHotline) throw new Error('Thiếu cấu hình hotline hỗ trợ SportBooking.');
+  const supportHotlineHref = `tel:${supportHotline.replace(/\D/g, '')}`;
+  const setSupportHotline = (root) => {
+    for (const hotline of root.querySelectorAll('[data-support-hotline]')) {
+      hotline.textContent = supportHotline;
+      if (hotline.tagName === 'A') hotline.href = supportHotlineHref;
+    }
+  };
+  setSupportHotline(document);
+
   const mount = document.querySelector('[data-shared-footer]');
   if (!mount) return;
 
@@ -14,7 +25,7 @@
           <span class="text-on-surface-variant text-xs">| Nền tảng đặt sân thể thao thông minh</span>
         </div>
         <p class="text-on-surface-variant text-xs">Hệ thống đặt sân thể thao SportBooking Hà Nội - Đặt sân trực tuyến nhanh chóng, tiện lợi &amp; chuẩn xác</p>
-        <p class="text-on-surface text-sm">Hotline hỗ trợ 24/7: <span class="font-bold text-secondary">1900 8899</span></p>
+        <p class="text-on-surface text-sm">Hotline hỗ trợ 24/7: <a class="font-bold text-secondary" data-support-hotline href="${supportHotlineHref}"></a></p>
       </div>
       <div class="flex flex-col md:items-end gap-1.5">
         <div class="flex flex-wrap items-center gap-3 text-xs text-on-surface-variant">
@@ -28,4 +39,5 @@
       </div>
     </div>`;
   mount.replaceChildren(footer);
+  setSupportHotline(footer);
 })();

@@ -7,13 +7,20 @@
   const sportInput = document.getElementById('paramSport');
   const queryInput = document.getElementById('queryInput');
   const districtInput = document.getElementById('paramDistrict');
+  const dateInput = document.getElementById('paramDate');
+  const timeBandSelect = document.getElementById('timeSlotSelect');
+  const slotCheckboxes = [...document.querySelectorAll('.filter-slot-check')];
   const countResults = document.getElementById('countResults');
   const paginationRange = document.getElementById('paginationRange');
   const totalCountText = document.getElementById('totalCountText');
   const allowedSports = new Set(['BADMINTON', 'FOOTBALL_MINI', 'PICKLEBALL']);
+  const searchFilters = window.SportBookingSearchFilters;
   const pageSize = 10;
 
   if (!form || !results) return;
+  if (!searchFilters) throw new Error('Thiếu cấu hình bộ lọc tìm sân.');
+
+  const filterState = { date: '', timeBands: [] };
 
   function makeElement(tag, className, text) {
     const element = document.createElement(tag);
@@ -36,7 +43,9 @@
     return {
       sport: sportInput.value,
       district: districtInput.value.trim(),
-      q: queryInput.value.trim()
+      q: queryInput.value.trim(),
+      date: filterState.date,
+      time_band: filterState.timeBands.join(',')
     };
   }
 
@@ -48,17 +57,80 @@
       id: String(facility.id),
       returnTo
     });
+    if (filterState.date) params.set('date', filterState.date);
     return `/chi-tiet-san.html?${params}`;
   }
 
-  function updateUrl(page) {
-    const params = new URLSearchParams();
-    const filters = currentFilters();
-    if (filters.sport) params.set('sport', filters.sport);
-    if (filters.district) params.set('district', filters.district);
-    if (filters.q) params.set('q', filters.q);
-    params.set('page', String(page));
-    window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
+  function updateUrl(page, historyMode) {
+    const params = searchFilters.buildSearchParams({
+      ...currentFilters(),
+      timeBands: filterState.timeBands
+    }, page);
+    const url = `${window.location.pathname}?${params}`;
+    if (historyMode === 'push') {
+      window.history.pushState({}, '', url);
+    } else if (historyMode === 'replace') {
+      window.history.replaceState({}, '', url);
+    }
+  }
+
+  function updateTimeBandControls() {
+    filterState.timeBands = searchFilters.normalizeTimeBands(filterState.timeBands);
+    slotCheckboxes.forEach((checkbox) => {
+      checkbox.checked = filterState.timeBands.includes(checkbox.value);
+    });
+
+    const selectState = searchFilters.getTimeBandSelectState(filterState.timeBands);
+    let multipleOption = timeBandSelect.querySelector('[data-multiple-time-bands]');
+    if (selectState.label) {
+      if (!multipleOption) {
+        multipleOption = document.createElement('option');
+        multipleOption.value = '__multiple__';
+        multipleOption.disabled = true;
+        multipleOption.dataset.multipleTimeBands = '';
+        timeBandSelect.prepend(multipleOption);
+      }
+      multipleOption.textContent = selectState.label;
+    } else if (multipleOption) {
+      multipleOption.remove();
+    }
+    timeBandSelect.value = selectState.value;
+  }
+
+  function restoreFromUrl() {
+    const filters = searchFilters.parseSearchState(window.location.search);
+    sportInput.value = allowedSports.has(filters.sport) ? filters.sport : '';
+    queryInput.value = filters.q;
+    districtInput.value = filters.district;
+    filterState.date = filters.date;
+    dateInput.value = filters.date;
+    filterState.timeBands = filters.timeBands;
+    updateSelectedSport();
+    updateTimeBandControls();
+    return filters.page;
+  }
+
+  function showEmptyResults() {
+    results.replaceChildren();
+    const state = makeElement(
+      'div',
+      'col-span-full py-16 text-center text-on-surface-variant flex flex-col items-center justify-center gap-3'
+    );
+    state.setAttribute('role', 'status');
+    state.append(makeElement(
+      'span',
+      'font-medium text-base',
+      'Không có cụm sân nào phù hợp. Hãy thử đổi ngày, khung giờ hoặc bỏ bớt bộ lọc.'
+    ));
+    const resetButton = makeElement(
+      'button',
+      'mt-2 px-4 py-2 bg-primary text-on-primary rounded-xl font-bold text-sm cursor-pointer',
+      'Đặt lại bộ lọc'
+    );
+    resetButton.type = 'button';
+    resetButton.addEventListener('click', () => document.getElementById('clearFiltersBtn').click());
+    state.append(resetButton);
+    results.append(state);
   }
 
   function updateSelectedSport() {
@@ -92,7 +164,7 @@
     if (retry) {
       const button = makeElement('button', 'mt-2 px-4 py-2 bg-primary text-on-primary rounded-xl font-bold text-sm cursor-pointer', 'Thử lại');
       button.type = 'button';
-      button.addEventListener('click', () => load(currentPage));
+      button.addEventListener('click', () => load(currentPage, { historyMode: 'none' }));
       state.append(button);
     }
     results.append(state);
@@ -107,9 +179,12 @@
   }
 
   function createFacilityCard(facility) {
+    const inactive = facility.is_active === false
+      || (Number.isFinite(Number(facility.active_court_count))
+        && Number(facility.active_court_count) === 0);
     const article = makeElement(
       'article',
-      'bg-surface-container-lowest rounded-2xl shadow-sm hover:shadow-md transition-all p-5 flex flex-col md:flex-row gap-5 border border-gray-100 group'
+      `bg-surface-container-lowest rounded-2xl shadow-sm hover:shadow-md transition-all p-5 flex flex-col md:flex-row gap-5 border border-gray-100 group${inactive ? ' opacity-70' : ''}`
     );
     const href = detailUrl(facility);
     article.setAttribute('role', 'link');
@@ -135,6 +210,13 @@
     }
     const sportBadge = makeElement('span', 'absolute bottom-2.5 left-2.5 px-2.5 py-0.5 rounded-full bg-primary text-on-primary text-xs font-bold shadow-sm', facility.sport_name || '');
     imageWrap.append(sportBadge);
+    if (inactive) {
+      imageWrap.append(makeElement(
+        'span',
+        'absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full bg-surface text-error text-xs font-bold shadow-sm',
+        'Tạm ngưng hoạt động'
+      ));
+    }
     article.append(imageWrap);
 
     const content = makeElement('div', 'flex-1 flex flex-col justify-between');
@@ -213,9 +295,22 @@
       buttons.append(mapNoteEl);
     }
     buttons.append(mapLink);
-    const bookLink = makeElement('a', 'px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-container text-white font-bold text-sm shadow-sm transition-all flex items-center gap-1', 'Đặt sân ngay');
-    bookLink.href = href;
-    buttons.append(bookLink);
+    if (inactive) {
+      const bookButton = makeElement(
+        'button',
+        'px-5 py-2.5 rounded-xl bg-surface-container text-on-surface-variant font-bold text-sm shadow-sm flex items-center gap-1 cursor-not-allowed',
+        'Đặt sân ngay'
+      );
+      bookButton.type = 'button';
+      bookButton.disabled = true;
+      bookButton.title = 'Cơ sở tạm ngưng hoạt động';
+      buttons.append(bookButton);
+      buttons.append(makeElement('span', 'text-xs text-error', 'Cơ sở tạm ngưng hoạt động'));
+    } else {
+      const bookLink = makeElement('a', 'px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-container text-white font-bold text-sm shadow-sm transition-all flex items-center gap-1', 'Đặt sân ngay');
+      bookLink.href = href;
+      buttons.append(bookLink);
+    }
     actions.append(buttons);
     content.append(actions);
     article.append(content);
@@ -238,7 +333,9 @@
       );
       button.type = 'button';
       button.disabled = disabled;
-      if (!active && !disabled) button.addEventListener('click', () => load(target));
+      if (!active && !disabled) {
+        button.addEventListener('click', () => load(target, { historyMode: 'push' }));
+      }
       paginationButtons.append(button);
     }
 
@@ -250,9 +347,12 @@
   }
 
   let currentPage = 1;
-  async function load(page) {
+  let filterDebounce;
+  let loadSequence = 0;
+  async function load(page, { historyMode = 'push' } = {}) {
+    const sequence = ++loadSequence;
     currentPage = page;
-    updateUrl(page);
+    updateUrl(page, historyMode);
     countResults.textContent = '…';
     totalCountText.textContent = '…';
     paginationRange.textContent = '—';
@@ -263,13 +363,13 @@
         page,
         page_size: pageSize
       });
-      if (!response) return;
+      if (!response || sequence !== loadSequence) return;
 
       const facilities = response.facilities;
       const pagination = response.pagination;
       const lastPage = Math.max(pagination.total_pages, 1);
       if (page > lastPage) {
-        return load(lastPage);
+        return load(lastPage, { historyMode: 'replace' });
       }
       countResults.textContent = String(pagination.total);
       totalCountText.textContent = String(pagination.total);
@@ -278,7 +378,7 @@
       paginationRange.textContent = `${start} - ${end}`;
 
       if (facilities.length === 0) {
-        showState('Không tìm thấy sân phù hợp. Hãy đổi từ khóa, môn hoặc quận, hoặc đặt lại bộ lọc.');
+        showEmptyResults();
         renderPagination(pagination);
         return;
       }
@@ -286,6 +386,7 @@
       results.replaceChildren(...facilities.map(createFacilityCard));
       renderPagination(pagination);
     } catch (error) {
+      if (sequence !== loadSequence) return;
       countResults.textContent = '—';
       totalCountText.textContent = '—';
       paginationRange.textContent = '—';
@@ -295,16 +396,16 @@
   }
 
   function setSport(value) {
+    window.clearTimeout(filterDebounce);
     sportInput.value = allowedSports.has(value) ? value : '';
     updateSelectedSport();
-    load(1);
+    load(1, { historyMode: 'push' });
   }
 
-  const params = new URLSearchParams(window.location.search);
-  const initialSport = (params.get('sport') || '').toUpperCase();
-  sportInput.value = allowedSports.has(initialSport) ? initialSport : '';
-  queryInput.value = params.get('q') || '';
-  districtInput.value = params.get('district') || '';
+  const dateRange = searchFilters.getDateRange();
+  dateInput.min = dateRange.min;
+  dateInput.max = dateRange.max;
+  const initialPage = restoreFromUrl();
   updateSelectedSport();
 
   document.querySelectorAll('.sport-tab-btn').forEach((button) => {
@@ -315,16 +416,49 @@
   });
   form.addEventListener('submit', (event) => {
     event.preventDefault();
-    load(1);
+    window.clearTimeout(filterDebounce);
+    filterState.date = dateInput.value;
+    load(1, { historyMode: 'push' });
+  });
+  dateInput.addEventListener('change', () => {
+    filterState.date = dateInput.value;
+  });
+  timeBandSelect.addEventListener('change', () => {
+    if (timeBandSelect.value === '__multiple__') return;
+    filterState.timeBands = searchFilters.normalizeTimeBands([timeBandSelect.value]);
+    updateTimeBandControls();
+  });
+  slotCheckboxes.forEach((checkbox) => {
+    checkbox.addEventListener('change', () => {
+      filterState.timeBands = slotCheckboxes
+        .filter((item) => item.checked)
+        .map((item) => item.value);
+      updateTimeBandControls();
+      window.clearTimeout(filterDebounce);
+      filterDebounce = window.setTimeout(
+        () => load(1, { historyMode: 'push' }),
+        250
+      );
+    });
   });
   document.getElementById('clearFiltersBtn').addEventListener('click', () => {
+    window.clearTimeout(filterDebounce);
     sportInput.value = '';
     queryInput.value = '';
     districtInput.value = '';
+    filterState.date = '';
+    filterState.timeBands = [];
+    dateInput.value = '';
+    updateTimeBandControls();
     updateSelectedSport();
-    load(1);
+    load(1, { historyMode: 'push' });
   });
 
-  const requestedPage = Number(params.get('page'));
-  load(Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1);
+  window.addEventListener('popstate', () => {
+    window.clearTimeout(filterDebounce);
+    const page = restoreFromUrl();
+    load(page, { historyMode: 'none' });
+  });
+
+  load(initialPage, { historyMode: 'none' });
 })();

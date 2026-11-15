@@ -7,6 +7,7 @@ const test = require('node:test');
 const vm = require('node:vm');
 const adminApi = require('../admin/admin-api.js');
 const adminState = require('../admin/admin-state.js');
+const bookingAdminState = require('../booking/admin-state.js');
 const adminShell = require('../admin/admin-shell.js');
 
 const frontendRoot = path.resolve(__dirname, '..');
@@ -17,6 +18,7 @@ const pageScript = fs.readFileSync(path.join(frontendRoot, 'admin', 'admin-page.
 const apiScript = fs.readFileSync(path.join(frontendRoot, 'admin', 'admin-api.js'), 'utf8');
 const headerScript = fs.readFileSync(path.join(frontendRoot, 'shared', 'header.js'), 'utf8');
 const shellScript = fs.readFileSync(path.join(frontendRoot, 'admin', 'admin-shell.js'), 'utf8');
+const incidentDialogScript = fs.readFileSync(path.join(frontendRoot, 'admin', 'incident-cancel-dialog.js'), 'utf8');
 const usersHtml = fs.readFileSync(path.join(frontendRoot, 'quan-tri-nguoi-dung.html'), 'utf8');
 const usersPageScript = fs.readFileSync(path.join(frontendRoot, 'admin', 'users-page.js'), 'utf8');
 
@@ -27,6 +29,33 @@ test('role redirects use the shared home constants for admin, user, and unauthen
   assert.equal(adminState.getPostLoginDestination('USER'), '/trangchu-user.html');
   assert.equal(adminState.getAdminAccessDestination(false), '/dang-nhap.html?returnTo=%2Fquan-tri-tong-quan.html');
   assert.equal(adminState.getAdminAccessDestination(true), '/trangchu-user.html');
+});
+
+test('lock confirmation allows optional reasons, enforces 300 characters, and blocks while submitting', () => {
+  assert.equal(bookingAdminState.canSubmitLock('', false), true);
+  assert.equal(bookingAdminState.canSubmitLock('Reason', false), true);
+  assert.equal(bookingAdminState.canSubmitLock('x'.repeat(300), false), true);
+  assert.equal(bookingAdminState.canSubmitLock('x'.repeat(301), false), false);
+  assert.equal(bookingAdminState.canSubmitLock('', true), false);
+  assert.match(usersPageScript, /el\.reason\.addEventListener\('input', updateLockDialogState\)/);
+  assert.match(usersPageScript, /el\.confirm\.disabled = !state\.canSubmitLock/);
+  assert.doesNotMatch(usersHtml, /name="ban-period"/);
+  assert.match(usersHtml, /id="userLockReasonCount">0<\/span>\/300 ký tự/);
+});
+
+test('locked sessions redirect to the locked login notice and user summaries are rendered from API data', () => {
+  assert.match(headerScript, /ACCOUNT_LOCKED/);
+  assert.match(headerScript, /dang-nhap\.html\?locked=1/);
+  assert.match(headerScript, /const CUSTOMER_HEADER_POLL_INTERVAL_MS = 5000;/);
+  assert.match(headerScript, /}, CUSTOMER_HEADER_POLL_INTERVAL_MS\)/);
+  assert.match(
+    headerScript,
+    /setInterval\(\s*refreshPendingHoldBanner,\s*CUSTOMER_HEADER_POLL_INTERVAL_MS\s*\)/
+  );
+  assert.match(usersPageScript, /data-admin-user-summary/);
+  assert.match(usersHtml, /Đang hoạt động/);
+  assert.match(usersHtml, /Bị khóa/);
+  assert.doesNotMatch(usersHtml, /fonts\.googleapis\.com|material-symbols-outlined/);
 });
 
 test('status labels and incident cancellation visibility follow backend booking statuses', () => {
@@ -49,7 +78,9 @@ test('status labels and incident cancellation visibility follow backend booking 
     'Đang trong trận'
   );
   assert.equal(adminState.getBookingStatusLabel('UNKNOWN'), 'Không xác định');
-  assert.match(pageScript, /cancel\.hidden = !model\.canCancel/);
+  assert.match(pageScript, /cancel\.hidden = !canCancel/);
+  assert.match(pageScript, /incidentDialogApi\.mount\(/);
+  assert.match(pageScript, /booking\.can_cancel_incident === true/);
 });
 
 test('confirmed booking display tabs follow the backend UTC+7 half-open slot rules', () => {
@@ -159,7 +190,7 @@ test('draft filters apply only on submit, reset together, and build minimal API 
   });
   filters = adminState.updateDraftFilter(filters, 'query', '  SPB-99  ');
   assert.equal(adminState.hasUnappliedFilters(filters), true);
-  assert.match(html, /id="filterDraftStatus"[^>]*>Chưa áp dụng/);
+  assert.doesNotMatch(html, /Bộ lọc nâng cao|Chưa áp dụng|filterDraftStatus/);
   assert.deepEqual(filters.applied, {
     status: 'PENDING',
     query: 'SPB-42',
@@ -178,6 +209,13 @@ test('draft filters apply only on submit, reset together, and build minimal API 
   assert.equal(filters.applied.query, 'SPB-99');
   assert.equal(filters.applied.page, 1);
   assert.equal(adminState.hasUnappliedFilters(filters), false);
+  filters = adminState.setAppliedStatus(filters, 'IN_PROGRESS');
+  assert.deepEqual(adminState.buildExportFilters(filters), {
+    status: 'IN_PROGRESS',
+    q: 'SPB-99',
+    date: '2026-11-12',
+    facility_id: '23'
+  });
   assert.deepEqual(adminState.resetFilterState(), {
     draft: { query: '', date: '', facilityId: '' },
     applied: { status: '', query: '', date: '', facilityId: '', page: 1 }
@@ -247,14 +285,17 @@ test('admin page uses safe text rendering, local SVG icons, and the required con
   assert.doesNotMatch(html, /material-symbols-outlined|material-icons/i);
   assert.doesNotMatch(html, /check-in|\bVIP\b|\bGold\b|\bTennis\b|ưu đãi/i);
   assert.match(html, /data-sb-icon="search"/);
-  assert.match(html, /aria-modal="true"/);
+  assert.match(incidentDialogScript, /setAttribute\('aria-modal', 'true'\)/);
   assert.match(apiScript, /cache: 'no-store'/);
   assert.match(apiScript, /credentials: 'same-origin'/);
   assert.match(html, /placeholder="Tìm theo mã đặt sân\.\.\."/);
   assert.match(html, /type="date"/);
-  assert.match(html, /Bộ lọc nâng cao[\s\S]*?disabled/);
   assert.match(html, /id="applyBookingFilters"[\s\S]*?Tìm kiếm/);
-  assert.match(pageScript, /elements\.focusBookingSearch\.addEventListener\('click', \(\) => elements\.search\.focus\(\)\)/);
+  assert.match(html, /id="exportBookings"[\s\S]*?Xuất dữ liệu Excel/);
+  assert.doesNotMatch(html, /Bộ lọc nâng cao|Chưa áp dụng/);
+  assert.match(pageScript, /elements\.exportButton\.addEventListener\('click', downloadBookingsExport\)/);
+  assert.match(pageScript, /state\.buildExportFilters\(filterState\)/);
+  assert.match(pageScript, /showNotice\(error\.message \|\| 'Không thể xuất dữ liệu đơn đặt sân\.', 'error'\)/);
   assert.match(headerScript, /const isAdmin = user\.role === 'ADMIN'/);
   assert.match(headerScript, /const showNavigation = window\.SportBookingHeaderState\.shouldShowNavigation\(user\.role\)/);
   assert.match(headerScript, /if \(showNavigation\) \{/);
@@ -262,21 +303,19 @@ test('admin page uses safe text rendering, local SVG icons, and the required con
   assert.match(headerScript, /sb-shared-header__admin-role', 'Quản trị viên'/);
 });
 
-test('admin shell creates the shared navigation and disables only system settings', () => {
+test('admin shell creates the shared navigation without the system settings item', () => {
   const labels = [
     'Tổng quan',
     'Đơn đặt sân',
     'Người dùng',
     'Cơ sở & Sân',
-    'Khung giờ & Giá',
-    'Cài đặt hệ thống'
+    'Khung giờ & Giá'
   ];
   const labelIndexes = labels.map((label) => shellScript.indexOf(`label: '${label}'`));
-  assert.ok(labelIndexes.slice(0, -1).every((index) => index >= 0));
-  assert.deepEqual(labelIndexes.slice(0, -1), labelIndexes.slice(0, -1).slice().sort((a, b) => a - b));
+  assert.ok(labelIndexes.every((index) => index >= 0));
+  assert.deepEqual(labelIndexes, labelIndexes.slice().sort((a, b) => a - b));
   assert.match(html, /data-admin-sidebar/);
-  assert.match(shellScript, /settingLabel\.textContent = 'Cài đặt hệ thống'/);
-  assert.match(shellScript, /soon\.textContent = 'Sắp có'/);
+  assert.doesNotMatch(shellScript, /Cài đặt hệ thống/);
   assert.equal((shellScript.match(/href: '\/quan-tri-/g) || []).length, 4);
   assert.doesNotMatch(shellScript, /localStorage|material-symbols-outlined|check-in|\bVIP\b|\bGold\b|\bTennis\b|bùng cọc/i);
   assert.match(adminCss, /@media \(max-width: 900px\)[\s\S]*?\.admin-sidebar__list\s*\{[^}]*overflow-x: auto/);
@@ -389,6 +428,206 @@ test('admin API requests bypass caches and include same-origin session credentia
   }
 });
 
+test('a concurrent write makes an in-flight 304 fetch fresh dashboard data', async () => {
+  const originalFetch = global.fetch;
+  const cachedBody = { new_bookings: 4 };
+  const updatedBody = { new_bookings: 5 };
+  let dashboardRequests = 0;
+  let resolveNotModified;
+  global.fetch = (url, options) => {
+    if (url === '/api/v1/admin/dashboard?range=cache-race') {
+      dashboardRequests += 1;
+      if (dashboardRequests === 1) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          headers: { get: () => '"dashboard-v1"' },
+          async json() { return cachedBody; }
+        });
+      }
+      if (dashboardRequests === 2) {
+        assert.equal(options.headers['If-None-Match'], '"dashboard-v1"');
+        return new Promise((resolve) => { resolveNotModified = resolve; });
+      }
+      assert.equal(options.headers['If-None-Match'], undefined);
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        headers: { get: () => null },
+        async json() { return updatedBody; }
+      });
+    }
+    if (url === '/api/v1/admin/facilities/999') {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        async json() { return { facility: { id: '999' } }; }
+      });
+    }
+    throw new Error(`Unexpected request: ${url}`);
+  };
+  try {
+    assert.deepEqual(await adminApi.getDashboard('cache-race'), cachedBody);
+    const pendingDashboard = adminApi.getDashboard('cache-race');
+    await Promise.resolve();
+    assert.equal(typeof resolveNotModified, 'function');
+    await adminApi.updateAdminFacility('999', { is_active: false });
+    resolveNotModified({
+      ok: false,
+      status: 304,
+      headers: { get: () => null },
+      async json() { throw new Error('304 has no response body'); }
+    });
+    assert.deepEqual(await pendingDashboard, updatedBody);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('admin API translates internal server errors into Vietnamese', async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async () => ({
+    ok: false,
+    status: 500,
+    async json() {
+      return { error: { code: 'INTERNAL_ERROR', message: 'An unexpected error occurred.' } };
+    }
+  });
+  try {
+    await assert.rejects(adminApi.getDashboard('today'), {
+      message: 'Không thể hoàn tất thao tác do lỗi hệ thống. Vui lòng thử lại.'
+    });
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('shared report API endpoints preserve filters and pass responses through the XLSX helper', async () => {
+  const originalFetch = global.fetch;
+  const requests = [];
+  global.fetch = async (url, options) => {
+    requests.push({ url: String(url), options });
+    const prefix = String(url).split('/').pop().split('?')[0] === 'export'
+      ? 'report'
+      : 'report';
+    return {
+      ok: true,
+      status: 200,
+      headers: {
+        get(name) {
+          return name === 'content-disposition'
+            ? `attachment; filename="${prefix}-20261114-1200.xlsx"`
+            : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+        }
+      },
+      async blob() { return new Blob(['xlsx']); }
+    };
+  };
+  try {
+    await adminApi.exportDashboard('30d');
+    await adminApi.exportUsers({ q: 'Locked User', status: 'ADMIN_LOCKED' });
+    await adminApi.exportFacilities({
+      q: 'Sân A',
+      district: 'Cầu Giấy',
+      is_active: 'false'
+    });
+    await adminApi.exportTimeSlots('42', { from: '2026-11-09', to: '2026-11-15' });
+    assert.deepEqual(requests.map((request) => request.url), [
+      '/api/v1/admin/dashboard/export?period=30d',
+      '/api/v1/admin/users/export?q=Locked+User&status=ADMIN_LOCKED',
+      '/api/v1/admin/facilities/export?q=S%C3%A2n+A&district=C%E1%BA%A7u+Gi%E1%BA%A5y&is_active=false',
+      '/api/v1/admin/courts/42/time-slots/export?from=2026-11-09&to=2026-11-15'
+    ]);
+    assert.ok(requests.every(({ options }) => (
+      options.credentials === 'same-origin' && options.cache === 'no-store'
+    )));
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('admin API never exposes unknown English errors and redirects locked accounts', async () => {
+  const originalFetch = global.fetch;
+  const originalWindow = global.window;
+  const redirects = [];
+  global.window = {
+    SportBookingCurrentUser: { id: '2' },
+    location: { replace: (url) => redirects.push(url) }
+  };
+  try {
+    global.fetch = async () => ({
+      ok: false,
+      status: 500,
+      async json() {
+        return { error: { code: 'UNRECOGNIZED_SERVER_CODE', message: 'Unexpected error.' } };
+      }
+    });
+    await assert.rejects(adminApi.getDashboard('today'), {
+      message: 'Yêu cầu chưa thể hoàn tất. Vui lòng thử lại.'
+    });
+
+    global.fetch = async () => ({
+      ok: false,
+      status: 401,
+      async json() {
+        return {
+          error: {
+            code: 'ACCOUNT_LOCKED',
+            message: 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.'
+          }
+        };
+      }
+    });
+    await assert.rejects(adminApi.getMe(), {
+      message: 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.'
+    });
+    assert.equal(global.window.SportBookingCurrentUser, null);
+    assert.deepEqual(redirects, ['/dang-nhap.html?locked=1']);
+  } finally {
+    global.fetch = originalFetch;
+    if (originalWindow === undefined) delete global.window;
+    else global.window = originalWindow;
+  }
+});
+
+test('admin export API downloads the applied filters as a credentialed XLSX blob', async () => {
+  const originalFetch = global.fetch;
+  let observed;
+  global.fetch = async (url, options) => {
+    observed = { url, options };
+    return {
+      ok: true,
+      status: 200,
+      headers: {
+        get(name) {
+          return name === 'content-disposition'
+            ? 'attachment; filename="don-dat-san-20261114-1200.xlsx"'
+            : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+        }
+      },
+      async blob() { return new Blob(['xlsx']); }
+    };
+  };
+  try {
+    const result = await adminApi.exportBookings({
+      status: 'IN_PROGRESS',
+      q: 'SPB 42',
+      date: '2026-11-14',
+      facility_id: '23'
+    });
+    assert.equal(
+      observed.url,
+      '/api/v1/admin/bookings/export?status=IN_PROGRESS&q=SPB+42&date=2026-11-14&facility_id=23'
+    );
+    assert.equal(observed.options.credentials, 'same-origin');
+    assert.equal(observed.options.cache, 'no-store');
+    assert.equal(result.filename, 'don-dat-san-20261114-1200.xlsx');
+    assert.equal(result.blob.size, 4);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
 test('admin page retains mockup classes except for replaced header, icons, and removed mockup actions', () => {
   const classTokens = (source) => new Set(
     [...source.matchAll(/\bclass\s*=\s*["']([^"']*)["']/g)]
@@ -433,6 +672,7 @@ test('admin page retains mockup classes except for replaced header, icons, and r
     'sticky',
     'text-[#CBD5E1]',
     'text-[#D97706]',
+    'text-[10px]',
     'text-[15px]',
     'text-[16px]',
     'text-[18px]',
@@ -565,6 +805,7 @@ test('booking row template renders all six admin display states without errors',
       status: item.status,
       paid_amount: '100000',
       refunded_amount: '0',
+      can_cancel_incident: item.canCancel,
       owner: { full_name: 'Khách kiểm thử', phone: '0900000000' },
       slots: item.slot ? [item.slot] : []
     }, index === 0);

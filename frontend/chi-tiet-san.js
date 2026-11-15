@@ -70,6 +70,7 @@
     modeContainer: document.getElementById('gameModeContainer'),
     dateOptions: document.getElementById('slotDateOptions'),
     slotLoading: document.getElementById('slotLoadingState'),
+    inactiveBanner: document.getElementById('facilityInactiveBanner'),
     slotError: document.getElementById('slotErrorState'),
     slotErrorMessage: document.getElementById('slotErrorMessage'),
     retrySlots: document.getElementById('retrySlotsLoad'),
@@ -169,6 +170,7 @@
     try {
       response = await fetch(url, {
         credentials: 'same-origin',
+        cache: 'no-store',
         signal: controller.signal
       });
     } catch (error) {
@@ -340,6 +342,12 @@
 
   function renderCourt(court) {
     state.court = court;
+    const facilityInactive = state.facility?.is_active === false;
+    const courtInactive = court.is_active === false;
+    elements.inactiveBanner.hidden = !facilityInactive && !courtInactive;
+    elements.inactiveBanner.textContent = facilityInactive
+      ? 'Cơ sở đang tạm ngưng hoạt động. Bạn chưa thể chọn khung giờ hoặc đặt sân.'
+      : 'Sân đang tạm ngưng hoạt động. Bạn chưa thể chọn khung giờ hoặc đặt sân.';
     const sportName = court.sport_name || court.sport_type || '';
     elements.sportText.textContent = sportName;
     elements.sportNameHeader.textContent = sportName;
@@ -471,6 +479,7 @@
 
   function getSlotLabel(slot) {
     if (slot.unavailable_reason === 'PAST_OR_TOO_SOON') return 'Đã qua / bắt đầu quá gần';
+    if (slot.unavailable_reason === 'COURT_INACTIVE') return 'Tạm khóa';
     if (slot.status === 'LOCKED') return 'Đang giữ chỗ';
     if (slot.status === 'BOOKED') return 'Đã đặt';
     if (slot.status === 'AVAILABLE' && slot.is_selectable) return 'Còn trống';
@@ -528,19 +537,24 @@
 
   function renderSlots() {
     elements.slotGrid.replaceChildren();
+    const inactive = state.facility?.is_active === false || state.court?.is_active === false;
     elements.slotEmpty.hidden = state.slots.length > 0;
     if (state.slots.length === 0) {
-      elements.slotEmpty.textContent = `Ngày ${formatDate(state.date)} chưa có khung giờ. Vui lòng chọn ngày khác trong 14 ngày.`;
+      elements.slotEmpty.textContent = inactive
+        ? 'Cơ sở hoặc sân đang tạm khóa nên không thể chọn khung giờ.'
+        : `Ngày ${formatDate(state.date)} chưa có khung giờ. Vui lòng chọn ngày khác trong 14 ngày.`;
       renderSelectionSummary();
       return;
     }
 
     const availableCount = state.slots.filter(
-      (slot) => slot.status === 'AVAILABLE' && slot.is_selectable
+      (slot) => !inactive && slot.status === 'AVAILABLE' && slot.is_selectable
     ).length;
     if (availableCount === 0) {
       elements.slotEmpty.hidden = false;
-      elements.slotEmpty.textContent = `Ngày ${formatDate(state.date)} không còn khung giờ có thể chọn. Vui lòng chọn ngày khác.`;
+      elements.slotEmpty.textContent = inactive
+        ? 'Cơ sở hoặc sân đang tạm khóa nên không thể chọn khung giờ.'
+        : `Ngày ${formatDate(state.date)} không còn khung giờ có thể chọn. Vui lòng chọn ngày khác.`;
     } else {
       elements.slotEmpty.hidden = true;
       elements.slotEmpty.textContent = '';
@@ -548,7 +562,7 @@
 
     state.slots.forEach((slot) => {
       const selected = state.selectedSlotIds.has(String(slot.id));
-      const selectable = slot.status === 'AVAILABLE' && slot.is_selectable;
+      const selectable = !inactive && slot.status === 'AVAILABLE' && slot.is_selectable;
       const peak = isPeakHour(slot);
       const button = document.createElement('button');
       button.type = 'button';

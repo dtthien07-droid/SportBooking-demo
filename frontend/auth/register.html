@@ -414,7 +414,7 @@
 <h3>Điều 6. Bộ phận Tiếp nhận &amp; Bảo vệ Dữ liệu</h3>
 <p>Nếu bạn có bất kỳ câu hỏi, yêu cầu trích xuất hoặc xóa dữ liệu cá nhân, vui lòng liên hệ:</p>
 <p><strong>Đơn vị kiểm soát dữ liệu:</strong> Ban quản trị SportBooking Hà Nội</p>
-<p><strong>Hotline 24/7:</strong> 1900 8899</p>
+<p><strong>Hotline 24/7:</strong> <span data-support-hotline></span></p>
 <p><strong>Email chuyên trách bảo mật:</strong> privacy@sportbooking.vn</p>
 <p><strong>Trụ sở:</strong> Tầng 6, Tháp Thể Thao Đống Đa, TP. Hà Nội</p></div>
                                     </details>
@@ -470,7 +470,7 @@
 <h3>Điều 7. Thông tin Liên hệ</h3>
 <p>Mọi thắc mắc và khiếu nại về dịch vụ xin vui lòng liên hệ:</p>
 <p><strong>Đơn vị vận hành:</strong> SportBooking Hà Nội</p>
-<p><strong>Hotline hỗ trợ 24/7:</strong> 1900 8899</p>
+<p><strong>Hotline hỗ trợ 24/7:</strong> <span data-support-hotline></span></p>
 <p><strong>Email tiếp nhận:</strong> support@sportbooking.vn</p>
 <p><strong>Trụ sở:</strong> Tầng 6, Tháp Thể Thao Đống Đa, TP. Hà Nội</p></div>
                                     </details>
@@ -524,30 +524,12 @@
         </div>
     </main>
 
-    <!-- FOOTER ĐỒNG BỘ -->
-    <footer class="w-full bg-[#f1f3ff] border-t border-gray-200 shadow-[0_-1px_6px_rgba(0,0,0,0.02)]">
-        <div class="max-w-[1440px] mx-auto px-margin py-8 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div class="flex flex-col gap-1 text-left">
-                <div class="flex items-center gap-2">
-                    <span class="font-bold text-base text-primary">SportBooking Hà Nội</span>
-                    <span class="text-on-surface-variant text-xs">| Nền tảng đặt sân thể thao thông minh</span>
-                </div>
-                <p class="text-on-surface-variant text-xs">Hệ thống đặt sân thể thao SportBooking Hà Nội - Đặt sân trực tuyến nhanh chóng, tiện lợi &amp; chuẩn xác</p>
-                <p class="text-on-surface text-sm">Hotline hỗ trợ 24/7: <span class="font-bold text-secondary">1900 8899</span></p>
-            </div>
-            <div class="flex flex-col md:items-end gap-1.5">
-                <div class="flex flex-wrap items-center gap-3 text-xs text-on-surface-variant">
-                    <a class="hover:text-primary transition-colors" href="#legal-terms">Điều khoản sử dụng</a>
-                    <span>•</span>
-                    <a class="hover:text-primary transition-colors" href="#legal-privacy">Chính sách bảo mật</a>
-                </div>
-                <p class="text-xs text-on-surface-variant">© 2026 SportBooking Hà Nội. Tất cả các quyền được bảo lưu.</p>
-            </div>
-        </div>
-    </footer>
+    <div data-shared-footer></div>
 
     
     
+    <script src="/shared/support-constants.js" defer></script>
+    <script src="/shared/footer.js" defer></script>
     <script src="/shared/app.js" defer></script>
 </body>
 </html>

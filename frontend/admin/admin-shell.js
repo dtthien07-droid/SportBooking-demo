@@ -50,22 +50,6 @@
       list.append(row);
     }
 
-    const settingRow = pageDocument.createElement('li');
-    const disabled = pageDocument.createElement('span');
-    disabled.className = 'admin-sidebar__link is-disabled';
-    disabled.setAttribute('aria-disabled', 'true');
-    const settingIcon = pageDocument.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    settingIcon.classList.add('admin-sidebar__icon');
-    settingIcon.setAttribute('data-sb-icon', 'tune');
-    settingIcon.setAttribute('aria-hidden', 'true');
-    const settingLabel = pageDocument.createElement('span');
-    settingLabel.textContent = 'Cài đặt hệ thống';
-    const soon = pageDocument.createElement('span');
-    soon.className = 'admin-sidebar__soon';
-    soon.textContent = 'Sắp có';
-    disabled.append(settingIcon, settingLabel, soon);
-    settingRow.append(disabled);
-    list.append(settingRow);
     navigation.replaceChildren(list);
     pageDocument.defaultView?.SportBookingIcons?.renderAll?.(navigation);
   }
@@ -230,8 +214,8 @@
         hourCycle: 'h23',
         timeZone: 'Asia/Ho_Chi_Minh'
       }).format(state.lastUpdatedAt)}`
-      : state.status === 'offline' ? 'Mất kết nối' : 'Đang đồng bộ';
-    status.dataset.state = state.status;
+      : 'Đang đồng bộ';
+    status.dataset.state = state.status === 'synced' ? 'synced' : 'retrying';
     status.textContent = label;
   }
 

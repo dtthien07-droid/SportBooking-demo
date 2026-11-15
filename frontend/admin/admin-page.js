@@ -3,8 +3,12 @@
 (() => {
   const state = window.SportBookingAdminPageState;
   const api = window.SportBookingAdminApi;
+  const exportDownload = window.SportBookingExportDownload;
   const shell = window.SportBookingAdminShell;
-  if (!state || !api || !shell) throw new Error('Thiếu cấu hình trang quản trị.');
+  const incidentDialogApi = window.SportBookingIncidentCancelDialog;
+  if (!state || !api || !exportDownload || !shell || !incidentDialogApi) {
+    throw new Error('Thiếu cấu hình trang quản trị.');
+  }
   shell.mountAdminShell({ active: 'bookings' });
 
   const elements = {
@@ -25,7 +29,7 @@
     retryFacilities: document.getElementById('retryFacilities'),
     applyFilters: document.getElementById('applyBookingFilters'),
     resetFilters: document.getElementById('resetBookingFilters'),
-    filterDraftStatus: document.getElementById('filterDraftStatus'),
+    exportButton: document.getElementById('exportBookings'),
     rows: document.getElementById('bookingRows'),
     rowTemplate: document.getElementById('bookingRowTemplate'),
     pageTemplate: document.getElementById('paginationPageTemplate'),
@@ -35,15 +39,7 @@
     previousPage: document.getElementById('previousPage'),
     nextPage: document.getElementById('nextPage'),
     refreshButtons: [...document.querySelectorAll('#refreshBookings, #refreshBookingsIcon')],
-    focusBookingSearch: document.getElementById('focusBookingSearch'),
-    notice: document.getElementById('adminNotice'),
-    modal: document.getElementById('cancellationModal'),
-    dialog: document.getElementById('cancellationDialog'),
-    form: document.getElementById('cancellationForm'),
-    reason: document.getElementById('cancellationReason'),
-    reasonCount: document.getElementById('cancellationReasonCount'),
-    reasonError: document.getElementById('cancellationError'),
-    confirm: document.getElementById('confirmCancellation')
+    notice: document.getElementById('adminNotice')
   };
   const PAGE_SIZE = 10;
   const COUNT_FILTERS = Object.freeze([
@@ -56,10 +52,6 @@
   let filterState = state.restoreFilterState(window.location.search);
   let totalPages = 1;
   let facilities = [];
-  let activeBooking = null;
-  let cancelTrigger = null;
-  let bodyOverflowBeforeModal = '';
-  let cancellationInProgress = false;
   let noticeTimer = null;
   let bookingsRequestId = 0;
   let dashboardRequestId = 0;
@@ -96,12 +88,6 @@
     elements.search.value = filterState.draft.query;
     elements.date.value = filterState.draft.date;
     elements.facility.value = filterState.draft.facilityId;
-    const hasUnappliedFilters = state.hasUnappliedFilters(filterState);
-    elements.filterDraftStatus.hidden = !hasUnappliedFilters;
-    elements.applyFilters.setAttribute(
-      'data-dirty',
-      String(hasUnappliedFilters)
-    );
   }
 
   function syncFilterUrl() {
@@ -281,17 +267,6 @@
     return /^-?\d+$/.test(revenue) && BigInt(revenue) !== 0n;
   }
 
-  function setDashboardError() {
-    elements.dashboardMessage.dataset.kind = 'error';
-    elements.dashboardMessage.replaceChildren(
-      document.createTextNode('Không thể tải số liệu. ')
-    );
-    const retry = makeElement('button', 'admin-button admin-button--quiet', 'Thử lại');
-    retry.type = 'button';
-    retry.addEventListener('click', loadDashboard);
-    elements.dashboardMessage.append(retry);
-  }
-
   async function loadDashboard(isPolling = false) {
     const requestId = ++dashboardRequestId;
     elements.dashboardMessage.dataset.kind = 'info';
@@ -309,8 +284,11 @@
       delete elements.dashboardMessage.dataset.kind;
     } catch (error) {
       if (redirectForStatus(error.status)) return;
-      if (requestId === dashboardRequestId) setDashboardError();
-      if (isPolling && requestId === countsRequestId) throw error;
+      if (requestId === dashboardRequestId && !isPolling) {
+        elements.dashboardMessage.textContent = '';
+        delete elements.dashboardMessage.dataset.kind;
+      }
+      if (isPolling) throw error;
     }
   }
 
@@ -422,11 +400,12 @@
       row.setAttribute('data-new-booking', 'true');
       row.setAttribute('aria-label', 'Đơn đặt sân mới');
     }
+    const canCancel = booking.can_cancel_incident === true;
     const cancel = row.querySelector('[data-action="cancel"]');
-    const emptyAction = setField('action-empty', model.canCancel ? '' : '—');
-    emptyAction.hidden = model.canCancel;
-    cancel.hidden = !model.canCancel;
-    if (model.canCancel) cancel.addEventListener('click', () => openCancellation(booking, cancel));
+    const emptyAction = setField('action-empty', canCancel ? '' : '—');
+    emptyAction.hidden = canCancel;
+    cancel.hidden = !canCancel;
+    if (canCancel) cancel.addEventListener('click', () => openCancellation(booking, cancel));
     return row;
   }
 
@@ -547,7 +526,7 @@
       setTabCounts(values);
     } catch (error) {
       if (redirectForStatus(error.status)) return;
-      if (requestId === countsRequestId) {
+      if (!isPolling && requestId === countsRequestId) {
         showNotice('Không thể cập nhật số lượng theo trạng thái. Vui lòng tải lại danh sách.', 'error');
       }
       if (isPolling) throw error;
@@ -647,7 +626,6 @@
       if (redirectForStatus(error.status)) return;
       if (requestId !== bookingsRequestId) return;
       if (isPolling) {
-        showNotice(error.message || 'Không thể cập nhật danh sách đơn.', 'error');
         throw error;
       } else {
         appendEmptyState(error.message || 'Không thể tải danh sách đơn.', 'Thử lại', loadBookings);
@@ -657,163 +635,20 @@
     await countsPromise;
   }
 
-  function getOwnerLabel(booking) {
-    const owner = booking.owner && typeof booking.owner === 'object' ? booking.owner : {};
-    return owner.full_name || owner.email || 'Chưa cập nhật';
-  }
-
-  function clearReasonError() {
-    elements.reasonError.hidden = true;
-    elements.reasonError.textContent = '';
-    elements.reason.removeAttribute('aria-invalid');
-  }
-
-  function setReasonError(message) {
-    elements.reasonError.textContent = message;
-    elements.reasonError.hidden = false;
-    elements.reason.setAttribute('aria-invalid', 'true');
-  }
-
-  function updateReasonControls() {
-    elements.reasonCount.textContent = `${elements.reason.value.length}/500 ký tự`;
-    elements.confirm.disabled = cancellationInProgress
-      || !state.isValidCancellationReason(elements.reason.value);
-  }
-
   function openCancellation(booking, trigger) {
-    if (!state.canCancelIncident(booking.status)) return;
-    activeBooking = booking;
-    cancelTrigger = trigger;
-    cancellationInProgress = false;
-    document.getElementById('modalBookingCode').textContent = booking.booking_code || 'Chưa có mã đơn';
-    document.getElementById('modalOwner').textContent = getOwnerLabel(booking);
-    document.getElementById('modalVenue').textContent = state.getVenueLabel(booking);
-    document.getElementById('modalSchedule').textContent = state.formatSchedule(booking);
-    document.getElementById('modalPaidAmount').textContent = state.formatMoney(booking.paid_amount);
-    document.getElementById('cancellationRefund').textContent =
-      `Hoàn 100% số đã trả: ${state.formatMoney(booking.paid_amount)}, không áp dụng bảng hoàn của người dùng`;
-    elements.reason.value = '';
-    clearReasonError();
-    updateReasonControls();
-    elements.modal.hidden = false;
-    bodyOverflowBeforeModal = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    document.addEventListener('keydown', onModalKeydown);
-    window.requestAnimationFrame(() => elements.reason.focus());
+    incidentCancellationDialog.open(booking, trigger);
   }
 
-  function getDialogFocusableElements() {
-    return [...elements.dialog.querySelectorAll(
-      'button:not([disabled]), textarea:not([disabled]), input:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'
-    )].filter((element) => !element.hidden);
-  }
-
-  function closeCancellation() {
-    if (elements.modal.hidden || cancellationInProgress) return;
-    elements.modal.hidden = true;
-    document.body.style.overflow = bodyOverflowBeforeModal;
-    document.removeEventListener('keydown', onModalKeydown);
-    activeBooking = null;
-    if (cancelTrigger?.isConnected) cancelTrigger.focus();
-  }
-
-  function onModalKeydown(event) {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      closeCancellation();
-      return;
-    }
-    if (event.key !== 'Tab') return;
-    const focusable = getDialogFocusableElements();
-    if (focusable.length === 0) {
-      event.preventDefault();
-      elements.dialog.focus();
-      return;
-    }
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  }
-
-  function unlockCancellationControls() {
-    cancellationInProgress = false;
-    elements.reason.disabled = false;
-    document.querySelectorAll('[data-modal-close]').forEach((button) => {
-      button.disabled = false;
-    });
-    elements.confirm.textContent = 'Xác nhận hủy do sự cố';
-    updateReasonControls();
-  }
-
-  function closeForCancellationResult() {
-    cancellationInProgress = false;
-    closeCancellation();
-  }
-
-  async function handleCancellationFailure(error) {
-    const action = state.getCancellationErrorAction(error.status);
-    const message = state.getCancellationErrorMessage(error.status, error.code, error.message);
-    if (action === 'login' || action === 'home') {
-      redirectForStatus(error.status);
-      return;
-    }
-    if (action === 'reason') {
-      setReasonError(message);
-      return;
-    }
-    if (action === 'not-found') {
-      closeForCancellationResult();
-      showNotice(message, 'error');
-      await loadBookings();
-      return;
-    }
-    if (action === 'refresh') {
-      closeForCancellationResult();
-      showNotice(message, 'error');
-      await loadBookings();
-      return;
-    }
-    setReasonError(message);
-  }
-
-  async function submitCancellation(event) {
-    event.preventDefault();
-    if (!state.isValidCancellationReason(elements.reason.value)) {
-      setReasonError('Vui lòng nhập lý do từ 3 đến 500 ký tự.');
-      elements.reason.focus();
-      updateReasonControls();
-      return;
-    }
-    if (!activeBooking || cancellationInProgress) return;
-
-    const booking = activeBooking;
-    clearReasonError();
-    cancellationInProgress = true;
-    elements.reason.disabled = true;
-    document.querySelectorAll('[data-modal-close]').forEach((button) => {
-      button.disabled = true;
-    });
-    elements.confirm.disabled = true;
-    elements.confirm.textContent = 'Đang gửi yêu cầu...';
-    try {
-      const result = await api.cancelIncident(booking.booking_id, elements.reason.value.trim());
-      closeForCancellationResult();
+  const incidentCancellationDialog = incidentDialogApi.mount({
+    onSubmit: (booking, reason) => api.cancelIncident(booking.booking_id, reason),
+    onSuccess: async (result, booking) => {
       showNotice(
         `Đã hủy đơn ${booking.booking_code || booking.booking_id} do sự cố. Số tiền hoàn theo máy chủ: ${state.formatMoney(result.refunded_amount)}.`
       );
       await Promise.all([loadDashboard(), loadBookings()]);
-    } catch (error) {
-      await handleCancellationFailure(error);
-    } finally {
-      unlockCancellationControls();
-    }
-  }
+    },
+    onError: (error) => redirectForStatus(error.status)
+  });
 
   function selectTab(selected) {
     filterState = state.setAppliedStatus(filterState, selected.dataset.filter || '');
@@ -829,6 +664,24 @@
     renderSelectedTab();
     syncFilterUrl();
     Promise.all([loadDashboard(), loadBookings()]);
+  }
+
+  async function downloadBookingsExport() {
+    return exportDownload.download(
+      elements.exportButton,
+      elements.notice,
+      () => api.exportBookings(state.buildExportFilters(filterState)),
+      {
+        successMessage: 'Đã tải tệp Excel đơn đặt sân.',
+        onSuccess: () => showNotice('Đã tải tệp Excel đơn đặt sân.'),
+        onError: (error) => {
+          if (!redirectForStatus(error.status)) {
+            showNotice(error.message || 'Không thể xuất dữ liệu đơn đặt sân.', 'error');
+          }
+          return true;
+        }
+      }
+    );
   }
 
   function resetFiltersAndLoad() {
@@ -865,7 +718,7 @@
   elements.refreshButtons.forEach((button) => {
     button.addEventListener('click', () => Promise.all([loadDashboard(), loadBookings()]));
   });
-  elements.focusBookingSearch.addEventListener('click', () => elements.search.focus());
+  elements.exportButton.addEventListener('click', downloadBookingsExport);
   elements.filters.addEventListener('submit', applyFilters);
   elements.search.addEventListener('input', () => updateDraftFilter('query', elements.search.value));
   elements.date.addEventListener('input', () => updateDraftFilter('date', elements.date.value));
@@ -883,14 +736,6 @@
     filterState = state.setAppliedPage(filterState, filterState.applied.page + 1);
     syncFilterUrl();
     loadBookings();
-  });
-  elements.form.addEventListener('submit', submitCancellation);
-  elements.reason.addEventListener('input', () => {
-    if (elements.reason.value.trim()) clearReasonError();
-    updateReasonControls();
-  });
-  document.querySelectorAll('[data-modal-close]').forEach((button) => {
-    button.addEventListener('click', closeCancellation);
   });
   elements.guardRetry.addEventListener('click', authorize);
   window.addEventListener('hashchange', () => {

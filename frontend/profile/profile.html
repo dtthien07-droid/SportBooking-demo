@@ -6,108 +6,247 @@
   <meta name="theme-color" content="#006b2c">
   <title>Hồ sơ cá nhân | SportBooking</title>
 
-
-
-
   <link rel="stylesheet" href="/app.css">
   <link rel="stylesheet" href="/shared/header.css">
+  <link rel="stylesheet" href="/profile/profile.css">
+  <script src="/shared/icons.js"></script>
   <script src="/shared/header-state.js" defer></script>
   <script src="/shared/header.js" defer></script>
   <script src="/shared/app.js" defer></script>
-    <script src="/shared/icons.js"></script>
+  <script src="/profile/profile-view.js" defer></script>
 </head>
-<body data-page="profile">
+<body class="bg-surface font-['Be_Vietnam_Pro'] text-on-surface antialiased" data-page="profile">
   <div data-shared-header></div>
-  <main class="sb-container sb-main-layout sb-profile-layout">
-    <a class="sb-back-link" href="/auth/login.html" data-back data-fallback="/auth/login.html">
-      <span aria-hidden="true">←</span> Quay lại
-    </a>
-    <section class="sb-card sb-profile-card" aria-labelledby="page-title">
-      <header class="sb-profile-heading">
-        <p class="sb-auth-eyebrow">Tài khoản của bạn</p>
-        <h1 id="page-title">Hồ sơ cá nhân</h1>
-        <p class="sb-auth-intro">Cập nhật thông tin và bảo vệ tài khoản của bạn.</p>
+  <main class="sb-container sb-main-layout sb-profile-layout profile-page">
+    <div class="profile-page__inner max-w-[1440px] px-margin py-space-xl">
+      <a class="sb-back-link profile-back-link" href="/auth/login.html" data-back data-fallback="/auth/login.html">
+        <svg class="profile-icon" data-sb-icon="arrow_back"></svg>
+        <span>Quay lại</span>
+      </a>
+
+      <header class="profile-page__heading">
+        <p class="profile-page__eyebrow">Tài khoản của bạn</p>
+        <h1 id="page-title" class="profile-page__title">Hồ sơ cá nhân</h1>
+        <p class="profile-page__intro">Cập nhật thông tin và bảo vệ tài khoản của bạn.</p>
       </header>
-      <p class="sb-notice" role="status" aria-live="polite" data-notice hidden></p>
-      <div class="sb-loading-state" data-profile-loading role="status">
+
+      <p class="sb-notice profile-notice" role="status" aria-live="polite" data-notice hidden></p>
+      <div class="sb-loading-state profile-loading" data-profile-loading role="status">
         <span class="sb-spinner" aria-hidden="true"></span>
         <span>Đang tải hồ sơ…</span>
       </div>
-      <div class="sb-empty-state" data-profile-error hidden>
+      <div class="sb-empty-state profile-error" data-profile-error hidden>
         <p>Chưa tải được hồ sơ của bạn.</p>
         <button class="sb-btn sb-btn-outline" type="button" data-retry>Tải lại</button>
       </div>
-      <div data-profile-content hidden>
-        <form class="sb-form-stack sb-section-form" data-form="profile" novalidate>
-          <h2>Thông tin cá nhân</h2>
-          <div class="sb-field">
-            <label class="sb-field-label" for="profile-full-name">Họ và tên</label>
-            <input class="sb-field-input" id="profile-full-name" name="fullName" type="text" autocomplete="name" maxlength="120" required
-              aria-describedby="profile-full-name-error">
-            <p class="sb-field-error" id="profile-full-name-error" data-field-error="fullName"></p>
-          </div>
-          <div class="sb-field">
-            <label class="sb-field-label" for="profile-email">Email</label>
-            <input class="sb-field-input" id="profile-email" name="email" type="email" autocomplete="email" readonly>
-          </div>
-          <div class="sb-field">
-            <label class="sb-field-label" for="profile-phone">Số điện thoại</label>
-            <input class="sb-field-input" id="profile-phone" name="phone" type="tel" autocomplete="tel" maxlength="20" required
-              aria-describedby="profile-phone-error">
-            <p class="sb-field-error" id="profile-phone-error" data-field-error="phone"></p>
-          </div>
-          <div class="sb-field-row">
-            <div class="sb-field">
-              <label class="sb-field-label" for="profile-gender">Giới tính</label>
-              <select class="sb-field-input" id="profile-gender" name="gender">
-                <option value="">Chưa cập nhật</option>
-                <option value="MALE">Nam</option>
-                <option value="FEMALE">Nữ</option>
-                <option value="OTHER">Khác</option>
-              </select>
-              <p class="sb-field-error" data-field-error="gender"></p>
+
+      <div class="profile-layout-grid grid grid-cols-1 lg:grid-cols-12" data-profile-content hidden>
+        <aside class="profile-sidebar lg:col-span-4">
+          <section class="profile-summary bg-surface-container-lowest rounded-xl p-space-lg shadow-sm"
+            aria-label="Tóm tắt hồ sơ">
+            <div class="profile-summary__avatar-wrap">
+              <span class="profile-summary__avatar" data-profile-summary-avatar aria-hidden="true"></span>
             </div>
-            <div class="sb-field">
-              <label class="sb-field-label" for="profile-skill">Trình độ</label>
-              <select class="sb-field-input" id="profile-skill" name="skillLevel">
-                <option value="">Chưa cập nhật</option>
-                <option value="BEGINNER">Mới chơi</option>
-                <option value="INTERMEDIATE">Trung bình</option>
-                <option value="GOOD">Khá</option>
-              </select>
-              <p class="sb-field-error" data-field-error="skillLevel"></p>
-            </div>
-          </div>
-          <p class="sb-profile-role" data-profile-role></p>
-          <button class="sb-btn sb-btn-primary" type="submit" data-submit
-            data-idle-label="Lưu thay đổi" data-loading-label="Đang lưu…">Lưu thay đổi</button>
-        </form>
-        <form class="sb-form-stack sb-section-form" data-form="password" novalidate>
-          <h2>Đổi mật khẩu</h2>
-          <div class="sb-field">
-            <label class="sb-field-label" for="current-password">Mật khẩu hiện tại</label>
-            <input class="sb-field-input" id="current-password" name="currentPassword" type="password" autocomplete="current-password" required
-              aria-describedby="current-password-error">
-            <p class="sb-field-error" id="current-password-error" data-field-error="currentPassword"></p>
-          </div>
-          <div class="sb-field">
-            <label class="sb-field-label" for="new-password">Mật khẩu mới <span class="sb-label-hint">(ít nhất 8 ký tự)</span></label>
-            <input class="sb-field-input" id="new-password" name="newPassword" type="password" autocomplete="new-password" required
-              aria-describedby="new-password-error">
-            <p class="sb-field-error" id="new-password-error" data-field-error="newPassword"></p>
-          </div>
-          <div class="sb-field">
-            <label class="sb-field-label" for="confirm-new-password">Nhập lại mật khẩu mới</label>
-            <input class="sb-field-input" id="confirm-new-password" name="confirmNewPassword" type="password" autocomplete="new-password" required
-              aria-describedby="confirm-new-password-error">
-            <p class="sb-field-error" id="confirm-new-password-error" data-field-error="confirmNewPassword"></p>
-          </div>
-          <button class="sb-btn sb-btn-secondary" type="submit" data-submit
-            data-idle-label="Cập nhật mật khẩu" data-loading-label="Đang cập nhật…">Cập nhật mật khẩu</button>
-        </form>
+            <h2 class="profile-summary__name" data-profile-summary-name></h2>
+            <span class="profile-role-badge">
+              <svg class="profile-icon" data-sb-icon="military_tech"></svg>
+              <span data-profile-role></span>
+            </span>
+            <dl class="profile-summary__details">
+              <div class="profile-summary__detail">
+                <dt>
+                  <svg class="profile-icon profile-icon--small" data-sb-icon="phone"></svg>
+                  Số điện thoại
+                </dt>
+                <dd data-profile-summary-phone></dd>
+              </div>
+              <div class="profile-summary__detail">
+                <dt>
+                  <svg class="profile-icon profile-icon--small" data-sb-icon="mail"></svg>
+                  Email
+                </dt>
+                <dd data-profile-summary-email></dd>
+              </div>
+            </dl>
+          </section>
+
+          <nav class="profile-navigation bg-surface-container-lowest rounded-xl p-space-md shadow-sm"
+            aria-label="Điều hướng hồ sơ">
+            <a class="profile-navigation__link is-active" href="#profile-account">
+              <span><svg class="profile-icon" data-sb-icon="person"></svg>Thông tin cá nhân</span>
+              <svg class="profile-icon profile-icon--small" data-sb-icon="chevron_right"></svg>
+            </a>
+            <a class="profile-navigation__link" href="/lich-su-dat-san.html">
+              <span><svg class="profile-icon" data-sb-icon="calendar_month"></svg>Lịch sử đặt sân</span>
+              <svg class="profile-icon profile-icon--small" data-sb-icon="chevron_right"></svg>
+            </a>
+            <a class="profile-navigation__link" href="/thong-bao.html">
+              <span><svg class="profile-icon" data-sb-icon="notifications"></svg>Thông báo</span>
+              <svg class="profile-icon profile-icon--small" data-sb-icon="chevron_right"></svg>
+            </a>
+            <a class="profile-navigation__link" href="#profile-password">
+              <span><svg class="profile-icon" data-sb-icon="lock"></svg>Đổi mật khẩu</span>
+              <svg class="profile-icon profile-icon--small" data-sb-icon="chevron_right"></svg>
+            </a>
+          </nav>
+        </aside>
+
+        <section class="profile-main lg:col-span-8" aria-labelledby="profile-main-title">
+          <section class="profile-card bg-surface-container-lowest rounded-xl p-space-lg shadow-sm"
+            id="profile-account" aria-labelledby="profile-main-title">
+            <header class="profile-card__heading">
+              <div>
+                <h2 class="profile-card__title font-headline-sm" id="profile-main-title">Thông tin tài khoản</h2>
+                <p class="profile-card__description font-body-sm">
+                  Quản lý thông tin cá nhân dùng để nhận diện khi nhận sân.
+                </p>
+              </div>
+              <span class="profile-security-badge">
+                <svg class="profile-icon profile-icon--small" data-sb-icon="shield"></svg>
+                Thông tin tài khoản
+              </span>
+            </header>
+
+            <form class="profile-form" data-form="profile" novalidate>
+              <div class="profile-form-grid">
+                <div class="profile-field">
+                  <label class="profile-field__label font-label-md" for="profile-full-name">Họ và tên</label>
+                  <div class="profile-field__control">
+                    <svg class="profile-field__icon" data-sb-icon="badge"></svg>
+                    <input class="sb-field-input profile-input focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                      id="profile-full-name" name="fullName" type="text" autocomplete="name" maxlength="120" required
+                      aria-describedby="profile-full-name-error">
+                  </div>
+                  <p class="sb-field-error profile-field-error" id="profile-full-name-error"
+                    data-field-error="fullName"></p>
+                </div>
+
+                <div class="profile-field">
+                  <label class="profile-field__label font-label-md" for="profile-gender">Giới tính</label>
+                  <div class="profile-field__control">
+                    <svg class="profile-field__icon" data-sb-icon="wc"></svg>
+                    <select class="sb-field-input profile-input profile-select focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                      id="profile-gender" name="gender" aria-describedby="profile-gender-error">
+                      <option value="">Chưa cập nhật</option>
+                      <option value="MALE">Nam</option>
+                      <option value="FEMALE">Nữ</option>
+                      <option value="OTHER">Khác</option>
+                    </select>
+                    <svg class="profile-field__chevron" data-sb-icon="expand_more"></svg>
+                  </div>
+                  <p class="sb-field-error profile-field-error" id="profile-gender-error"
+                    data-field-error="gender"></p>
+                </div>
+
+                <div class="profile-field">
+                  <label class="profile-field__label font-label-md" for="profile-skill">Trình độ</label>
+                  <div class="profile-field__control">
+                    <svg class="profile-field__icon" data-sb-icon="military_tech"></svg>
+                    <select class="sb-field-input profile-input profile-select focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                      id="profile-skill" name="skillLevel" aria-describedby="profile-skill-error">
+                      <option value="">Chưa cập nhật</option>
+                      <option value="BEGINNER">Mới chơi</option>
+                      <option value="INTERMEDIATE">Trung bình</option>
+                      <option value="GOOD">Khá</option>
+                    </select>
+                    <svg class="profile-field__chevron" data-sb-icon="expand_more"></svg>
+                  </div>
+                  <p class="sb-field-error profile-field-error" id="profile-skill-error"
+                    data-field-error="skillLevel"></p>
+                </div>
+
+                <div class="profile-field">
+                  <label class="profile-field__label font-label-md" for="profile-phone">Số điện thoại</label>
+                  <div class="profile-field__control">
+                    <svg class="profile-field__icon" data-sb-icon="phone"></svg>
+                    <input class="sb-field-input profile-input focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                      id="profile-phone" name="phone" type="tel" autocomplete="tel" maxlength="20" required
+                      aria-describedby="profile-phone-error">
+                  </div>
+                  <p class="sb-field-error profile-field-error" id="profile-phone-error"
+                    data-field-error="phone"></p>
+                </div>
+
+                <div class="profile-field profile-field--full">
+                  <label class="profile-field__label font-label-md" for="profile-email">Địa chỉ email</label>
+                  <div class="profile-field__control">
+                    <svg class="profile-field__icon" data-sb-icon="mail"></svg>
+                    <input class="sb-field-input profile-input focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                      id="profile-email" name="email" type="email" autocomplete="email" readonly>
+                  </div>
+                </div>
+              </div>
+
+              <button class="sb-btn sb-btn-primary profile-save-button" type="submit" data-submit
+                data-idle-label="Lưu thay đổi" data-loading-label="Đang lưu…">Lưu thay đổi</button>
+            </form>
+          </section>
+
+          <section class="profile-card bg-surface-container-lowest rounded-xl p-space-lg shadow-sm"
+            id="profile-password" aria-labelledby="profile-password-title">
+            <header class="profile-card__heading">
+              <div>
+                <h2 class="profile-card__title font-headline-sm" id="profile-password-title">Đổi mật khẩu</h2>
+                <p class="profile-card__description font-body-sm">
+                  Dùng mật khẩu hiện tại để bảo vệ tài khoản của bạn.
+                </p>
+              </div>
+            </header>
+
+            <form class="profile-form" data-form="password" novalidate>
+              <div class="profile-field">
+                <label class="profile-field__label font-label-md" for="current-password">Mật khẩu hiện tại</label>
+                <div class="profile-field__control">
+                  <svg class="profile-field__icon" data-sb-icon="lock"></svg>
+                  <input class="sb-field-input profile-input focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                    id="current-password" name="currentPassword" type="password" autocomplete="current-password" required
+                    aria-describedby="current-password-error">
+                </div>
+                <p class="sb-field-error profile-field-error" id="current-password-error"
+                  data-field-error="currentPassword"></p>
+              </div>
+
+              <div class="profile-field">
+                <label class="profile-field__label font-label-md" for="new-password">
+                  Mật khẩu mới <span class="profile-field__hint">(ít nhất 8 ký tự)</span>
+                </label>
+                <div class="profile-field__control">
+                  <svg class="profile-field__icon" data-sb-icon="lock"></svg>
+                  <input class="sb-field-input profile-input focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                    id="new-password" name="newPassword" type="password" autocomplete="new-password" required
+                    aria-describedby="new-password-error">
+                </div>
+                <p class="sb-field-error profile-field-error" id="new-password-error"
+                  data-field-error="newPassword"></p>
+              </div>
+
+              <div class="profile-field">
+                <label class="profile-field__label font-label-md" for="confirm-new-password">
+                  Nhập lại mật khẩu mới
+                </label>
+                <div class="profile-field__control">
+                  <svg class="profile-field__icon" data-sb-icon="lock"></svg>
+                  <input class="sb-field-input profile-input focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+                    id="confirm-new-password" name="confirmNewPassword" type="password" autocomplete="new-password" required
+                    aria-describedby="confirm-new-password-error">
+                </div>
+                <p class="sb-field-error profile-field-error" id="confirm-new-password-error"
+                  data-field-error="confirmNewPassword"></p>
+              </div>
+
+              <button class="sb-btn sb-btn-primary profile-save-button" type="submit" data-submit
+                data-idle-label="Cập nhật mật khẩu" data-loading-label="Đang cập nhật…">
+                Cập nhật mật khẩu
+              </button>
+            </form>
+          </section>
+        </section>
       </div>
-    </section>
-    <footer class="sb-site-footer"><p>SportBooking · Đặt sân thể thao dễ dàng</p></footer>
+
+      <footer class="sb-site-footer profile-footer">
+        <p>SportBooking · Đặt sân thể thao dễ dàng</p>
+      </footer>
+    </div>
   </main>
 </body>
 </html>

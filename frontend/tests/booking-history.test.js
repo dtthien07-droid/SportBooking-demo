@@ -325,7 +325,7 @@ function createHistoryPageRuntime(record, facilityImageUrl = null) {
       async listBookings() {
         apiCalls.push('listBookings');
         return {
-          bookings: [record],
+          bookings: Array.isArray(record) ? record : [record],
           pagination: { page: 1, total_pages: 1, total: 1 }
         };
       },
@@ -678,6 +678,8 @@ test('dựng thẻ offline cho PENDING, CONFIRMED, CANCELLED và EXPIRED có ả
       booking_code: `SPB-20261111-00000${index}`,
       status: item.status,
       display_status_code: item.displayStatus,
+      payment_status: item.status === 'CONFIRMED' ? 'PAID' : null,
+      ticket: item.status === 'CONFIRMED' ? { qr_code: 'QR-TEST' } : null,
       remaining_seconds: 90,
       paid_amount: '120000',
       slots: [{
@@ -771,16 +773,167 @@ test('PENDING còn hạn hiển thị nhãn, đồng hồ và nút tiếp tục 
 });
 
 test('CONFIRMED hiển thị nút mở vé', () => {
-  const view = getBookingPresentation(booking('CONFIRMED', 'UPCOMING'));
+  const view = getBookingPresentation(booking('CONFIRMED', 'UPCOMING', {
+    payment_status: 'PAID',
+    ticket: { qr_code: 'QR-TEST' }
+  }));
   assert.equal(view.action, 'view-ticket');
   assert.equal(view.href, '/ve-dien-tu.html?booking_id=42&from=%2Flich-su-dat-san.html');
   assert.equal(view.label, 'Sắp tới');
 });
 
 test('CONFIRMED đang diễn ra vẫn hiển thị nút mở vé', () => {
-  const view = getBookingPresentation(booking('CONFIRMED', 'IN_PROGRESS'));
+  const view = getBookingPresentation(booking('CONFIRMED', 'IN_PROGRESS', {
+    payment_status: 'PAID',
+    ticket: { qr_code: 'QR-TEST' }
+  }));
   assert.equal(view.action, 'view-ticket');
   assert.equal(view.label, 'Đang trong trận');
+});
+
+test('vé thiếu mã QR được đánh dấu vô hiệu thay vì làm hỏng trạng thái đơn', () => {
+  const view = getBookingPresentation(booking('CONFIRMED', 'UPCOMING', {
+    payment_status: 'PAID',
+    ticket: {}
+  }));
+  assert.equal(view.ticketPresentation.status, 'invalid');
+  assert.equal(view.ticketPresentation.label, 'Vé: Đã vô hiệu');
+  assert.match(view.ticketPresentation.reason, /thiếu mã QR/);
+});
+
+test('một vé thiếu QR không làm hỏng các thẻ đơn khác trong danh sách', async () => {
+  const validBooking = {
+    ...booking('CONFIRMED', 'UPCOMING', {
+      payment_status: 'PAID',
+      ticket: { qr_code: 'QR-VALID' }
+    }),
+    slots: [{
+      facility_id: '7',
+      facility_name: 'Sân mẫu',
+      court_name: 'Sân 1',
+      sport_type: 'BADMINTON',
+      service_date: '2026-11-12',
+      starts_at: '10:00:00',
+      ends_at: '11:00:00'
+    }]
+  };
+  const missingQrBooking = {
+    ...validBooking,
+    booking_id: '43',
+    ticket: {}
+  };
+  const runtime = await createHistoryPageRuntime([validBooking, missingQrBooking]);
+  assert.equal(runtime.list.children.length, 2);
+  assert.equal(runtime.list.children[0].querySelector('[data-ticket-status]').dataset.ticketStatus, 'valid');
+  assert.equal(runtime.list.children[1].querySelector('[data-ticket-status]').dataset.ticketStatus, 'invalid');
+});
+
+test('trang 1 hiển thị 10 đơn và trang 6 hiển thị đủ 9 đơn từ dữ liệu fixture', async () => {
+  const slot = {
+    facility_id: '10',
+    facility_name: 'Âu Lạc Pickleball',
+    court_name: 'Sân 1',
+    sport_type: 'PICKLEBALL',
+    service_date: '2026-11-09',
+    starts_at: '15:00:00',
+    ends_at: '16:00:00'
+  };
+  const record = (id, status, displayStatusCode, extra = {}) => booking(status, displayStatusCode, {
+    booking_id: String(id),
+    booking_code: `SPB-${id}`,
+    payment_status: 'PENDING',
+    ticket: null,
+    paid_amount: '0',
+    slots: [{ ...slot }],
+    ...extra
+  });
+  const pageOne = Array.from({ length: 10 }, (_, index) => record(
+    61 - index,
+    'COMPLETED',
+    'COMPLETED',
+    { payment_status: 'PAID', ticket: { qr_code: 'QR-TEST' } }
+  ));
+  const pageSix = [
+    record(10, 'CANCELLED', 'CANCELLED'),
+    record(9, 'COMPLETED', 'COMPLETED', { payment_status: 'PAID', ticket: { qr_code: 'QR-TEST' } }),
+    record(8, 'CANCELLED', 'CANCELLED'),
+    record(7, 'CANCELLED', 'CANCELLED'),
+    ...[6, 5, 4, 3].map((id) => record(id, 'EXPIRED', 'EXPIRED')),
+    record(2, 'EXPIRED', 'EXPIRED', { slots: [{ ...slot }, { ...slot, starts_at: '16:00:00', ends_at: '17:00:00' }] })
+  ];
+
+  const firstPageRuntime = await createHistoryPageRuntime(pageOne);
+  const sixthPageRuntime = await createHistoryPageRuntime(pageSix);
+  assert.equal(firstPageRuntime.list.children.length, 10);
+  assert.equal(sixthPageRuntime.list.children.length, 9);
+  assert.ok(sixthPageRuntime.list.children.every((card) => card.querySelector('[data-booking-code]')));
+});
+
+test('field null, vé thiếu QR và trạng thái hoàn tiền không làm hỏng thẻ', async () => {
+  const nullFields = booking('COMPLETED', 'COMPLETED', {
+    booking_id: '45',
+    booking_code: 'SPB-45',
+    payment_status: '',
+    ticket: { qr_code: 'QR-TEST' },
+    slots: [{
+      facility_id: null,
+      facility_name: null,
+      court_name: null,
+      sport_type: null,
+      service_date: null,
+      starts_at: null,
+      ends_at: null
+    }]
+  });
+  const refunded = booking('CANCELLED', 'CANCELLED', {
+    booking_id: '46',
+    booking_code: 'SPB-46',
+    payment_status: 'REFUNDED',
+    ticket: { qr_code: 'QR-TEST' },
+    slots: [{ facility_id: '7', service_date: null, starts_at: null, ends_at: null }]
+  });
+  const missingQr = booking('CONFIRMED', 'UPCOMING', {
+    booking_id: '47',
+    booking_code: 'SPB-47',
+    payment_status: 'PAID',
+    ticket: {},
+    slots: [{ facility_id: '7' }]
+  });
+  const runtime = await createHistoryPageRuntime([nullFields, refunded, missingQr]);
+
+  assert.equal(runtime.list.children.length, 3);
+  assert.equal(runtime.list.children[0].querySelector('[data-facility-name]').textContent, '--');
+  assert.equal(runtime.list.children[0].querySelector('[data-date]').textContent, '--');
+  assert.equal(runtime.list.children[0].querySelector('[data-time-range]').textContent, '--');
+  assert.equal(runtime.list.children[0].querySelector('[data-ticket-status]').dataset.ticketStatus, 'invalid');
+  assert.equal(runtime.list.children[1].querySelector('[data-ticket-status]').dataset.ticketStatus, 'invalid');
+  assert.equal(runtime.list.children[2].querySelector('[data-ticket-status]').dataset.ticketStatus, 'invalid');
+});
+
+test('đơn lỗi có thẻ dự phòng riêng, các đơn hợp lệ vẫn hiển thị', async () => {
+  const valid = {
+    ...booking('CONFIRMED', 'UPCOMING', {
+      payment_status: 'PAID',
+      ticket: { qr_code: 'QR-VALID' }
+    }),
+    booking_code: 'SPB-VALID',
+    slots: [{
+      facility_id: '7',
+      facility_name: 'Sân mẫu',
+      court_name: 'Sân 1',
+      sport_type: 'BADMINTON',
+      service_date: '2026-11-12',
+      starts_at: '10:00:00',
+      ends_at: '11:00:00'
+    }]
+  };
+  const invalid = { ...valid, booking_id: '43', booking_code: 'SPB-INVALID', display_status_code: 'UNKNOWN' };
+  const runtime = await createHistoryPageRuntime([valid, invalid]);
+
+  assert.equal(runtime.list.children.length, 2);
+  assert.equal(runtime.list.children[0].querySelector('[data-booking-code]').textContent, 'SPB-VALID');
+  assert.match(runtime.list.children[1].textContent, /SPB-INVALID.*Không hiển thị được chi tiết/);
+  assert.equal(runtime.elements.get('history-error').hidden, true);
 });
 
 test('Đơn hết hạn không điều hướng tới luồng đặt lại chưa được hỗ trợ', () => {

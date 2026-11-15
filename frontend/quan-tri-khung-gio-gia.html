@@ -10,14 +10,12 @@
   <script src="/shared/icons.js" defer></script>
   <script src="/booking/admin-state.js" defer></script>
   <script src="/admin/admin-shell.js" defer></script>
+  <script src="/admin/export-download.js" defer></script>
   <script src="/admin/admin-api.js" defer></script>
   <script src="/admin/slots-state.js" defer></script>
   <script src="/shared/header-state.js" defer></script>
   <script src="/shared/header.js" defer></script>
   <script src="/admin/slots-page.js" defer></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
   <style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style>
   <script src="https://cdn.tailwindcss.com"></script>
   <script id="tailwind-config">tailwind.config = {
@@ -219,7 +217,7 @@
     </aside>
     <div class="admin-main admin-main--mockup"><main class="w-full pt-16 bg-surface px-space-lg py-space-lg flex-1"><div class="flex flex-col w-full gap-space-lg pb-12">
 <!-- Header Bar & Quick Actions -->
-<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
+<div class="slots-page-header flex flex-col justify-between gap-space-md">
 <div class="flex flex-col gap-1">
 <div class="flex items-center gap-2">
 <span class="font-label-sm text-label-sm px-2.5 py-1 rounded-full bg-primary-container text-on-primary font-bold uppercase tracking-wider">Cấu hình vận hành</span>
@@ -228,25 +226,28 @@
           Đồng bộ thời gian thực
         </span>
 </div>
-<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Quản lý khung giờ &amp; Bảng giá sân</h1>
+<h1 class="slots-page-title font-headline-lg text-headline-lg text-on-surface tracking-tight">Quản lý khung giờ &amp; Bảng giá sân</h1>
 <p class="font-body-sm text-body-sm text-on-surface-variant" id="slotsStatus" role="status" aria-live="polite">Đang tải khung giờ...</p>
 </div>
 <!-- Action Buttons -->
-<div class="flex items-center gap-space-sm flex-wrap">
-<button class="px-space-md py-2.5 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md text-label-md flex items-center gap-2 transition-all shadow-sm" type="button" disabled aria-label="Lịch sử đổi giá, sắp có">
+<div class="slots-page-actions flex items-center gap-space-sm flex-wrap">
+<button class="slots-page-action--soon px-space-md py-2.5 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md text-label-md flex items-center gap-2 transition-all shadow-sm" type="button" disabled aria-label="Lịch sử đổi giá, sắp có">
 <span class="material-symbols-outlined text-[18px]">history</span>
 <span>Lịch sử đổi giá <span class="admin-mockup-soon">Sắp có</span></span>
 </button>
-<button class="px-space-md py-2.5 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md text-label-md flex items-center gap-2 transition-all shadow-sm" type="button" disabled aria-label="Sao chép sang tuần sau, sắp có">
-<span class="material-symbols-outlined text-[18px]">content_copy</span>
-<span>Sao chép sang tuần sau <span class="admin-mockup-soon">Sắp có</span></span>
+<div class="slots-page-primary-actions">
+<button class="admin-export-btn bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md text-label-md transition-all shadow-sm" id="slotsExport" type="button" aria-label="Xuất báo cáo Excel">
+<svg class="admin-export-btn__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4"/></svg>
+<span data-export-label>Xuất báo cáo Excel</span>
 </button>
-<button class="px-space-lg py-2.5 rounded-xl bg-secondary-container hover:bg-secondary text-on-primary font-label-lg text-label-lg flex items-center gap-2 transition-all shadow-md" id="btn-save-all" type="button">
+<button class="slots-page-action--save bg-secondary-container hover:bg-secondary text-on-primary font-label-lg text-label-lg transition-all shadow-md" id="btn-save-all" type="button">
 <span class="material-symbols-outlined text-[20px]">save</span>
 <span>Lưu &amp; Áp dụng ngay</span>
 </button>
 </div>
 </div>
+</div>
+<p class="admin-notice" id="slotsExportStatus" role="status" aria-live="polite" hidden></p>
 <!-- Filter & Scope Bar -->
 <div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-space-md">
 <div class="grid grid-cols-1 md:grid-cols-3 gap-space-md flex-1">
@@ -285,26 +286,19 @@
 <div class="flex flex-col gap-1.5">
 <label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider flex items-center gap-1.5">
 <span class="material-symbols-outlined text-[16px] text-primary">calendar_today</span>
-          Ngày áp dụng
+          Ngày xem
         </label>
 <div class="relative">
-<select class="w-full pl-3 pr-9 py-2.5 bg-surface-container-low text-on-surface font-label-md text-label-md rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-sm appearance-none cursor-pointer" id="mockupSlotDate">
-<option selected="">Hôm nay (Thứ Tư, 24/10/2024)</option>
-<option>Ngày mai (Thứ Năm, 25/10/2024)</option>
-<option>Áp dụng cố định Ngày trong tuần (T2 - T6)</option>
-<option>Áp dụng cố định Cuối tuần (T7 - CN)</option>
-<option>Áp dụng toàn bộ tuần (T2 - CN)</option>
-</select>
-<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-[18px]">expand_more</span>
+<input class="w-full pl-3 pr-9 py-2.5 bg-surface-container-low text-on-surface font-label-md text-label-md rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-sm" id="mockupSlotDate" type="date" lang="vi" aria-label="Ngày xem khung giờ">
 </div>
 </div>
 </div>
 <!-- Quick Switcher -->
 <div class="flex items-center gap-2 xl:self-end pt-2 xl:pt-0">
 <div class="inline-flex p-1 bg-surface-container-low rounded-xl">
-<button class="px-3 py-1.5 rounded-lg bg-surface-container-lowest text-on-surface font-label-sm text-label-sm shadow-sm font-semibold" type="button">Theo ngày</button>
-<button class="px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm" type="button" disabled aria-label="Xem theo tuần, sắp có">Tuần</button>
-<button class="px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm" type="button" disabled aria-label="Xem theo tháng, sắp có">Tháng</button>
+<button class="px-3 py-1.5 rounded-lg bg-surface-container-lowest text-on-surface font-label-sm text-label-sm shadow-sm font-semibold" id="slotViewDay" type="button" data-slot-view="day" aria-pressed="true">Theo ngày</button>
+<button class="px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm" id="slotViewWeek" type="button" data-slot-view="week" aria-pressed="false">Tuần</button>
+<button class="px-3 py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm" id="slotViewMonth" type="button" data-slot-view="month" aria-pressed="false">Tháng</button>
 </div>
 </div>
 </div>
@@ -319,7 +313,7 @@
 </div>
 <span class="font-label-sm text-label-sm text-on-surface-variant">Tự động áp dụng theo ma trận giờ bên dưới</span>
 </div>
-<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
 <!-- Thẻ Giờ Thường -->
 <div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between gap-space-md relative overflow-hidden group hover:shadow-md transition-shadow">
 <div class="flex items-start justify-between">
@@ -328,9 +322,9 @@
 <span class="w-2.5 h-2.5 rounded-full bg-primary"></span>
 <span class="font-label-md text-label-md text-on-surface font-bold">Khung Giờ Thường</span>
 </div>
-<span class="font-body-sm text-body-sm text-on-surface-variant">Giờ thấp điểm buổi sáng &amp; đầu chiều</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Phần còn lại trong giờ mở cửa</span>
 </div>
-<span class="font-label-sm text-label-sm px-2.5 py-1 rounded-full bg-surface-container-high text-on-surface font-semibold">06:00 - 17:00</span>
+<span class="font-label-sm text-label-sm px-2.5 py-1 rounded-full bg-surface-container-high text-on-surface font-semibold" data-admin-normal-hours>Giờ thường</span>
 </div>
 <div class="flex flex-col gap-2">
 <span class="font-label-sm text-label-sm text-on-surface-variant">Đơn giá giờ chuẩn</span>
@@ -339,17 +333,19 @@
 <input class="w-full px-3 py-2 bg-surface-container-low text-on-surface font-headline-sm text-headline-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-primary shadow-sm" id="mockupNormalPrice" data-admin-slot-price="normal" type="text" inputmode="numeric" value="" disabled>
 <span class="absolute right-3 top-1/2 -translate-y-1/2 font-label-sm text-label-sm text-on-surface-variant">đ/giờ</span>
 </div>
-<button class="px-3 py-2.5 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-label-sm font-label-sm" title="Áp dụng nhanh · Sắp có" type="button" disabled>
-              Áp dụng <span class="admin-mockup-soon">Sắp có</span>
+<button class="px-3 py-2.5 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-label-sm font-label-sm" data-admin-price-apply="normal" type="button" disabled>
+              Áp dụng
             </button>
 </div>
+<p class="text-[11px] text-error" id="mockupNormalPriceError" role="alert" hidden></p>
 </div>
+<p class="font-body-sm text-body-sm text-on-surface-variant" data-admin-price-preview>Sẽ áp dụng cho 0 khung trống từ ngày hiện tại.</p>
 <div class="flex items-center justify-between pt-2">
 <span class="font-body-sm text-body-sm text-primary flex items-center gap-1">
 <span class="material-symbols-outlined text-[16px]">check_circle</span>
-            <span data-admin-normal-slot-count>—</span> slot tương ứng
+            <span data-admin-normal-slot-count>0</span> khung giờ thường
           </span>
-<span class="font-label-sm text-label-sm text-on-surface-variant">Độ phủ: <span data-admin-normal-slot-rate>—</span></span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Tỷ lệ đã đặt/giữ: <span data-admin-normal-slot-rate>0%</span></span>
 </div>
 </div>
 <!-- Thẻ Giờ Vàng -->
@@ -370,8 +366,8 @@
 </div>
 </div>
 <div class="flex items-center gap-2">
-<span class="font-label-sm text-label-sm px-2.5 py-1 rounded-full bg-secondary-fixed text-on-secondary-fixed font-bold">17:00 - 22:00</span>
-<span class="font-body-sm text-body-sm text-on-surface-variant"><span data-admin-peak-slot-count>—</span> ca buổi tối</span>
+<span class="font-label-sm text-label-sm px-2.5 py-1 rounded-full bg-secondary-fixed text-on-secondary-fixed font-bold">17:00 - 21:00</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant"><span data-admin-peak-slot-count>0</span> khung giờ cao điểm</span>
 </div>
 <div class="flex flex-col gap-2">
 <span class="font-label-sm text-label-sm text-on-surface-variant">Đơn giá giờ cao điểm</span>
@@ -380,49 +376,18 @@
 <input class="w-full px-3 py-2 bg-surface-container-low text-on-surface font-headline-sm text-headline-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-secondary-container shadow-sm font-bold" id="mockupPeakPrice" data-admin-slot-price="peak" type="text" inputmode="numeric" value="" disabled>
 <span class="absolute right-3 top-1/2 -translate-y-1/2 font-label-sm text-label-sm text-on-surface-variant">đ/giờ</span>
 </div>
-<button class="px-3 py-2.5 rounded-xl bg-secondary-fixed text-on-secondary-fixed hover:bg-secondary-fixed-dim font-label-sm text-label-sm font-semibold" title="Áp dụng nhanh · Sắp có" type="button" disabled>
-              Áp dụng <span class="admin-mockup-soon">Sắp có</span>
+<button class="px-3 py-2.5 rounded-xl bg-secondary-fixed text-on-secondary-fixed hover:bg-secondary-fixed-dim font-label-sm text-label-sm font-semibold" data-admin-price-apply="peak" type="button" disabled>
+              Áp dụng
             </button>
 </div>
+<p class="text-[11px] text-error" id="mockupPeakPriceError" role="alert" hidden></p>
 </div>
 <div class="flex items-center justify-between pt-2">
 <span class="font-body-sm text-body-sm text-secondary font-semibold flex items-center gap-1">
 <span class="material-symbols-outlined text-[16px]">trending_up</span>
-            Lấp đầy trung bình <span data-admin-peak-slot-rate>—</span>
+            Tỷ lệ đã đặt/giữ <span data-admin-peak-slot-rate>0%</span>
           </span>
-<span class="font-label-sm text-label-sm text-on-surface-variant">Tỉ lệ lấp đầy cao nhất</span>
-</div>
-</div>
-<!-- Phụ phí Cuối tuần & Bulk Action -->
-<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between gap-space-md hover:shadow-md transition-shadow">
-<div class="flex items-start justify-between">
-<div class="flex flex-col gap-1">
-<div class="flex items-center gap-2">
-<span class="w-2.5 h-2.5 rounded-full bg-tertiary"></span>
-<span class="font-label-md text-label-md text-on-surface font-bold">Phụ Phí Cuối Tuần / Lễ <span class="admin-mockup-soon">Sắp có</span></span>
-</div>
-<span class="font-body-sm text-body-sm text-on-surface-variant">Cộng thêm vào đơn giá gốc cho T7, CN</span>
-</div>
-<span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed font-semibold">Phụ thu</span>
-</div>
-<div class="flex flex-col gap-2">
-<span class="font-label-sm text-label-sm text-on-surface-variant">Mức phụ thu mỗi giờ</span>
-<div class="flex items-center gap-2">
-<div class="relative flex-1">
-<input class="w-full px-3 py-2 bg-surface-container-low text-on-surface font-headline-sm text-headline-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-tertiary shadow-sm" type="text" value="" disabled>
-<span class="absolute right-3 top-1/2 -translate-y-1/2 font-label-sm text-label-sm text-on-surface-variant">đ/giờ</span>
-</div>
-<label class="flex items-center gap-2 cursor-pointer p-2 rounded-xl bg-surface-container-low">
-<input checked="" class="w-4 h-4 accent-tertiary rounded" type="checkbox" disabled aria-label="Phụ thu cuối tuần, sắp có">
-<span class="font-label-sm text-label-sm text-on-surface font-medium">Bật</span>
-</label>
-</div>
-</div>
-<div class="pt-2">
-<button class="w-full py-2.5 px-space-md rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md flex items-center justify-center gap-2 transition-all shadow-sm" type="button" disabled aria-label="Cập nhật bảng giá đồng loạt, sắp có">
-<span class="material-symbols-outlined text-[18px]">sync_alt</span>
-<span>Cập nhật bảng giá đồng loạt <span class="admin-mockup-soon">Sắp có</span></span>
-</button>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Tỉ lệ lấp đầy khung cao điểm</span>
 </div>
 </div>
 </div>
@@ -434,7 +399,7 @@
 <div class="w-8 h-8 rounded-lg bg-surface-container-highest text-on-surface flex items-center justify-center">
 <span class="material-symbols-outlined text-[20px]">calendar_view_week</span>
 </div>
-<h2 class="font-headline-sm text-headline-sm text-on-surface">Ma trận điều phối khung giờ theo ngày (06:00 - 22:00)</h2>
+<h2 class="font-headline-sm text-headline-sm text-on-surface" data-admin-hours-title>Khung giờ trong ngày</h2>
 </div>
 <!-- Legend Indicator -->
 <div class="flex items-center gap-3 flex-wrap bg-surface-container-lowest px-space-md py-2 rounded-xl shadow-sm">
@@ -444,15 +409,11 @@
 </div>
 <div class="flex items-center gap-1.5">
 <span class="w-3.5 h-3.5 rounded bg-secondary-fixed"></span>
-<span class="font-label-sm text-label-sm text-secondary font-semibold">Đang giữ / Tìm đối</span>
+<span class="font-label-sm text-label-sm text-secondary font-semibold">Đang giữ chỗ</span>
 </div>
 <div class="flex items-center gap-1.5">
 <span class="w-3.5 h-3.5 rounded bg-inverse-surface"></span>
-<span class="font-label-sm text-label-sm text-on-surface-variant font-semibold">Đã thanh toán</span>
-</div>
-<div class="flex items-center gap-1.5">
-<span class="w-3.5 h-3.5 rounded bg-error-container"></span>
-<span class="font-label-sm text-label-sm text-error font-semibold">Khóa / Bảo trì</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-semibold">Đã đặt</span>
 </div>
 </div>
 </div>
@@ -475,10 +436,7 @@
             Sân 3 Lining
           </button>
 </div>
-<div class="hidden sm:flex items-center gap-2 text-on-surface-variant font-body-sm text-body-sm">
-<span class="material-symbols-outlined text-[16px]">touch_app</span>
-<span>Nhấp trực tiếp ô slot để điều phối</span>
-</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant" data-admin-slot-range-label></span>
 </div>
 <!-- Schedule Matrix Table Scrollable Container -->
 <div class="overflow-x-auto">
@@ -849,8 +807,8 @@
 <span class="material-symbols-outlined text-[22px]">calendar_today</span>
 </div>
 <div class="flex flex-col">
-<span class="font-label-sm text-label-sm text-surface-variant uppercase font-semibold">Tổng slot hôm nay</span>
-<span class="font-headline-sm text-headline-sm font-bold text-inverse-on-surface"><span data-admin-slot-total>—</span> <span class="font-body-sm text-body-sm font-normal text-surface-variant">khung giờ</span></span>
+<span class="font-label-sm text-label-sm text-surface-variant uppercase font-semibold">Tổng khung giờ</span>
+<span class="font-headline-sm text-headline-sm font-bold text-inverse-on-surface"><span data-admin-slot-total>0</span> <span class="font-body-sm text-body-sm font-normal text-surface-variant">khung giờ</span></span>
 </div>
 </div>
 <!-- Booked Slots & Progress -->
@@ -861,10 +819,10 @@
 <div class="flex flex-col">
 <div class="flex items-center gap-2">
 <span class="font-label-sm text-label-sm text-surface-variant uppercase font-semibold">Đã đặt &amp; Giữ chỗ</span>
-<span class="font-label-sm text-label-sm px-1.5 py-0.2 rounded bg-inverse-primary text-on-primary-fixed font-bold" data-admin-slot-fill-rate>—</span>
+<span class="font-label-sm text-label-sm px-1.5 py-0.2 rounded bg-inverse-primary text-on-primary-fixed font-bold" data-admin-slot-fill-rate>0%</span>
 </div>
 <div class="flex items-center gap-2">
-<span class="font-headline-sm text-headline-sm font-bold text-inverse-on-surface"><span data-admin-slot-booked>—</span> <span class="font-body-sm text-body-sm font-normal text-surface-variant">slot</span></span>
+<span class="font-headline-sm text-headline-sm font-bold text-inverse-on-surface"><span data-admin-slot-booked>0</span> <span class="font-body-sm text-body-sm font-normal text-surface-variant">khung giờ</span></span>
 <div class="w-20 h-2 bg-surface-container-high/30 rounded-full overflow-hidden">
 <div class="h-full bg-inverse-primary rounded-full" data-admin-slot-fill-bar style="width: 0%"></div>
 </div>
@@ -878,7 +836,7 @@
 </div>
 <div class="flex flex-col">
 <span class="font-label-sm text-label-sm text-surface-variant uppercase font-semibold">Còn trống</span>
-<span class="font-headline-sm text-headline-sm font-bold text-primary-fixed"><span data-admin-slot-available>—</span> <span class="font-body-sm text-body-sm font-normal text-surface-variant">slot</span></span>
+<span class="font-headline-sm text-headline-sm font-bold text-primary-fixed"><span data-admin-slot-available>0</span> <span class="font-body-sm text-body-sm font-normal text-surface-variant">khung giờ</span></span>
 </div>
 </div>
 </div>
@@ -889,13 +847,7 @@
 <span class="material-symbols-outlined text-[16px]">payments</span>
 <span class="font-label-sm text-label-sm uppercase font-bold tracking-wider">Doanh thu dự kiến</span>
 </div>
-<span class="font-display-lg text-display-lg font-bold text-secondary-fixed leading-none"><span data-admin-slot-revenue>—</span><span class="font-headline-sm text-headline-sm text-surface-variant ml-1 font-normal">đ</span></span>
-</div>
-<div class="flex items-center gap-2">
-<button class="px-space-md py-3 rounded-xl bg-surface-container-low/10 hover:bg-surface-container-low/20 text-inverse-on-surface font-label-md text-label-md flex items-center gap-1.5 transition-all" type="button" disabled aria-label="Báo cáo ngày, sắp có">
-<span class="material-symbols-outlined text-[18px]">receipt_long</span>
-<span>Báo cáo ngày <span class="admin-mockup-soon">Sắp có</span></span>
-</button>
+<span class="font-display-lg text-display-lg font-bold text-secondary-fixed leading-none"><span data-admin-slot-revenue>0</span><span class="font-headline-sm text-headline-sm text-surface-variant ml-1 font-normal">đ</span></span>
 </div>
 </div>
 </div>
@@ -1025,9 +977,9 @@
             <h2 id="slotPriceTitle">Cập nhật giá sân</h2>
             <form id="slotPriceForm" class="admin-slot-form">
               <label for="slotPriceNormal">Giá thường (VND)</label>
-              <input id="slotPriceNormal" type="number" min="0" step="1" required>
+              <input id="slotPriceNormal" type="number" min="1000" max="10000000" step="1">
               <label for="slotPricePeak">Giá giờ vàng 17:00–21:00 (VND)</label>
-              <input id="slotPricePeak" type="number" min="0" step="1" required>
+              <input id="slotPricePeak" type="number" min="1000" max="10000000" step="1">
               <p id="slotPricePreview" class="admin-slot-preview">Chọn sân để xem số khung còn trống.</p>
               <p id="slotPriceError" class="admin-dialog__error" role="alert" hidden></p>
               <button class="admin-button admin-button--primary" type="submit">Lưu giá</button>

@@ -51,6 +51,20 @@
     window.location.assign(`/dang-nhap.html?returnTo=${encodeURIComponent(returnTo)}`);
   }
 
+  async function redirectIfAccountLocked(response) {
+    if (response.status !== 401) return false;
+    const body = await response.clone().json().catch(() => null);
+    if (body?.error?.code !== 'ACCOUNT_LOCKED') return false;
+    window.SportBookingCurrentUser = null;
+    clearPendingHoldBanner();
+    stopNotificationPolling();
+    stopPendingHoldPolling();
+    window.location.replace('/dang-nhap.html?locked=1');
+    return true;
+  }
+
+  window.SportBookingHeaderAuth = { redirectIfAccountLocked };
+
   function relativeNotificationTime(createdAt, serverTime) {
     const created = new Date(createdAt);
     const reference = new Date(serverTime || Date.now());
@@ -88,6 +102,7 @@
           `/api/v1/notifications/${encodeURIComponent(notification.id)}/read`,
           { method: 'PATCH', credentials: 'same-origin', cache: 'no-store' }
         );
+        if (await redirectIfAccountLocked(response)) return;
         if (response.status === 401) { loginRedirect(); return; }
         if (!response.ok) throw new Error('Không thể đánh dấu thông báo đã đọc.');
         const result = await response.json();
@@ -128,6 +143,7 @@
         credentials: 'same-origin',
         cache: 'no-store'
       });
+      if (await redirectIfAccountLocked(countResponse)) return;
       if (countResponse.status === 401) { loginRedirect(); return; }
       if (!countResponse.ok) throw new Error('Không thể cập nhật số thông báo chưa đọc.');
       const countResult = await countResponse.json();
@@ -153,6 +169,7 @@
           credentials: 'same-origin',
           cache: 'no-store'
         });
+        if (await redirectIfAccountLocked(listResponse)) return;
         if (listResponse.status === 401) { loginRedirect(); return; }
         if (!listResponse.ok) throw new Error('Không thể tải thông báo mới nhất.');
         const result = await listResponse.json();
@@ -246,7 +263,7 @@
     refreshHeaderNotifications(header, !document.querySelector('.sb-shared-header__popover')?.hidden);
     notificationPollTimer = window.setInterval(() => {
       refreshHeaderNotifications(header, !document.querySelector('.sb-shared-header__popover')?.hidden);
-    }, 10_000);
+    }, CUSTOMER_HEADER_POLL_INTERVAL_MS);
   }
 
   function stopNotificationPolling() {
@@ -276,6 +293,7 @@
   let notificationRequestActive = false;
   let notificationRefreshRequested = false;
   let notificationServerTime = null;
+  const CUSTOMER_HEADER_POLL_INTERVAL_MS = 5000;
   let notificationItems = [];
 
   function clearPendingHoldBanner() {
@@ -338,6 +356,7 @@
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({})
         });
+        if (await redirectIfAccountLocked(response)) return;
         if (response.status === 401) { loginRedirect(); return; }
         if (response.ok || response.status === 410) {
           window.dispatchEvent(new Event('pending-booking-changed'));
@@ -384,6 +403,7 @@
     pendingHoldRequestActive = true;
     try {
       const response = await fetch('/api/v1/bookings/pending', { credentials: 'same-origin', cache: 'no-store' });
+      if (await redirectIfAccountLocked(response)) return;
       if (response.status === 401) { loginRedirect(); return; }
       if (!response.ok) throw new Error('Không thể tải thông tin giữ chỗ.');
       const booking = await response.json();
@@ -409,7 +429,10 @@
         || document.hidden
         || pendingHoldPollTimer) return;
     refreshPendingHoldBanner();
-    pendingHoldPollTimer = window.setInterval(refreshPendingHoldBanner, 10_000);
+    pendingHoldPollTimer = window.setInterval(
+      refreshPendingHoldBanner,
+      CUSTOMER_HEADER_POLL_INTERVAL_MS
+    );
   }
 
   function stopPendingHoldPolling() {
@@ -519,6 +542,7 @@
           credentials: 'same-origin',
           cache: 'no-store'
         });
+        if (await redirectIfAccountLocked(response)) return;
         if (response.status === 401) { loginRedirect(); return; }
         if (!response.ok) throw new Error('Không thể đánh dấu tất cả đã đọc.');
         window.dispatchEvent(new CustomEvent('notification-state-changed', {
@@ -591,6 +615,7 @@
           credentials: 'same-origin',
           cache: 'no-store'
         });
+        if (await redirectIfAccountLocked(response)) return;
         if (response.status === 401) {
           loginRedirect();
           return;
@@ -638,6 +663,7 @@
   function initializeHeader() {
     return fetch('/api/v1/auth/me', { credentials: 'same-origin', cache: 'no-store' })
       .then(async (response) => {
+        if (await redirectIfAccountLocked(response)) return null;
         if (response.status === 401) {
           loginRedirect();
           return null;

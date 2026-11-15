@@ -81,9 +81,12 @@
   }
 
   function createFacilityCard(facility) {
+    const inactive = facility.is_active === false
+      || (Number.isFinite(Number(facility.active_court_count))
+        && Number(facility.active_court_count) === 0);
     const card = makeElement(
       'article',
-      'bg-surface-container-lowest rounded-2xl shadow-sm hover:shadow-md transition-all p-4 flex flex-col gap-3 border border-gray-100'
+      `bg-surface-container-lowest rounded-2xl shadow-sm hover:shadow-md transition-all p-4 flex flex-col gap-3 border border-gray-100${inactive ? ' opacity-70' : ''}`
     );
     const href = detailUrl(facility);
     card.setAttribute('role', 'link');
@@ -106,6 +109,13 @@
       imageWrap.append(image);
     } else {
       imageWrap.append(window.SportBookingIcons.createIcon('stadium', 'text-4xl text-primary'));
+    }
+    if (inactive) {
+      imageWrap.append(makeElement(
+        'span',
+        'absolute top-2 left-2 rounded-full bg-surface px-2 py-1 text-xs font-bold text-error shadow-sm',
+        'Tạm ngưng hoạt động'
+      ));
     }
     card.append(imageWrap);
 

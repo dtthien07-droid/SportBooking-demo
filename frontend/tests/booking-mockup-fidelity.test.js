@@ -16,6 +16,10 @@ const pages = [
     output: path.join(root, 'frontend', 'chi-tiet-don-dat-san.html')
   }
 ];
+const profilePage = {
+  mockup: path.join(root, 'docs', '02-design', 'mockups', 'ho-so-ca-nhan.html'),
+  output: path.join(root, 'frontend', 'profile', 'profile.html')
+};
 
 function markupWithoutScripts(html) {
   return html.replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, '');
@@ -32,7 +36,15 @@ function classNames(html) {
 for (const { mockup, output } of pages) {
   test(`${path.basename(output)} retains all mockup markup classes`, () => {
     const sourceClasses = classNames(fs.readFileSync(mockup, 'utf8'));
-    const outputClasses = classNames(fs.readFileSync(output, 'utf8'));
+    let outputMarkup = fs.readFileSync(output, 'utf8');
+    if (outputMarkup.includes('data-shared-footer')) {
+      assert.match(outputMarkup, /<script src=["']\/shared\/footer\.js["']/);
+      const footerScript = fs.readFileSync(path.join(root, 'frontend', 'shared', 'footer.js'), 'utf8');
+      const footerClasses = footerScript.match(/footer\.className = '([^']+)'/);
+      assert.ok(footerClasses, 'Shared footer must define its root classes.');
+      outputMarkup += `<footer class="${footerClasses[1]}">${footerScript}</footer>`;
+    }
+    const outputClasses = classNames(outputMarkup);
     const intentionallyRemoved = new Set([['material', '-symbols-outlined'].join('')]);
     if (path.basename(output) === 'chi-tiet-don-dat-san.html') {
       intentionallyRemoved.add('text-outline-variant');
@@ -44,6 +56,8 @@ for (const { mockup, output } of pages) {
         'flex-col-reverse',
         'sm:flex-1'
       ].forEach((name) => intentionallyRemoved.add(name));
+      intentionallyRemoved.add('w-fit'); // Used only by the removed textual ticket-code container.
+      intentionallyRemoved.add('tracking-widest'); // Used only by the removed textual ticket code.
     } else {
       intentionallyRemoved.add('self-start');
       intentionallyRemoved.add('md:self-auto');
@@ -60,12 +74,61 @@ for (const { mockup, output } of pages) {
     assert.ok(scripts.some((attributes) => /cdn\.tailwindcss\.com/i.test(attributes)));
     assert.ok(scripts.some((attributes) => /id=["']tailwind-config["']/i.test(attributes)));
     assert.ok(scripts.every((attributes) =>
-      /(?:cdn\.tailwindcss\.com|id=["']tailwind-config["']|src=["']\/(?:booking|shared)\/[^"']+\.js["'])/i
+      /(?:cdn\.tailwindcss\.com|id=["']tailwind-config["']|src=["']\/(?:assets|booking|shared)\/[^"']+\.js["'])/i
         .test(attributes)
     ));
     assert.doesNotMatch(html, /firebase|realtime-sync|auth\.js|notification-header/i);
   });
 }
+
+test('profile page retains the mockup layout classes for supported blocks', () => {
+  const sourceClasses = classNames(fs.readFileSync(profilePage.mockup, 'utf8'));
+  const outputClasses = classNames(fs.readFileSync(profilePage.output, 'utf8'));
+  const requiredClasses = [
+    'bg-surface',
+    "font-['Be_Vietnam_Pro']",
+    'text-on-surface',
+    'antialiased',
+    'max-w-[1440px]',
+    'px-margin',
+    'py-space-xl',
+    'grid',
+    'grid-cols-1',
+    'lg:grid-cols-12',
+    'lg:col-span-4',
+    'lg:col-span-8',
+    'bg-surface-container-lowest',
+    'rounded-xl',
+    'p-space-lg',
+    'shadow-sm',
+    'font-headline-sm',
+    'font-label-md',
+    'font-body-sm',
+    'focus:outline-none',
+    'focus:ring-2',
+    'focus:ring-primary',
+    'transition-all'
+  ];
+  assert.deepEqual(
+    requiredClasses.filter((name) => !sourceClasses.has(name)),
+    [],
+    'The fidelity check must use classes present in the profile mockup.'
+  );
+  assert.deepEqual(
+    requiredClasses.filter((name) => !outputClasses.has(name)),
+    []
+  );
+});
+
+test('profile page keeps the supported account and password blocks', () => {
+  const html = fs.readFileSync(profilePage.output, 'utf8');
+  assert.match(html, /<aside\b/);
+  assert.match(html, /<nav\b/);
+  assert.match(html, /data-form=["']profile["']/);
+  assert.match(html, /data-form=["']password["']/);
+  assert.match(html, /data-profile-loading/);
+  assert.match(html, /data-profile-error/);
+});
 
 test('history detail links use the booking_id query parameter', () => {
   const html = fs.readFileSync(pages[0].output, 'utf8');
