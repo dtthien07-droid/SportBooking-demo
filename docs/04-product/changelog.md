@@ -1,3 +1,78 @@
+## 2026-11-15 — Làm mới giao diện hồ sơ cá nhân
+- Áp bố cục hai cột, thẻ hồ sơ, điều hướng và trường nhập theo mockup; giữ nguyên form/API/validation và header dùng chung.
+- Ẩn thống kê, CLB, hạng, sở thích và các trường không có API; phần tóm tắt dùng dữ liệu tài khoản thật qua `textContent`.
+- Fidelity baseline trước khi đổi markup FAIL vì thiếu lớp và khối sidebar; sau thay đổi PASS. Frontend: 34/34 file test; `node --check` đạt.
+- Browser với API giả ở desktop/mobile: không tràn ngang; focus bàn phím và trạng thái tải được xác nhận. API thật: **Chờ người dùng xác nhận**.
+
+## 2026-11-15 — Lọc ngày và khung giờ tìm sân
+- Bật lọc ngày chơi và các khung giờ ở cả thanh tìm kiếm/bộ lọc chi tiết; đồng bộ lựa chọn, URL/back, phân trang, reset và ngày truyền sang trang chi tiết sân.
+- API xác thực phạm vi 14 ngày theo UTC+7, lọc qua `EXISTS` với cùng điều kiện slot chọn được của lưới giờ; test frontend 3/3, facilities integration 1/1, `node --check` đạt.
+- Bộ lọc tiện ích tiếp tục hoãn: dữ liệu hiện là văn bản tự do không có mã chuẩn; kiểm tra trình duyệt: **Chờ người dùng xác nhận**.
+
+## 2026-11-15 — Đồng bộ hotline hỗ trợ và trạng thái vé điện tử
+- Đồng bộ hotline nền tảng SportBooking về đầu vào chung `frontend/shared/support-constants.js` và footer dùng chung `frontend/shared/footer.js`; tất cả trang giao diện đọc số từ cùng một nguồn, không hardcode ở từng file, trong khi hotline sân của từng cơ sở vẫn giữ theo dữ liệu sân.
+- Sửa logic trạng thái vé điện tử ở chi tiết/lịch sử theo dữ liệu thật: khi có vé nhưng booking đã hủy/hoàn tiền hoặc hết hạn, hiển thị `VÉ ĐÃ VÔ HIỆU`; khi có vé hợp lệ và thanh toán thành công thì `ĐÃ PHÁT HÀNH`; khi không có vé thì `CHƯA PHÁT HÀNH`.
+- Cập nhật API/renderer dùng chung để đồng bộ logic giữa lịch sử đặt sân và trang chi tiết đơn; kiểm tra dữ liệu booking #59 cho thấy ticket tồn tại nhưng đơn `CANCELLED` + `payment_status = REFUNDED` nên phải vô hiệu.
+- Kiểm tra nguồn dữ liệu và giao diện: hotline/ticket đều kiểm tra lại theo dữ liệu thực tế; no hardcode lặp lại vì sử dụng source-of-truth. Kiểm tra trình duyệt: **Chờ người dùng xác nhận**.
+- Sửa footer để gán hotline sau khi gắn footer vào DOM; kiểm tra trình duyệt thấy `support-constants.js` và `footer.js` đều trả HTTP 200, không phát sinh lỗi JS (ngoài cảnh báo Tailwind CDN có sẵn).
+- Vé có thiếu `qr_code` nay được trình bày vô hiệu thay vì ném lỗi; lỗi dựng một đơn được cô lập, ghi Console và không làm mất các thẻ khác. `frontend/tests/booking-history.test.js`: 25/25 đạt; `node --check` và `git diff --check` đạt.
+
+## 2026-11-15 — Admin: xuất Excel các báo cáo còn lại
+- Thêm xuất Excel cho Tổng quan, Người dùng, Cơ sở & Sân, Khung giờ & Giá; chuyển trang Đơn đặt sân sang dùng chung module tải và dựng workbook, giữ tên file/hành vi hiện có.
+- Tệp báo cáo dùng tiếng Việt, cố định/in đậm hàng tiêu đề, định dạng ngày/giờ/tiền, thoát công thức và giới hạn 5.000 dòng; audit theo action mà không ghi dữ liệu cá nhân.
+- Bỏ dòng chân thẻ “Doanh thu trong kỳ … / Theo dữ liệu API” ở biểu đồ Tổng quan; giữ nguyên số liệu, biểu đồ và trạng thái rỗng.
+- HTTP integration cho quyền, bộ lọc, workbook, khớp số liệu dashboard, giới hạn, audit và dữ liệu nhạy cảm đạt; frontend 31/31 file test, `node --check` đạt, `npm test` 93/93 hai lượt liên tiếp trên `sportbooking_test`.
+- Đã kiểm tra metadata schema `sportbooking_dev` bằng truy vấn chỉ đọc; các bảng/cột báo cáo tồn tại. Kiểm tra trình duyệt: **Chờ người dùng xác nhận**. Cần khởi động lại server.
+
+## 2026-11-14 — Đồng bộ cơ sở admin–khách, KPI và xóa cơ sở
+- Nguyên nhân cơ sở id 30 “sân bóng” không hiện cho khách: truy vấn public dùng `INNER JOIN courts` nên cơ sở 0 sân con bị loại; dữ liệu đọc-only trên `sportbooking_dev` cũng cho thấy cơ sở này đang `is_active=0` và có 0 sân. Không thấy cache backend/ETag; response đã `no-store`, còn fetch frontend nay đặt `cache: 'no-store'`. Bộ lọc môn/khu vực chỉ áp dụng khi người dùng chọn; không lọc theo khung giờ trống.
+- GET danh sách, tìm sân/trang chủ và chi tiết chỉ công khai cơ sở đang mở có ít nhất một sân con hoạt động; cơ sở mới tạo bằng form có sân đầu tiên hiển thị ngay. Cơ sở không có sân vẫn hiện trong admin với nhãn “Chưa có sân”.
+- KPI tổng/mở/khóa nay đếm cơ sở trên toàn bộ dữ liệu, tổng bằng mở + khóa; giữ trường summary cũ tương thích. Tỷ lệ lấp đầy 7 ngày không đổi; cập nhật theo polling 5 giây và sau thao tác.
+- Thêm DELETE cơ sở có expected_updated_at; chặn nếu có booking ở mọi trạng thái, xóa phụ thuộc và ghi `DELETE_FACILITY` trong cùng transaction. Bảng theo thứ tự: `booking_slots` → `time_slots` → `courts` → `facilities`; không xóa dữ liệu `sportbooking_dev`.
+- Sửa phạm vi hàm popup/xóa để handler hàng cơ sở gọi được; test frontend 198/198, backend `npm test` 90/90 ở hai lượt liên tiếp trên `sportbooking_test`; `node --check` 12 file JS và `git diff --check` đạt.
+- Kiểm tra giao diện bằng trình duyệt: **Chờ người dùng xác nhận**. Cần khởi động lại server để nhận thay đổi.
+
+## 2026-11-14 — Admin: hoàn thiện luồng cơ sở và sân
+- Bổ sung form tạo cơ sở với sân đầu tiên, môn thể thao, giá thường và giá giờ vàng; backend yêu cầu có ít nhất một sân, validate giờ tròn và hỗ trợ giờ đóng 24:00.
+- Tạo sân, 14 ngày khung giờ một giờ, giá theo khung giờ vàng và admin audit cùng transaction; sửa giờ chỉ cắt khung tương lai AVAILABLE, giữ khung đã đặt và từ chối nếu còn đơn hiệu lực ngoài giờ mới.
+- Sau lưu, cập nhật hàng/số liệu ngay; khách nhìn thấy cơ sở, giờ và khung mới, có thể đặt. Lỗi giờ hiện tiếng Việt cạnh trường.
+- HTTP integration: 19/19; frontend tests: 197/197; `node --check` đạt; `npm test` hai lượt liên tiếp: 82/82 mỗi lượt trên `sportbooking_test`. Không đổi schema/dependency; `sportbooking_dev` chỉ kiểm tra schema đọc-only.
+- Kiểm tra giao diện bằng trình duyệt: **Chờ người dùng xác nhận**.
+
+## 2026-11-14 — Admin: sửa ghi và đồng bộ dữ liệu khách
+- Hoàn tất ba giai đoạn yêu cầu: xử lý tiếng Việt cho lỗi admin và log stack chỉ trong development; khóa/mở khóa tài khoản cùng thu hồi phiên; hủy sự cố tạo đúng hai thông báo trong cùng transaction.
+- Đồng bộ giờ hoạt động giữa API admin/khách và khung giờ sân: giữ slot đã giữ/đặt, bỏ khung AVAILABLE ngoài giờ, sinh khung thiếu; booking ngoài giờ trả 409. Null giờ ở dữ liệu cũ không làm slot biến mất.
+- Giá mới đồng bộ qua tìm sân, chi tiết, lưới giờ và đơn mới; slot đã giữ/đặt không đổi. Không migration, đổi schema hoặc thêm dependency.
+- Kiểm tra HTTP tập trung trên `sportbooking_test` đạt cho hủy/thông báo, khóa/mở khóa, giờ hoạt động, trạng thái sân, giá và booking; `node --check` đạt 127 file JS.
+- `npm test` chạy hai lượt: mỗi lượt 77/79 (cùng một assertion export đòi filename có dấu ngoặc kép; response trả `filename=...`, cộng test cha báo lỗi). Frontend: 189/192; còn ba assertion về class mockup, `data-slot-view="week"` và icon `edit`.
+- Không tái hiện được các lỗi 500 ban đầu trên DB dev nên chưa xác nhận được nguyên nhân SQL gốc; giao diện: **Chờ người dùng xác nhận**.
+
+## 2026-11-14 — Admin GĐ4–5: Khung giờ, giá và xuất đơn
+- GĐ4: API hỗ trợ lịch khung giờ tối đa 31 ngày, tổng hợp từng ngày trong tháng, xem trước giá và cập nhật một/hai mức giá chỉ cho khung `AVAILABLE`; giao diện ngày/tuần/tháng hiển thị trạng thái và số liệu theo phạm vi.
+- GĐ5: bộ lọc áp dụng được dùng nhất quán cho danh sách và `GET /admin/bookings/export`; Excel tối đa 5.000 dòng, trạng thái tiếng Việt, thoát công thức, audit không chứa dữ liệu cá nhân.
+- Dùng chung dialog hủy sự cố trên trang Đơn đặt sân; sửa lỗi khởi tạo do trang không có form tĩnh và nút xác nhận không liên kết với form xử lý submit.
+- ExcelJS đã có trong backend, không thêm dependency; không migration/đổi schema. Đã thêm HTTP/frontend tests nhưng chưa chạy được do VS Code không có test controller và Windows shell sandbox không khả dụng; `npm audit` chưa chạy.
+- Kiểm tra giao diện bằng trình duyệt: **Chờ người dùng xác nhận**.
+
+## 2026-11-14 — Admin GĐ3: Cơ sở và sân
+- API admin trả summary tổng số cơ sở, sân đang hoạt động/tạm khóa và tỷ lệ lấp đầy 7 ngày; trạng thái cơ sở/sân tiếp tục kiểm tra đơn hiệu lực, `expected_updated_at` và audit trong transaction.
+- API khách hiển thị cả cơ sở/sân tạm khóa; slot bị khóa không chọn được, đơn mới trả `409 COURT_INACTIVE`. Danh sách, trang chủ và chi tiết sân phản ánh trạng thái.
+- Trang quản trị sắp lại bảng/KPI, bỏ cột môn/đơn giá và nút xóa, giữ một nút Sửa; icon của trang dùng SVG nội tuyến.
+- Đã thêm HTTP integration và frontend tests. Không chạy được test/`node --check`: PowerShell sandbox Windows không có backend; VS Code test discovery không có controller. Chẩn đoán editor không có lỗi; trình duyệt: **Chờ người dùng xác nhận**.
+- Không migration hoặc đổi schema.
+
+## 2026-11-14 — Admin GĐ2: Người dùng
+- `GET /admin/users` trả summary tổng tài khoản, ACTIVE, ADMIN_LOCKED và người dùng mới trong tháng UTC+7; khóa tài khoản thu hồi phiên cùng transaction.
+- `requireAuth` kiểm tra trạng thái mỗi request; tài khoản bị khóa nhận `401 ACCOUNT_LOCKED`, đăng nhập nhận `403` và thông báo thống nhất. Mở khóa cho phép đăng nhập phiên mới.
+- Trang người dùng có bốn số liệu thật, khóa không thời hạn với lý do tùy chọn, đếm ký tự, xác nhận mở khóa; thay icon ligature/font bằng SVG dùng chung.
+- Kiểm tra frontend tập trung 33/33 và backend HTTP tập trung 23/23 đạt; trình duyệt: **Chờ người dùng xác nhận**.
+
+## 2026-11-14 — Admin GĐ1: Tổng quan sau demo
+- Dashboard thêm series theo giờ/ngày, KPI doanh thu kỳ trước và số liệu sân; bảng đơn hiển thị SĐT, nhãn tiếng Việt, lọc và popup chi tiết.
+- Thêm API `GET /admin/bookings/{id}`; hủy sự cố dùng dialog chung, cập nhật 2 thông báo khách trong transaction và banner số tiền hoàn.
+- Bỏ mục “Cài đặt hệ thống” khỏi menu admin; giữ polling 5 giây. Không migration hoặc đổi schema.
+- Backend `npm test` đạt 76/76 hai lượt; frontend tests đạt 181/181 và `node --check` đạt trên 125 file; trình duyệt: **Chờ người dùng xác nhận**.
+
 ## 2026-11-13 — Module 10, GĐ5–6: polling đơn và tổng kiểm
 - Trang đơn đặt sân cập nhật bảng, số đếm tab và KPI tại chỗ mỗi 5 giây; giữ bộ lọc/trang/scroll, làm nổi đơn mới 5 giây và làm mới ngay sau thao tác admin.
 - Trang tổng quan dùng lại phiên xác thực từ header chung, chỉ gọi `/auth/me` dự phòng khi header không có user.
@@ -32,14 +107,14 @@
 ## 2026-11-12 — Phân bổ thông báo và thanh giữ chỗ dùng chung
 - Gom việc tạo notification vào event module dùng connection transaction; phân bổ thanh toán thành công/hủy đơn/hoàn tiền theo BOOKING_HOLD và PAYMENT, không ghi thông báo cho hủy PENDING hay thanh toán thất bại. Hủy sự cố có helper chưa gắn API; không thêm migration/schema.
 - Bộ lọc trang thông báo theo category; thông báo mới nhất dùng `created_at DESC, id DESC`.
-- Dựng thanh giữ chỗ từ hàm render header dùng chung, hiện trên mọi trang đăng nhập có header trừ `/thanh-toan.html`, `/dang-nhap.html`, `/dang-ky.html`; đồng bộ qua event, pageshow, visibilitychange và polling 10 giây khi tab hiển thị.
+- Dựng thanh giữ chỗ từ hàm render header dùng chung, hiện trên mọi trang đăng nhập có header trừ `/thanh-toan.html`, `/dang-nhap.html`, `/dang-ky.html`; đồng bộ qua event, pageshow, visibilitychange và polling 5 giây khi tab hiển thị.
 - Tìm sân hiển thị điểm sao tối đa một chữ số và giờ mở cửa không có giây; 24 giờ ghi “Mở cửa 24/24”.
 - Kiểm tra trình duyệt: **Chờ người dùng xác nhận**.
 
 ## 2026-11-11 — Module 8: Thông báo trong app
 - Thêm migration 007 và API danh sách, unread-count, đánh dấu đọc/đọc tất cả; truy vấn giới hạn theo user, trả `Cache-Control: no-store`.
 - Ghi thông báo thanh toán thành công, hết hạn giữ chỗ, hủy đơn có/không hoàn và hủy giữ chỗ trong transaction nghiệp vụ; tác vụ hết hạn chạy lặp không tạo trùng.
-- Nối chuông dùng SVG cục bộ, huy hiệu `9+`, popup 5 thông báo và polling 10 giây khi tab hiển thị; thêm trang thông báo theo API, bộ lọc, trạng thái và phân trang.
+- Nối chuông dùng SVG cục bộ, huy hiệu `9+`, popup 5 thông báo và polling 5 giây khi tab hiển thị; thêm trang thông báo theo API, bộ lọc, trạng thái và phân trang.
 - Migration đã áp dụng/xác minh trên `sportbooking_test`; frontend tests 111/111; `npm test` trên `sportbooking_test`: 59/59 hai lượt; `node --check`: đạt. Kiểm tra trình duyệt: **Chờ người dùng xác nhận**.
 
 ## 2026-11-12 — Sửa cập nhật thẻ sau khi hủy

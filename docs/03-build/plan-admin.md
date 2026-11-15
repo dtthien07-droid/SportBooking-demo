@@ -94,3 +94,24 @@ Thực hiện theo yêu cầu đã duyệt trong phiên 2026-11-13; chỉ sửa 
 - Mockup người dùng và khung giờ trong thư mục nguồn hiện rỗng; dashboard/cơ sở dùng giao diện hiện có, chưa chép nguyên nội dung mockup. Trang cài đặt không triển khai.
 - Xuất dữ liệu, bộ lọc nâng cao và nội dung ngoài nghiệp vụ đã bỏ hoặc vô hiệu; cần đối chiếu trực quan lần cuối.
 - Trước khi phát hành, chỉ chạy `node ../infra/database/migrate-bookings.js --database sportbooking_dev` khi được phép; không chạy vào `sportbooking_system`.
+
+## Chỉnh sửa sau demo
+
+- GĐ1 Tổng quan: biểu đồ theo giờ/ngày, KPI sân/doanh thu kỳ trước, trạng thái thống nhất và lọc đơn theo mã/tên/SĐT.
+- Bổ sung `GET /admin/bookings/{id}` cho popup chi tiết; dùng chung popup hủy sự cố, cập nhật thông báo khách trong transaction.
+- Chẩn đoán nút xác nhận hủy: nút nằm ngoài form nhưng thiếu liên kết `form`, nên click không gửi; đã liên kết và giữ validate `input` 3–500 ký tự.
+- Bỏ mục “Cài đặt hệ thống” khỏi menu admin; giữ nguyên polling 5 giây và ETag/304.
+- GĐ1 hoàn tất backend, HTTP integration và frontend test; kiểm tra giao diện bằng trình duyệt: **Chờ người dùng xác nhận**.
+- GĐ2: API người dùng trả summary toàn hệ thống theo tháng UTC+7; khóa thu hồi phiên trong transaction, requireAuth trả `401 ACCOUNT_LOCKED` và login trả `403` với thông báo thống nhất.
+- GĐ2 giao diện: bốn số liệu lấy từ API, khóa không hạn với lý do tùy chọn/đếm ký tự, mở khóa có xác nhận và cập nhật dòng/KPI.
+- Chẩn đoán nút khóa: các lựa chọn thời hạn trong markup là điều khiển demo bị vô hiệu, không tham gia payload; trạng thái gửi trước đây không có hàm thuần/input cập nhật. Bỏ chọn ngày và cập nhật nút theo `input`/trạng thái gửi.
+- GĐ3: API admin trả summary toàn hệ thống; tắt cơ sở/sân tiếp tục dùng `expected_updated_at`, chặn đơn hiệu lực và audit trong transaction.
+- API khách giữ cơ sở/sân tạm khóa kèm `is_active`; lịch trả slot không chọn được, tạo đơn trả `409 COURT_INACTIVE`.
+- GĐ3 giao diện: thứ tự bảng/KPI, cột và nút Sửa đúng phạm vi; khách thấy trạng thái ngưng hoạt động ở danh sách, trang chủ và chi tiết.
+- Thêm HTTP integration cho summary, khóa/mở sân, lịch/đặt sân khi khóa và đặt lại khi mở; lệnh test chưa chạy được do môi trường Windows không có sandbox backend.
+- GĐ4: thêm API khung giờ theo khoảng/ngày, summary tháng, dry-run và lưu một/hai mức giá; giao diện ngày/tuần/tháng và số liệu theo phạm vi xem.
+- GĐ4 test HTTP/frontend bổ sung; chưa chạy được trong phiên do VS Code không có test controller và shell sandbox không khả dụng.
+- GĐ5: lọc danh sách theo bộ lọc đã áp dụng; thêm xuất Excel tối đa 5.000 đơn, thoát công thức và audit chỉ lưu bộ lọc không chứa dữ liệu cá nhân.
+- Dùng ExcelJS đã có trong backend; chưa thêm thư viện. Chưa chạy được `npm audit` trong môi trường hiện tại.
+- Kết nối trang Đơn đặt sân với dialog hủy sự cố dùng chung; sửa lỗi khởi tạo do script bind vào form không có trong HTML.
+- Không migration/đổi schema. GĐ4–GĐ5 đã triển khai code và thêm test; lệnh test đang bị chặn bởi môi trường. Kiểm tra trình duyệt: **Chờ người dùng xác nhận**.
