@@ -261,11 +261,19 @@ test('booking list count, status counts, rows and slot display share the booking
     const result = await slots.listTimeSlots('1', '2026-11-16');
     const slotQuery = slotQueries.find(({ sql }) => sql.includes('AS effective_status'));
     assert.match(slotQuery.sql, /valid_booking_user\.id = slot_booking\.user_id/);
-    assert.match(slotQuery.sql, /slot_booking\.status = 'CONFIRMED'/);
+    assert.match(slotQuery.sql, /slot_booking\.status IN \('CONFIRMED', 'COMPLETED'\)/);
     assert.match(slotQuery.sql, /slot_booking\.status = 'PENDING'/);
+    assert.match(
+      slotQuery.sql,
+      /WHEN active_booking\.status IN \('CONFIRMED', 'COMPLETED'\) THEN 'BOOKED'/
+    );
     assert.equal(slotQuery.parameters[0], '2026-11-15 17:00:00.000');
     assert.equal(result.time_slots[0].status, 'AVAILABLE');
     assert.equal(result.time_slots[0].booking_code, null);
+
+    await slots.getMonthlySummary('1', '2026-11');
+    const monthlyQuery = slotQueries.find(({ sql }) => sql.includes('AS booked'));
+    assert.match(monthlyQuery.sql, /active_booking\.status IN \('CONFIRMED', 'COMPLETED'\)/);
   } finally {
     if (previousCutoff === undefined) delete process.env.BOOKING_DATA_START_AT;
     else process.env.BOOKING_DATA_START_AT = previousCutoff;

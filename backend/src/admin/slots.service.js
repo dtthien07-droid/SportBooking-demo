@@ -79,7 +79,7 @@ function activeBookingSubquery(validity) {
           INNER JOIN booking_slots AS bs
             ON bs.booking_id = slot_booking.id AND bs.time_slot_id = ts_current.id
           WHERE (${validity.sql})
-            AND (slot_booking.status = 'CONFIRMED'
+            AND (slot_booking.status IN ('CONFIRMED', 'COMPLETED')
               OR slot_booking.status = 'PENDING'
                 AND slot_booking.lock_expires_at > UTC_TIMESTAMP(3))`;
 }
@@ -158,7 +158,7 @@ function createAdminSlotsService(pool) {
                 ts.price, ts.status, ts.lock_expires_at, active_booking.booking_code,
                 DATE_FORMAT(ts.service_date, '%Y-%m-%d') AS slot_date,
                 CASE
-                  WHEN active_booking.status = 'CONFIRMED' THEN 'BOOKED'
+                  WHEN active_booking.status IN ('CONFIRMED', 'COMPLETED') THEN 'BOOKED'
                   WHEN active_booking.status = 'PENDING' THEN 'LOCKED'
                   WHEN ts.status IN ('BOOKED', 'LOCKED') THEN 'AVAILABLE'
                   ELSE ts.status
@@ -231,7 +231,7 @@ function createAdminSlotsService(pool) {
                 TIME_FORMAT(ts.ends_at, '%H:%i:%s') AS ends_at,
                 ts.price,
                 CASE
-                  WHEN active_booking.status = 'CONFIRMED' THEN 'BOOKED'
+                  WHEN active_booking.status IN ('CONFIRMED', 'COMPLETED') THEN 'BOOKED'
                   WHEN active_booking.status = 'PENDING' THEN 'LOCKED'
                   WHEN ts.status IN ('BOOKED', 'LOCKED') THEN 'AVAILABLE'
                   ELSE ts.status
@@ -295,7 +295,9 @@ function createAdminSlotsService(pool) {
       const [rows] = await pool.execute(
         `SELECT DATE_FORMAT(ts.service_date, '%Y-%m-%d') AS service_date,
                 COUNT(*) AS total,
-                COALESCE(SUM(CASE WHEN active_booking.status = 'CONFIRMED' THEN 1 ELSE 0 END), 0) AS booked,
+                COALESCE(SUM(CASE
+                  WHEN active_booking.status IN ('CONFIRMED', 'COMPLETED')
+                  THEN 1 ELSE 0 END), 0) AS booked,
                 COALESCE(SUM(CASE WHEN active_booking.status = 'PENDING' THEN 1 ELSE 0 END), 0) AS held,
                 COALESCE(SUM(CASE
                   WHEN active_booking.booking_id IS NULL
