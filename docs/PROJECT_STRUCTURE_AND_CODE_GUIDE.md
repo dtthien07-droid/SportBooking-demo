@@ -281,7 +281,7 @@ Mọi sự kiện thông báo được ghi cùng transaction với thay đổi n
 - **Monolith cùng origin — chủ động loại bỏ lỗi CORS:** `app.js` dùng `express.static` phục vụ frontend ngay trong tiến trình API, nên trình duyệt gọi API cùng origin — không phát sinh preflight CORS, không cần cấu hình cross-origin. Một lệnh `npm start` chạy toàn hệ thống, triển khai và sao lưu đơn giản.
 - **Bảo mật phiên theo chuẩn cookie:** cookie phiên đặt `httpOnly: true` + `sameSite: 'lax'` (`session.cookie.js`). HttpOnly khiến JavaScript không đọc được cookie (giảm rủi ro XSS đánh cắp phiên); SameSite=Lax chặn gửi cookie theo yêu cầu cross-site (giảm rủi ro CSRF). Cùng origin là điều kiện để bộ đôi này hoạt động đúng mà không cần nới lỏng chính sách.
 - **Polling 5s + ETag/304 — tối ưu băng thông, đúng quy mô:** middleware `admin-etag.js` băm SHA-256 payload (loại `server_time` để tránh nhiễu) thành weak ETag; khi `If-None-Match` khớp, server trả 304 không thân — chu kỳ 5s gần như không tốn băng thông lúc dữ liệu đứng yên. Nhịp 5s đủ mịn cho nghiệp vụ đặt sân, không phải duy trì WebSocket/SSE và hạ tầng push phức tạp.
-- **Tách routes / service / repository theo miền** (auth, facilities, bookings, notifications, admin) — mỗi tầng test độc lập được, bằng chứng là 325 test đạt (Phần 9).
+- **Tách routes / service / repository theo miền** (auth, facilities, bookings, notifications, admin) — mỗi tầng test độc lập được, bằng chứng là 339 test đạt (Phần 9).
 - **An toàn dữ liệu:** mọi thao tác ghi quan trọng dùng transaction + khóa dòng; quyền kiểm tra ở middleware và trong service (chủ đơn). Job nền chạy trong tiến trình web theo thiết kế idempotent — không cần hàng đợi riêng ở quy mô đồ án.
 
 **Ý chính khi demo**
@@ -826,7 +826,7 @@ flowchart LR
 Mọi module cốt lõi đều quy về trục Auth → Đặt sân → Thanh toán. Thông báo (M8) là hạ tầng chung được M4/M5/M6/M10 sử dụng. Module phạm vi mở rộng nối nét đứt.
 
 **Ý chính khi demo**
-- 11/14 module COMPLETED — 10 cốt lõi + 1 nâng cao (realtime), 325/325 test tự động đạt.
+- 11/14 module COMPLETED — 10 cốt lõi + 1 nâng cao (realtime), 339/339 test tự động đạt.
 - 3 module NOT STARTED là phạm vi mở rộng có chủ đích (tìm đối, đánh giá, quên MK/RSS/email), chứng minh bằng schema (không bảng) và API (không route).
 - Xác nhận thủ công trên trình duyệt: module 7/8/10 đã xác nhận 15/11/2026; module 1/3/4/5/6/12 còn "chờ người dùng xác nhận" theo roadmap.
 
@@ -939,7 +939,7 @@ Soát xét toàn bộ trang khách + trang admin ngày 15/11/2026. Đây là kho
 | 9 | Hàng mẫu Tennis/VIP trong HTML trang admin | quan-tri-tong-quan.html:442–462,702; quan-tri-nguoi-dung.html:371,505–509; quan-tri-san.html:452,455,462,589,727; quan-tri-khung-gio-gia.html:272,489 | KHÔNG phải dữ liệu hiển thị thường trực: JS thay toàn bộ bằng dữ liệu API khi tải (replaceChildren). Khối "Ghép đối — Sắp có" là placeholder trung thực. Rủi ro còn lại: lộ hàng mẫu nếu JS lỗi/tắt |
 
 **Ý chính khi demo**
-- 325/325 test đạt trong lần chạy thật 15/11/2026 (93 backend + 232 frontend) — có thể chạy lại ngay trên lớp bằng 2 lệnh trong Phần 11.
+- 339/339 test đạt trong lần chạy thật 15/11/2026 (93 backend + 232 frontend) — có thể chạy lại ngay trên lớp bằng 2 lệnh trong Phần 11.
 - Test đáng giá nhất: hai người cùng đặt một khung, SUCCESS đồng thời chỉ 1 vé, rollback khi lỗi giữa transaction.
 - HTTP integration chạy trên DB test thật (không mock) nên luồng đặt → thanh toán → hủy → đặt lại được kiểm chứng end-to-end ở tầng API.
 
