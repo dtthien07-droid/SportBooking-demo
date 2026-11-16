@@ -1527,7 +1527,7 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
     await t.test('admin booking list filters by status and code, paginates, and includes owner and slots', async () => {
       const response = await requestJson(
         baseUrl,
-        `/api/v1/admin/bookings?status=CONFIRMED&q=${encodeURIComponent(inProgressBooking.code)}&page=1&page_size=1`,
+        `/api/v1/admin/bookings?status=CONFIRMED&q=${encodeURIComponent(inProgressBooking.code)}&page=1`,
         'GET',
         undefined,
         admin.cookie
@@ -1541,7 +1541,7 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
       assert.equal(result.bookings.length, 1);
       assert.equal(result.pagination.total, 1);
       assert.equal(result.pagination.page, 1);
-      assert.equal(result.pagination.page_size, 1);
+      assert.equal(result.pagination.page_size, 10);
       assert.equal(result.bookings[0].booking_id, inProgressBooking.id);
       assert.equal(result.bookings[0].owner.full_name, owner.fullName);
       assert.equal(result.bookings[0].owner.email, owner.email);
@@ -1549,7 +1549,7 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
       assert.equal(result.bookings[0].slots.length, 1);
       assert.equal(result.bookings[0].slots[0].time_slot_id, inProgressBooking.slotId);
       const unchanged = await fetch(
-        `${baseUrl}/api/v1/admin/bookings?status=CONFIRMED&q=${encodeURIComponent(inProgressBooking.code)}&page=1&page_size=1`,
+        `${baseUrl}/api/v1/admin/bookings?status=CONFIRMED&q=${encodeURIComponent(inProgressBooking.code)}&page=1`,
         { headers: { cookie: admin.cookie, 'if-none-match': etag } }
       );
       assert.equal(unchanged.status, 304);
@@ -1557,14 +1557,21 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
 
       const firstPage = await requestJson(
         baseUrl,
-        '/api/v1/admin/bookings?page=1&page_size=1',
+        '/api/v1/admin/bookings?page=1',
         'GET',
         undefined,
         admin.cookie
       );
       const firstPageResult = await firstPage.json();
-      assert.equal(firstPageResult.bookings.length, 1);
-      assert.ok(firstPageResult.pagination.total_pages > 1);
+      assert.equal(
+        firstPageResult.bookings.length,
+        Math.min(firstPageResult.pagination.page_size, firstPageResult.pagination.total)
+      );
+      assert.equal(firstPageResult.pagination.page_size, 10);
+      assert.equal(
+        Object.values(firstPageResult.status_counts).reduce((sum, count) => sum + count, 0),
+        firstPageResult.pagination.total
+      );
       const invalidFacility = await requestJson(
         baseUrl,
         '/api/v1/admin/bookings?facility_id=not-a-number',
@@ -1586,6 +1593,7 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
       for (const query of [
         '?status=UNKNOWN',
         '?page=0',
+        '?page_size=1',
         '?page_size=51',
         '?facility_id=0',
         '?date=2026-2-3',
@@ -1632,7 +1640,7 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
     await t.test('admin booking list filters by facility, Vietnam service date, and both together', async () => {
       const byFacilityResponse = await requestJson(
         baseUrl,
-        `/api/v1/admin/bookings?facility_id=${facilityId}&page=1&page_size=2`,
+        `/api/v1/admin/bookings?facility_id=${facilityId}&page=1`,
         'GET',
         undefined,
         admin.cookie
@@ -1640,8 +1648,8 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
       assert.equal(byFacilityResponse.status, 200);
       const byFacility = await byFacilityResponse.json();
       assert.equal(byFacility.pagination.total, 5);
-      assert.equal(byFacility.pagination.total_pages, 3);
-      assert.equal(byFacility.bookings.length, 2);
+      assert.equal(byFacility.pagination.total_pages, 1);
+      assert.equal(byFacility.bookings.length, 5);
       assert.ok(byFacility.bookings.every((booking) => booking.slots.some(
         (slot) => slot.facility_id === facilityId
       )));

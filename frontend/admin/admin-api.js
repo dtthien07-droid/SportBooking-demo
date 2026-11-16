@@ -143,8 +143,13 @@
     return requestJson('/api/v1/auth/me');
   }
 
-  function getDashboard(range) {
-    return requestJson(`/api/v1/admin/dashboard?range=${encodeURIComponent(range)}`);
+  function getDashboard(range, filters = {}) {
+    const params = new URLSearchParams({ range: String(range) });
+    if (filters.q) params.set('q', filters.q);
+    if (filters.facility_id) params.set('facility_id', filters.facility_id);
+    if (filters.date) params.set('date', filters.date);
+    if (filters.status) params.set('status', filters.status);
+    return requestJson(`/api/v1/admin/dashboard?${params.toString()}`);
   }
 
   function getFacilities({ page, pageSize }) {
@@ -157,14 +162,14 @@
 
   function getBookings(filters = {}) {
     const page = filters.page ?? 1;
-    const pageSize = filters.page_size ?? filters.pageSize ?? 10;
     const query = filters.q ?? filters.query;
     const facilityId = filters.facility_id ?? filters.facilityId;
-    const params = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
+    const params = new URLSearchParams({ page: String(page) });
     if (filters.status) params.set('status', filters.status);
     if (query) params.set('q', query);
     if (filters.date) params.set('date', filters.date);
     if (facilityId) params.set('facility_id', facilityId);
+    if (filters.range) params.set('range', filters.range);
     return requestJson(`/api/v1/admin/bookings?${params.toString()}`);
   }
 
@@ -174,11 +179,16 @@
     if (filters.q) params.set('q', filters.q);
     if (filters.date) params.set('date', filters.date);
     if (filters.facility_id) params.set('facility_id', filters.facility_id);
+    if (filters.range) params.set('range', filters.range);
     return exportDownload.fetchFile(`/api/v1/admin/bookings/export?${params.toString()}`);
   }
 
-  function exportDashboard(period) {
-    const params = new URLSearchParams({ period: String(period) });
+  function exportDashboard(period, filters = {}) {
+    const params = new URLSearchParams({ range: String(period) });
+    if (filters.q) params.set('q', filters.q);
+    if (filters.facility_id) params.set('facility_id', filters.facility_id);
+    if (filters.date) params.set('date', filters.date);
+    if (filters.status) params.set('status', filters.status);
     return exportDownload.fetchFile(`/api/v1/admin/dashboard/export?${params.toString()}`);
   }
 

@@ -5,6 +5,7 @@ const {
   createDashboardExport,
   createUsersExport
 } = require('./bookings-export');
+const createAdminRepository = require('./admin.repository');
 
 const BOOKING_STATUSES = new Set([
   'PENDING',
@@ -16,6 +17,7 @@ const BOOKING_STATUSES = new Set([
 const EXPORT_STATUSES = new Set([...BOOKING_STATUSES, 'UPCOMING', 'IN_PROGRESS']);
 const DASHBOARD_RANGES = new Set(['today', '7d', '30d']);
 const MAX_PAGE_SIZE = 50;
+const BOOKING_PAGE_SIZE = createAdminRepository.BOOKING_PAGE_SIZE;
 const MAX_EXPORT_ROWS = 5000;
 const MAX_UINT64 = 18446744073709551615n;
 const VIETNAM_OFFSET_MS = 7 * 60 * 60 * 1000;
@@ -91,7 +93,7 @@ function parseBookingDate(value) {
   return value;
 }
 
-function parseBookingFilters(query = {}, allowDisplayStatuses = false) {
+function parseBookingFilters(query = {}, allowDisplayStatuses = true) {
   if (!query || typeof query !== 'object' || Array.isArray(query)) {
     throw invalidQuery('Bộ lọc đơn đặt sân không hợp lệ.');
   }
@@ -104,12 +106,23 @@ function parseBookingFilters(query = {}, allowDisplayStatuses = false) {
   if (typeof search !== 'string' || search.length > 100) {
     throw invalidQuery('q phải là chuỗi không quá 100 ký tự.');
   }
+  const range = query.range === undefined || query.range === '' ? null : query.range;
+  if (range !== null && !DASHBOARD_RANGES.has(range)) {
+    throw invalidQuery('range phải là today, 7d hoặc 30d.');
+  }
   return {
     status: status || null,
     query: search.trim(),
     facilityId: parseFacilityId(query.facility_id),
-    date: parseBookingDate(query.date)
+    date: parseBookingDate(query.date),
+    range
   };
+}
+
+function getBookingPeriodFilters(range, currentTime) {
+  if (!range) return { createdFrom: null, createdTo: null };
+  const window = getDashboardWindow(range, currentTime);
+  return { createdFrom: window.start, createdTo: window.end };
 }
 
 function normalizeBookingId(value) {
@@ -346,11 +359,18 @@ function createAdminService({
 
     async listBookings(query = {}) {
       const filters = parseBookingFilters(query);
-      const pageSize = parsePageValue(query.page_size, 10, 'page_size', MAX_PAGE_SIZE);
+      if (query.page_size !== undefined
+          && parsePageValue(query.page_size, BOOKING_PAGE_SIZE, 'page_size', MAX_PAGE_SIZE)
+            !== BOOKING_PAGE_SIZE) {
+        throw invalidQuery(`page_size cố định ở mức ${BOOKING_PAGE_SIZE}.`);
+      }
+      const pageSize = BOOKING_PAGE_SIZE;
       const maxPage = Math.floor(Number.MAX_SAFE_INTEGER / pageSize) + 1;
       const page = parsePageValue(query.page, 1, 'page', maxPage);
+      const periodFilters = getBookingPeriodFilters(filters.range, now());
       const result = await adminRepository.listBookings({
         ...filters,
+        ...periodFilters,
         page,
         pageSize
       });
@@ -399,7 +419,8 @@ function createAdminService({
           page_size: pageSize,
           total: result.total,
           total_pages: Math.ceil(result.total / pageSize)
-        }
+        },
+        status_counts: result.statusCounts
       };
     },
 
@@ -409,8 +430,10 @@ function createAdminService({
         throw new TypeError('Repository Admin chưa hỗ trợ xuất đơn đặt sân.');
       }
       const filters = parseBookingFilters(query, true);
+      const periodFilters = getBookingPeriodFilters(filters.range, now());
       const result = await adminRepository.exportBookings({
         ...filters,
+        ...periodFilters,
         maxRows: MAX_EXPORT_ROWS
       });
       if (result.total > MAX_EXPORT_ROWS) {
@@ -440,6 +463,7 @@ function createAdminService({
         details: {
           filters: {
             status: filters.status,
+            range: filters.range,
             facility_id: filters.facilityId,
             date: filters.date,
             query_applied: Boolean(filters.query)
@@ -494,21 +518,32 @@ function createAdminService({
       };
     },
 
-    async getDashboard(period = 'today') {
-      const selectedRange = period || 'today';
+    async getDashboard(periodOrQuery = 'today') {
+      const query = typeof periodOrQuery === 'string'
+        ? { range: periodOrQuery || 'today' }
+        : {
+          ...periodOrQuery,
+          range: periodOrQuery?.range || periodOrQuery?.period || 'today'
+        };
+      const filters = parseBookingFilters(query, true);
+      const selectedRange = filters.range || 'today';
       const window = getDashboardWindow(selectedRange, now());
       const [counts, revenue, previousRevenue, revenueByDayRows, revenueSeriesRows,
         bookingSeriesRows, fillRate, courtCounts, topCourts, recent] = await Promise.all([
-        adminRepository.getDashboardBookingCounts(window.start, window.end),
-        adminRepository.getDashboardPaymentMetrics(window.start, window.end),
-        adminRepository.getDashboardPaymentMetrics(window.previousStart, window.previousEnd),
-        adminRepository.getRevenueByDay(window.start, window.end),
-        adminRepository.getRevenueSeries(window.start, window.end, selectedRange === 'today'),
-        adminRepository.getBookingSeries(window.start, window.end, selectedRange === 'today'),
+        adminRepository.getDashboardBookingCounts(window.start, window.end, filters),
+        adminRepository.getDashboardPaymentMetrics(window.start, window.end, filters),
+        adminRepository.getDashboardPaymentMetrics(window.previousStart, window.previousEnd, filters),
+        adminRepository.getRevenueByDay(window.start, window.end, filters),
+        adminRepository.getRevenueSeries(window.start, window.end, selectedRange === 'today', filters),
+        adminRepository.getBookingSeries(window.start, window.end, selectedRange === 'today', filters),
         adminRepository.getDashboardFillRate(window.from, window.to),
-        adminRepository.getDashboardCourtCounts(window.start, window.end),
-        adminRepository.getTopCourts(window.start, window.end),
-        adminRepository.getRecentBookings(5)
+        adminRepository.getDashboardCourtCounts(window.start, window.end, filters),
+        adminRepository.getTopCourts(window.start, window.end, filters),
+        adminRepository.getRecentBookings(5, {
+          ...filters,
+          createdFrom: window.start,
+          createdTo: window.end
+        })
       ]);
       const grossPaid = BigInt(String(revenue.gross_paid || 0));
       const refunded = BigInt(String(revenue.refunded || 0));
@@ -626,15 +661,17 @@ function createAdminService({
       if (typeof adminRepository.withTransaction !== 'function') {
         throw new TypeError('Repository Admin chưa hỗ trợ nhật ký xuất báo cáo.');
       }
-      const period = query.period || 'today';
-      const dashboard = await this.getDashboard(period);
+      const dashboard = await this.getDashboard({
+        ...query,
+        range: query.range || query.period || 'today'
+      });
       const exported = await createDashboardExport({ dashboard, now: now() });
       await adminRepository.withTransaction((connection) => writeAudit(connection, {
         adminUserId,
         action: 'EXPORT_DASHBOARD',
         resourceType: 'dashboard_export',
         resourceId: String(adminUserId),
-        details: { filters: { period }, row_count: 1 }
+        details: { filters: { period: query.range || query.period || 'today' }, row_count: 1 }
       }));
       return exported;
     },

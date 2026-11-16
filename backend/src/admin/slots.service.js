@@ -1,6 +1,7 @@
 'use strict';
 
 const { writeAudit } = require('./admin-audit');
+const createAdminRepository = require('./admin.repository');
 const { createTimeSlotsExport } = require('./bookings-export');
 const {
   insertMissingSlotsForCourt,
@@ -70,6 +71,19 @@ function formatTime(value) {
   return value == null ? '' : String(value).slice(0, 8);
 }
 
+function activeBookingSubquery(validity) {
+  return `SELECT ts_current.id AS time_slot_id, slot_booking.id AS booking_id,
+                 slot_booking.booking_code, slot_booking.status
+          FROM time_slots AS ts_current
+          INNER JOIN bookings AS slot_booking ON slot_booking.id = ts_current.current_booking_id
+          INNER JOIN booking_slots AS bs
+            ON bs.booking_id = slot_booking.id AND bs.time_slot_id = ts_current.id
+          WHERE (${validity.sql})
+            AND (slot_booking.status = 'CONFIRMED'
+              OR slot_booking.status = 'PENDING'
+                AND slot_booking.lock_expires_at > UTC_TIMESTAMP(3))`;
+}
+
 function createAdminSlotsService(pool) {
   async function transaction(callback) {
     const connection = await pool.getConnection();
@@ -110,6 +124,7 @@ function createAdminSlotsService(pool) {
 
   return {
     async listTimeSlots(rawCourtId, rawDate, rawFromDate, rawFrom, rawTo) {
+      const bookingValidity = createAdminRepository.buildBookingValidityCondition('slot_booking');
       const courtId = parseId(rawCourtId);
       let from;
       let to;
@@ -140,25 +155,30 @@ function createAdminSlotsService(pool) {
       if (!courtRows.length) throw failure(404, 'COURT_NOT_FOUND', 'Không tìm thấy sân.');
       const [rows] = await pool.execute(
         `SELECT ts.id, ts.court_id, ts.service_date, ts.starts_at, ts.ends_at,
-                ts.price, ts.status, ts.lock_expires_at, b.booking_code,
+                ts.price, ts.status, ts.lock_expires_at, active_booking.booking_code,
                 DATE_FORMAT(ts.service_date, '%Y-%m-%d') AS slot_date,
                 CASE
-                  WHEN ts.status = 'LOCKED'
-                    AND (ts.lock_expires_at IS NULL OR ts.lock_expires_at <= UTC_TIMESTAMP(3))
-                  THEN 'AVAILABLE'
+                  WHEN active_booking.status = 'CONFIRMED' THEN 'BOOKED'
+                  WHEN active_booking.status = 'PENDING' THEN 'LOCKED'
+                  WHEN ts.status IN ('BOOKED', 'LOCKED') THEN 'AVAILABLE'
                   ELSE ts.status
                 END AS effective_status
          FROM time_slots AS ts
-         LEFT JOIN bookings AS b ON b.id = ts.current_booking_id
+         LEFT JOIN (${activeBookingSubquery(bookingValidity)}) AS active_booking
+           ON active_booking.time_slot_id = ts.id
          WHERE ts.court_id = ? AND ts.service_date >= ? AND ts.service_date <= ?
          ORDER BY ts.service_date ASC, ts.starts_at ASC, ts.id ASC`,
-        [courtId, from, to]
+        [...bookingValidity.parameters, courtId, from, to]
       );
       const [previewRows] = await pool.execute(
         `SELECT COUNT(*) AS available_count
-         FROM time_slots
-         WHERE court_id = ? AND service_date >= ? AND status = 'AVAILABLE'`,
-        [courtId, fromDate]
+         FROM time_slots AS ts
+         LEFT JOIN (${activeBookingSubquery(bookingValidity)}) AS active_booking
+           ON active_booking.time_slot_id = ts.id
+         WHERE ts.court_id = ? AND ts.service_date >= ?
+           AND ts.status IN ('AVAILABLE', 'LOCKED', 'BOOKED')
+           AND active_booking.booking_id IS NULL`,
+        [...bookingValidity.parameters, courtId, fromDate]
       );
       const openingTime = formatTime(courtRows[0].opening_time);
       const closingTime = formatTime(courtRows[0].closing_time);
@@ -190,6 +210,7 @@ function createAdminSlotsService(pool) {
     },
 
     async exportTimeSlots(rawCourtId, rawFrom, rawTo, adminUserId) {
+      const bookingValidity = createAdminRepository.buildBookingValidityCondition('slot_booking');
       const courtId = parseId(rawCourtId);
       const { from, to } = getDateRange(rawFrom, rawTo);
       const parsedLimit = Number.parseInt(5001, 10);
@@ -210,16 +231,18 @@ function createAdminSlotsService(pool) {
                 TIME_FORMAT(ts.ends_at, '%H:%i:%s') AS ends_at,
                 ts.price,
                 CASE
-                  WHEN ts.status = 'LOCKED'
-                    AND (ts.lock_expires_at IS NULL OR ts.lock_expires_at <= UTC_TIMESTAMP(3))
-                  THEN 'AVAILABLE'
+                  WHEN active_booking.status = 'CONFIRMED' THEN 'BOOKED'
+                  WHEN active_booking.status = 'PENDING' THEN 'LOCKED'
+                  WHEN ts.status IN ('BOOKED', 'LOCKED') THEN 'AVAILABLE'
                   ELSE ts.status
                 END AS effective_status
          FROM time_slots AS ts
+         LEFT JOIN (${activeBookingSubquery(bookingValidity)}) AS active_booking
+           ON active_booking.time_slot_id = ts.id
          WHERE ts.court_id = ? AND ts.service_date >= ? AND ts.service_date <= ?
          ORDER BY ts.service_date ASC, ts.starts_at ASC, ts.id ASC
          LIMIT ${safeLimit}`,
-        [courtId, from, to]
+        [...bookingValidity.parameters, courtId, from, to]
       );
       if (rows.length > 5000) {
         throw failure(400, 'EXPORT_TOO_MANY_ROWS', 'Quá nhiều dòng, hãy lọc thu hẹp');
@@ -244,6 +267,7 @@ function createAdminSlotsService(pool) {
     },
 
     async getMonthlySummary(rawCourtId, rawMonth) {
+      const bookingValidity = createAdminRepository.buildBookingValidityCondition('slot_booking');
       const courtId = parseId(rawCourtId);
       if (typeof rawMonth !== 'string' || !/^\d{4}-\d{2}$/.test(rawMonth)) {
         throw failure(400, 'INVALID_MONTH', 'month phải theo định dạng YYYY-MM.');
@@ -271,14 +295,11 @@ function createAdminSlotsService(pool) {
       const [rows] = await pool.execute(
         `SELECT DATE_FORMAT(ts.service_date, '%Y-%m-%d') AS service_date,
                 COUNT(*) AS total,
-                COALESCE(SUM(CASE WHEN ts.status = 'BOOKED' THEN 1 ELSE 0 END), 0) AS booked,
+                COALESCE(SUM(CASE WHEN active_booking.status = 'CONFIRMED' THEN 1 ELSE 0 END), 0) AS booked,
+                COALESCE(SUM(CASE WHEN active_booking.status = 'PENDING' THEN 1 ELSE 0 END), 0) AS held,
                 COALESCE(SUM(CASE
-                  WHEN ts.status = 'LOCKED' AND ts.lock_expires_at > UTC_TIMESTAMP(3)
-                  THEN 1 ELSE 0 END), 0) AS held,
-                COALESCE(SUM(CASE
-                  WHEN ts.status = 'AVAILABLE'
-                    OR ts.status = 'LOCKED'
-                      AND (ts.lock_expires_at IS NULL OR ts.lock_expires_at <= UTC_TIMESTAMP(3))
+                  WHEN active_booking.booking_id IS NULL
+                    AND ts.status IN ('AVAILABLE', 'LOCKED', 'BOOKED')
                   THEN 1 ELSE 0 END), 0) AS available,
                 COALESCE(SUM(CASE
                   WHEN TIME(ts.starts_at) < '17:00:00' OR TIME(ts.starts_at) >= '21:00:00'
@@ -287,25 +308,25 @@ function createAdminSlotsService(pool) {
                   WHEN TIME(ts.starts_at) >= '17:00:00' AND TIME(ts.starts_at) < '21:00:00'
                   THEN 1 ELSE 0 END), 0) AS peak_total,
                 COALESCE(SUM(CASE
-                  WHEN (ts.status = 'BOOKED'
-                    OR ts.status = 'LOCKED' AND ts.lock_expires_at > UTC_TIMESTAMP(3))
+                  WHEN active_booking.booking_id IS NOT NULL
                     AND (TIME(ts.starts_at) < '17:00:00' OR TIME(ts.starts_at) >= '21:00:00')
                   THEN 1 ELSE 0 END), 0) AS normal_occupied,
                 COALESCE(SUM(CASE
-                  WHEN (ts.status = 'BOOKED'
-                    OR ts.status = 'LOCKED' AND ts.lock_expires_at > UTC_TIMESTAMP(3))
+                  WHEN active_booking.booking_id IS NOT NULL
                     AND TIME(ts.starts_at) >= '17:00:00' AND TIME(ts.starts_at) < '21:00:00'
                   THEN 1 ELSE 0 END), 0) AS peak_occupied,
                 COALESCE(SUM(ts.price), 0) AS expected_revenue
          FROM time_slots AS ts
          INNER JOIN courts AS c ON c.id = ts.court_id
          INNER JOIN facilities AS f ON f.id = c.facility_id
+         LEFT JOIN (${activeBookingSubquery(bookingValidity)}) AS active_booking
+           ON active_booking.time_slot_id = ts.id
          WHERE ts.court_id = ? AND ts.service_date >= ? AND ts.service_date <= ?
            AND TIME_TO_SEC(ts.starts_at) >= TIME_TO_SEC(f.opening_time)
            AND TIME_TO_SEC(ts.ends_at) <= TIME_TO_SEC(f.closing_time)
          GROUP BY ts.service_date
          ORDER BY ts.service_date ASC`,
-        [courtId, from, to]
+        [...bookingValidity.parameters, courtId, from, to]
       );
       const summaries = new Map(rows.map((row) => [row.service_date, {
         total: Number(row.total),

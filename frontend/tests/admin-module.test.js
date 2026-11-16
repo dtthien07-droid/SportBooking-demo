@@ -388,12 +388,13 @@ test('admin API uses the backend routes, query names, and cancellation payload',
       date: '2026-11-12',
       facilityId: '23',
       page: 2,
-      pageSize: 50
+      pageSize: 50,
+      range: '7d'
     });
     await adminApi.getFacilities({ page: 2, pageSize: 50 });
     await adminApi.getDashboard('7d');
     await adminApi.cancelIncident('42', 'Sự cố tại sân');
-    assert.equal(requests[0].url, '/api/v1/admin/bookings?page=2&page_size=50&status=CONFIRMED&q=SPB-42&date=2026-11-12&facility_id=23');
+    assert.equal(requests[0].url, '/api/v1/admin/bookings?page=2&status=CONFIRMED&q=SPB-42&date=2026-11-12&facility_id=23&range=7d');
     assert.equal(requests[1].url, '/api/v1/facilities?page=2&page_size=50');
     assert.equal(requests[2].url, '/api/v1/admin/dashboard?range=7d');
     assert.equal(requests[3].url, '/api/v1/admin/bookings/42/incident-cancellation');
@@ -533,7 +534,7 @@ test('shared report API endpoints preserve filters and pass responses through th
     });
     await adminApi.exportTimeSlots('42', { from: '2026-11-09', to: '2026-11-15' });
     assert.deepEqual(requests.map((request) => request.url), [
-      '/api/v1/admin/dashboard/export?period=30d',
+      '/api/v1/admin/dashboard/export?range=30d',
       '/api/v1/admin/users/export?q=Locked+User&status=ADMIN_LOCKED',
       '/api/v1/admin/facilities/export?q=S%C3%A2n+A&district=C%E1%BA%A7u+Gi%E1%BA%A5y&is_active=false',
       '/api/v1/admin/courts/42/time-slots/export?from=2026-11-09&to=2026-11-15'

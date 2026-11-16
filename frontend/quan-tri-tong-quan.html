@@ -234,7 +234,7 @@
             Tổng quan hoạt động hôm nay
           </h1>
 <p class="text-[13px] text-slate-500">
-            Theo dõi lưu lượng đặt sân, hiệu suất khai thác và doanh thu hệ thống SportBooking trên toàn quốc.
+            Thống kê theo ngày tạo đơn; Ngày chơi là bộ lọc riêng. Theo dõi hoạt động hệ thống SportBooking.
           </p>
 </div>
 <!-- Date Selector & CTA -->
@@ -561,6 +561,9 @@
               <button class="px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900 font-medium" type="button" data-admin-booking-filter="UPCOMING">
                               Sắp tới
               </button>
+              <button class="px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900 font-medium" type="button" data-admin-booking-filter="IN_PROGRESS">
+                              Đang trong trận
+              </button>
               <button class="px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900 font-medium" type="button" data-admin-booking-filter="COMPLETED">
                               Hoàn thành
               </button>
@@ -778,7 +781,7 @@
 <!-- Pagination & Summary -->
 <div class="pt-4 mt-2 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-[12px] text-slate-500">
 <div>
-            Hiển thị <span class="font-semibold text-slate-800" data-admin-booking-range>0</span> trong tổng số <span class="font-semibold text-slate-800" data-admin-booking-total>0</span> đơn đặt sân trên toàn hệ thống
+            Hiển thị <span class="font-semibold text-slate-800" data-admin-booking-range>0</span> của <span class="font-semibold text-slate-800" data-admin-booking-total>0</span> đơn đặt sân
           </div>
 <div class="flex items-center gap-2" data-admin-booking-pagination aria-label="Phân trang danh sách đặt sân"></div>
 </div>
