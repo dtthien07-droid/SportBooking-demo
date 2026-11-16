@@ -221,7 +221,7 @@ function createAdminRouter({
   });
 
   router.get('/dashboard', requireAuth, requireAdmin, adminEtag, async (request, response) => {
-    const result = await adminService.getDashboard(request.query.range || request.query.period);
+    const result = await adminService.getDashboard(request.query);
     response.json(result);
   });
 

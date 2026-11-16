@@ -9,11 +9,14 @@
   "scripts": {
     "start": "node src/server.js",
     "test": "node run-tests.js",
+    "test:local": "node run-tests.js",
+    "test:frontend": "node run-tests.js --frontend",
     "migrate:facilities": "node ../infra/database/migrate-facilities.js",
     "seed:facilities": "node ../infra/database/seed-facilities.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
+    "compression": "^1.8.2",
     "dotenv": "^16.4.7",
     "exceljs": "^4.4.0",
     "express": "^5.1.0",

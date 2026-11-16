@@ -25,9 +25,11 @@
     chart: document.getElementById('revenueChart'),
     chartTooltip: document.getElementById('revenueTooltip'),
     topCourts: document.getElementById('topCourts'),
-    recentBookings: document.getElementById('recentBookings'),
     manageFacilities: document.getElementById('manageFacilities')
   };
+  const validRanges = new Set(['today', '7d', '30d']);
+  const requestedRange = new URLSearchParams(window.location.search).get('range');
+  if (validRanges.has(requestedRange)) elements.range.value = requestedRange;
   let polling = null;
   let requestId = 0;
   let bookingsRequestId = 0;
@@ -37,7 +39,7 @@
   let bookingPage = 1;
   let bookingTotal = 0;
   let bookingTotalPages = 0;
-  const bookingPageSize = 10;
+  let bookingPageSize = 10;
   const bookingDetailModal = document.getElementById('dashboardBookingDetailModal');
   let incidentDialog = null;
   let detailTrigger = null;
@@ -49,8 +51,8 @@
     return node;
   }
 
-  elements.chart.replaceChildren(element('p', 'text-[12px] text-slate-500', 'Đang tải biểu đồ...'));
-  elements.topCourts.replaceChildren(element('p', 'py-3 text-[12px] text-slate-500', 'Đang tải danh sách sân...'));
+  elements.chart?.replaceChildren(element('p', 'text-[12px] text-slate-500', 'Đang tải biểu đồ...'));
+  elements.topCourts?.replaceChildren(element('p', 'py-3 text-[12px] text-slate-500', 'Đang tải danh sách sân...'));
   const initialBookingRow = element('tr');
   const initialBookingCell = element('td', 'py-4 px-3 text-center text-slate-500', 'Đang tải danh sách đặt sân...');
   initialBookingCell.colSpan = 7;
@@ -186,7 +188,19 @@
 
   function setDashboardError(message) {
     elements.message.dataset.kind = 'error';
-    elements.message.textContent = message;
+    elements.message.replaceChildren(document.createTextNode(`${message} `));
+    const retry = element('button', 'admin-button admin-button--quiet', 'Thử lại');
+    retry.type = 'button';
+    retry.addEventListener('click', () => loadDashboard());
+    elements.message.append(retry);
+    for (const container of [elements.chart, elements.topCourts]) {
+      if (!container) continue;
+      const notice = element('p', 'py-3 text-[12px] text-rose-700', message);
+      const button = element('button', 'admin-button admin-button--quiet', 'Thử lại');
+      button.type = 'button';
+      button.addEventListener('click', () => loadDashboard());
+      container.replaceChildren(notice, button);
+    }
   }
 
   async function authorize() {
@@ -206,7 +220,29 @@
     return state.formatMoney(value);
   }
 
+  function syncRangeUrl() {
+    const params = new URLSearchParams(window.location.search);
+    params.set('range', elements.range.value);
+    window.history.replaceState(
+      window.history.state,
+      '',
+      `${window.location.pathname}?${params.toString()}${window.location.hash}`
+    );
+    document.querySelectorAll('[data-admin-nav="bookings"]').forEach((link) => {
+      link.href = `/quan-tri.html?range=${encodeURIComponent(elements.range.value)}`;
+    });
+  }
+
+  function renderRangeButtons() {
+    document.querySelectorAll('[data-admin-range]').forEach((button) => {
+      button.className = button.dataset.adminRange === elements.range.value
+        ? 'px-3.5 py-1.5 rounded-lg bg-white text-slate-900 font-semibold text-[12px] shadow-sm transition-all'
+        : 'px-3.5 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 font-medium text-[12px] transition-all';
+    });
+  }
+
   function renderChart(series, period) {
+    if (!elements.chart) return;
     const svgNs = 'http://www.w3.org/2000/svg';
     const svg = document.createElementNS(svgNs, 'svg');
     const pad = { top: 16, right: 12, bottom: 52, left: 84 };
@@ -314,6 +350,7 @@
   }
 
   function renderTopCourts(courts) {
+    if (!elements.topCourts) return;
     const highlight = document.querySelector('[data-admin-top-highlight]');
     if (highlight) highlight.textContent = courts[0]?.facility_name || '';
     const highlightFooter = highlight?.parentElement?.parentElement;
@@ -346,22 +383,6 @@
     ]));
   }
 
-  function renderRecentBookings(bookings) {
-    const rows = bookings.map((booking) => {
-      const link = element('a', 'admin-dashboard-row admin-dashboard-row--link');
-      link.href = `/quan-tri.html?q=${encodeURIComponent(booking.booking_code)}`;
-      link.append(
-        element('span', 'admin-dashboard-row__main', booking.booking_code || '—'),
-        element('span', 'admin-dashboard-row__meta',
-          `${booking.owner_name || 'Khách'} · ${booking.facility_name || '—'} · ${booking.court_name || '—'}`),
-        element('span', 'admin-dashboard-row__meta',
-          `${booking.service_date || 'Chưa có lịch'} ${booking.starts_at?.slice(0, 5) || ''} · ${money(booking.paid_amount)}`)
-      );
-      return link;
-    });
-    elements.recentBookings.replaceChildren(...(rows.length ? rows : [element('p', 'admin-empty', 'Chưa có đơn đặt sân.')]));
-  }
-
   function renderBookingPagination() {
     const container = document.querySelector('[data-admin-booking-pagination]');
     if (!container) return;
@@ -387,14 +408,36 @@
     container.replaceChildren(previous, label, next);
   }
 
+  function exportDashboardReport() {
+    return exportDownload.download(
+      elements.exportButton,
+      elements.exportStatus,
+      () => api.exportDashboard(elements.range.value, {
+        status: bookingStatusFilter,
+        q: bookingSearchQuery
+      }),
+      {
+        onError(error) {
+          const retry = element('button', 'admin-button admin-button--quiet', 'Thử lại');
+          retry.type = 'button';
+          retry.addEventListener('click', exportDashboardReport);
+          elements.exportStatus.replaceChildren(
+            document.createTextNode(`${error.message || 'Không thể xuất báo cáo Excel. Vui lòng thử lại.'} `),
+            retry
+          );
+          elements.exportStatus.setAttribute('role', 'alert');
+          elements.exportStatus.dataset.kind = 'error';
+          elements.exportStatus.hidden = false;
+          return true;
+        }
+      }
+    );
+  }
+
   function renderMockupBookings() {
     const body = document.getElementById('mockupBookingRows');
     if (!body) return;
-    const filteredBookings = dashboardState.filterBookings(
-      dashboardBookings,
-      bookingStatusFilter,
-      bookingSearchQuery
-    );
+    const filteredBookings = dashboardBookings;
     const range = document.querySelector('[data-admin-booking-range]');
     const total = document.querySelector('[data-admin-booking-total]');
     const first = bookingTotal ? (bookingPage - 1) * bookingPageSize + 1 : 0;
@@ -495,7 +538,12 @@
     const currentRequest = ++bookingsRequestId;
     try {
       const result = await withTimeout(
-        api.getBookings({ page: bookingPage, page_size: bookingPageSize }),
+        api.getBookings({
+          page: bookingPage,
+          range: elements.range.value,
+          status: bookingStatusFilter,
+          q: bookingSearchQuery
+        }),
         'Quá thời gian tải danh sách đặt sân. Vui lòng thử lại.'
       );
       if (currentRequest !== bookingsRequestId) return;
@@ -503,7 +551,8 @@
         throw new Error('Dữ liệu danh sách đặt sân không hợp lệ.');
       }
       bookingTotal = Math.max(0, Number(result.pagination.total) || 0);
-      bookingTotalPages = Math.ceil(bookingTotal / bookingPageSize);
+      bookingPageSize = Math.max(1, Number(result.pagination.page_size) || bookingPageSize);
+      bookingTotalPages = Math.max(0, Number(result.pagination.total_pages) || 0);
       if (bookingTotalPages > 0 && bookingPage > bookingTotalPages) {
         bookingPage = bookingTotalPages;
         return loadBookings(isPolling);
@@ -517,8 +566,12 @@
         dashboardBookings = [];
         const row = element('tr');
         const cell = element('td', 'py-4 px-3 text-center text-slate-500',
-          'Không thể tải danh sách đặt sân. Vui lòng thử lại.');
+          `${error.message || 'Không thể tải danh sách đặt sân.'} `);
         cell.colSpan = 7;
+        const retry = element('button', 'admin-button admin-button--quiet', 'Thử lại');
+        retry.type = 'button';
+        retry.addEventListener('click', () => loadBookings());
+        cell.append(retry);
         row.append(cell);
         document.getElementById('mockupBookingRows')?.replaceChildren(row);
         bookingTotal = 0;
@@ -537,7 +590,10 @@
     const currentRequest = ++requestId;
     try {
       const result = await withTimeout(
-        api.getDashboard(elements.range.value),
+        api.getDashboard(elements.range.value, {
+          status: bookingStatusFilter,
+          q: bookingSearchQuery
+        }),
         'Quá thời gian tải số liệu (10 giây). Vui lòng thử lại.'
       );
       if (currentRequest !== requestId) return;
@@ -593,15 +649,13 @@
         '30d': '30 ngày qua'
       }[elements.range.value]}`;
       renderTopCourts(result.top_courts || []);
-      renderRecentBookings(result.recent_bookings || []);
       elements.message.dataset.kind = '';
-      elements.message.textContent = `Dữ liệu ${dashboardState.formatDate(result.range.from)} – ${dashboardState.formatDate(result.range.to)}`;
+      elements.message.textContent = `Kỳ theo ngày tạo đơn: ${dashboardState.formatDate(result.range.from)} – ${dashboardState.formatDate(result.range.to)}. Ngày chơi là bộ lọc riêng.`;
     } catch (error) {
       if (error.status === 401) window.location.replace('/dang-nhap.html');
       else if (error.status === 403) window.location.replace(state.USER_HOME);
-      else if (!isPolling) {
-        elements.message.textContent = '';
-        delete elements.message.dataset.kind;
+      else if (currentRequest === requestId) {
+        setDashboardError(error.message || 'Không thể tải số liệu tổng quan.');
       }
       if (isPolling) throw error;
     }
@@ -621,22 +675,15 @@
   }
 
   elements.range.addEventListener('change', () => {
+    syncRangeUrl();
+    renderRangeButtons();
+    bookingPage = 1;
     api.clearCache();
-    if (polling) polling.refreshNow();
-    else loadDashboard();
+    Promise.all([loadDashboard(), loadBookings()]);
   });
-  elements.exportButton.addEventListener('click', () => exportDownload.download(
-    elements.exportButton,
-    elements.exportStatus,
-    () => api.exportDashboard(elements.range.value)
-  ));
+  elements.exportButton.addEventListener('click', exportDashboardReport);
   document.querySelectorAll('[data-admin-range]').forEach((button) => {
     button.addEventListener('click', () => {
-      document.querySelectorAll('[data-admin-range]').forEach((item) => {
-        item.className = item === button
-          ? 'px-3.5 py-1.5 rounded-lg bg-white text-slate-900 font-semibold text-[12px] shadow-sm transition-all'
-          : 'px-3.5 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 font-medium text-[12px] transition-all';
-      });
       elements.range.value = button.dataset.adminRange;
       elements.range.dispatchEvent(new Event('change', { bubbles: true }));
     });
@@ -644,17 +691,19 @@
   document.querySelectorAll('[data-admin-booking-filter]').forEach((button) => {
     button.addEventListener('click', () => {
       bookingStatusFilter = button.dataset.adminBookingFilter || '';
+      bookingPage = 1;
       document.querySelectorAll('[data-admin-booking-filter]').forEach((item) => {
         item.className = item === button
           ? 'px-3 py-1 rounded-lg bg-white text-slate-900 font-semibold shadow-sm'
           : 'px-3 py-1 rounded-lg text-slate-600 hover:text-slate-900 font-medium';
       });
-      renderMockupBookings();
+      Promise.all([loadDashboard(), loadBookings()]);
     });
   });
   document.getElementById('dashboardBookingSearch')?.addEventListener('input', (event) => {
     bookingSearchQuery = event.currentTarget.value;
-    renderMockupBookings();
+    bookingPage = 1;
+    Promise.all([loadDashboard(), loadBookings()]);
   });
   document.querySelector('[data-admin-booking-pagination]')?.addEventListener('click', (event) => {
     const button = event.target.closest('button[data-page]');
@@ -701,6 +750,8 @@
   });
   window.addEventListener('admin-data-changed', () => polling?.refreshNow());
   window.addEventListener('pagehide', () => polling?.stop(), { once: true });
+  syncRangeUrl();
+  renderRangeButtons();
   window.SportBookingIcons?.renderAll(document);
   initialize();
 })();

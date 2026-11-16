@@ -1156,16 +1156,48 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
         { inserted: 0, existing: 36 }
       );
 
-      await pool.execute(
-        `UPDATE time_slots SET status = 'LOCKED', lock_expires_at = DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 1 MINUTE)
-         WHERE court_id = ? AND service_date = ? AND starts_at = '06:00:00'`,
-        [generatedCourtId, fromDate]
-      );
-      await pool.execute(
-        `UPDATE time_slots SET status = 'BOOKED'
-         WHERE court_id = ? AND service_date = ? AND starts_at = '17:00:00'`,
-        [generatedCourtId, fromDate]
-      );
+      async function addSlotBooking(status, startsAt) {
+        const [slotRows] = await pool.execute(
+          `SELECT id FROM time_slots
+           WHERE court_id = ? AND service_date = ? AND starts_at = ?`,
+          [generatedCourtId, fromDate, startsAt]
+        );
+        assert.equal(slotRows.length, 1);
+        const slotId = String(slotRows[0].id);
+        const lockExpiresAt = status === 'PENDING'
+          ? new Date(Date.now() + 10 * 60_000)
+          : null;
+        const [bookingResult] = await pool.execute(
+          `INSERT INTO bookings
+             (booking_code, user_id, status, total_amount, match_preference,
+              lock_expires_at, created_at, updated_at)
+           VALUES (?, ?, ?, '120000', NULL, ?, UTC_TIMESTAMP(3), UTC_TIMESTAMP(3))`,
+          [
+            `SPB-ADM-${crypto.randomUUID().replaceAll('-', '')}`,
+            owner.id,
+            status,
+            lockExpiresAt
+          ]
+        );
+        const bookingId = String(bookingResult.insertId);
+        bookingIds.push(bookingId);
+        await pool.execute(
+          `INSERT INTO booking_slots
+             (booking_id, time_slot_id, court_id, price_at_booking, created_at)
+           VALUES (?, ?, ?, '120000', UTC_TIMESTAMP(3))`,
+          [bookingId, slotId, generatedCourtId]
+        );
+        await pool.execute(
+          `UPDATE time_slots
+           SET status = ?, current_booking_id = ?, lock_expires_at = ?
+           WHERE id = ?`,
+          [status === 'PENDING' ? 'LOCKED' : 'BOOKED', bookingId, lockExpiresAt, slotId]
+        );
+        return { bookingId, slotId };
+      }
+
+      const heldSlot = await addSlotBooking('PENDING', '06:00:00');
+      const bookedSlot = await addSlotBooking('CONFIRMED', '17:00:00');
       const facilityDetailResponse = await requestJson(
         baseUrl, `/api/v1/admin/facilities/${managedFacilityId}`, 'GET', undefined, admin.cookie
       );
@@ -1290,6 +1322,18 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
       assert.equal(priceUpdate.status, 200);
       const priceResult = await priceUpdate.json();
       assert.equal(priceResult.affected_slots, Number(priceAffectedRows[0].total));
+      await pool.execute(
+        `UPDATE bookings
+         SET lock_expires_at = DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 1 MINUTE)
+         WHERE id = ?`,
+        [heldSlot.bookingId]
+      );
+      await pool.execute(
+        `UPDATE time_slots
+         SET lock_expires_at = DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 1 MINUTE)
+         WHERE id = ?`,
+        [heldSlot.slotId]
+      );
       const stalePrices = await requestJson(
         baseUrl, `/api/v1/admin/courts/${generatedCourtId}/prices`, 'PATCH',
         {
@@ -1402,6 +1446,25 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
       );
       assert.deepEqual(auditRows.map((row) => row.action),
         ['COURT_CREATE', 'SLOTS_GENERATE', 'SLOTS_GENERATE', 'COURT_PRICES_UPDATE', 'COURT_PRICES_UPDATE']);
+      const temporaryBookingIds = [heldSlot.bookingId, bookedSlot.bookingId];
+      const placeholders = temporaryBookingIds.map(() => '?').join(', ');
+      await pool.execute(
+        `DELETE FROM booking_slots WHERE booking_id IN (${placeholders})`,
+        temporaryBookingIds
+      );
+      await pool.execute(
+        `UPDATE time_slots
+         SET status = 'AVAILABLE', current_booking_id = NULL, lock_expires_at = NULL
+         WHERE current_booking_id IN (${placeholders})`,
+        temporaryBookingIds
+      );
+      await pool.execute(
+        `DELETE FROM bookings WHERE id IN (${placeholders})`,
+        temporaryBookingIds
+      );
+      for (const bookingId of temporaryBookingIds) {
+        bookingIds.splice(bookingIds.indexOf(bookingId), 1);
+      }
     });
 
     await t.test('user list excludes sensitive fields and account locking revokes sessions transactionally', async () => {
@@ -1527,7 +1590,7 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
     await t.test('admin booking list filters by status and code, paginates, and includes owner and slots', async () => {
       const response = await requestJson(
         baseUrl,
-        `/api/v1/admin/bookings?status=CONFIRMED&q=${encodeURIComponent(inProgressBooking.code)}&page=1&page_size=1`,
+        `/api/v1/admin/bookings?status=CONFIRMED&q=${encodeURIComponent(inProgressBooking.code)}&page=1`,
         'GET',
         undefined,
         admin.cookie
@@ -1541,7 +1604,7 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
       assert.equal(result.bookings.length, 1);
       assert.equal(result.pagination.total, 1);
       assert.equal(result.pagination.page, 1);
-      assert.equal(result.pagination.page_size, 1);
+      assert.equal(result.pagination.page_size, 10);
       assert.equal(result.bookings[0].booking_id, inProgressBooking.id);
       assert.equal(result.bookings[0].owner.full_name, owner.fullName);
       assert.equal(result.bookings[0].owner.email, owner.email);
@@ -1549,7 +1612,7 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
       assert.equal(result.bookings[0].slots.length, 1);
       assert.equal(result.bookings[0].slots[0].time_slot_id, inProgressBooking.slotId);
       const unchanged = await fetch(
-        `${baseUrl}/api/v1/admin/bookings?status=CONFIRMED&q=${encodeURIComponent(inProgressBooking.code)}&page=1&page_size=1`,
+        `${baseUrl}/api/v1/admin/bookings?status=CONFIRMED&q=${encodeURIComponent(inProgressBooking.code)}&page=1`,
         { headers: { cookie: admin.cookie, 'if-none-match': etag } }
       );
       assert.equal(unchanged.status, 304);
@@ -1557,14 +1620,21 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
 
       const firstPage = await requestJson(
         baseUrl,
-        '/api/v1/admin/bookings?page=1&page_size=1',
+        '/api/v1/admin/bookings?page=1',
         'GET',
         undefined,
         admin.cookie
       );
       const firstPageResult = await firstPage.json();
-      assert.equal(firstPageResult.bookings.length, 1);
-      assert.ok(firstPageResult.pagination.total_pages > 1);
+      assert.equal(
+        firstPageResult.bookings.length,
+        Math.min(firstPageResult.pagination.page_size, firstPageResult.pagination.total)
+      );
+      assert.equal(firstPageResult.pagination.page_size, 10);
+      assert.equal(
+        Object.values(firstPageResult.status_counts).reduce((sum, count) => sum + count, 0),
+        firstPageResult.pagination.total
+      );
       const invalidFacility = await requestJson(
         baseUrl,
         '/api/v1/admin/bookings?facility_id=not-a-number',
@@ -1586,6 +1656,7 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
       for (const query of [
         '?status=UNKNOWN',
         '?page=0',
+        '?page_size=1',
         '?page_size=51',
         '?facility_id=0',
         '?date=2026-2-3',
@@ -1632,7 +1703,7 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
     await t.test('admin booking list filters by facility, Vietnam service date, and both together', async () => {
       const byFacilityResponse = await requestJson(
         baseUrl,
-        `/api/v1/admin/bookings?facility_id=${facilityId}&page=1&page_size=2`,
+        `/api/v1/admin/bookings?facility_id=${facilityId}&page=1`,
         'GET',
         undefined,
         admin.cookie
@@ -1640,8 +1711,8 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
       assert.equal(byFacilityResponse.status, 200);
       const byFacility = await byFacilityResponse.json();
       assert.equal(byFacility.pagination.total, 5);
-      assert.equal(byFacility.pagination.total_pages, 3);
-      assert.equal(byFacility.bookings.length, 2);
+      assert.equal(byFacility.pagination.total_pages, 1);
+      assert.equal(byFacility.bookings.length, 5);
       assert.ok(byFacility.bookings.every((booking) => booking.slots.some(
         (slot) => slot.facility_id === facilityId
       )));

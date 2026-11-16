@@ -334,7 +334,8 @@ function toSlotResponse(slot) {
 
 function createBookingsService(repository, {
   now = () => new Date(),
-  generateCode = generateBookingCode
+  generateCode = generateBookingCode,
+  matchmakingEnabled = false
 } = {}) {
   if (!repository || typeof repository.withTransaction !== 'function') {
     throw new TypeError('Cần repository đặt sân tương thích.');
@@ -346,7 +347,9 @@ function createBookingsService(repository, {
   async function createBooking(userId, body) {
     const slotIds = normalizeSlotIds(body && body.slot_ids);
     const paymentOption = normalizePaymentOption(body && body.payment_option);
-    const matchPreference = normalizeMatchPreference(body && body.match_preference);
+    const matchPreference = matchmakingEnabled
+      ? normalizeMatchPreference(body && body.match_preference)
+      : null;
     try {
       const result = await repository.withTransaction(async (connection) => {
         const user = await repository.lockUser(connection, userId);

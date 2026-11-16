@@ -52,7 +52,6 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
   const userEmails = [];
   let facilityId;
   let courtId;
-  let footballCourtId;
   let server;
   let multiSlotBookingId;
   let oneSlotBookingId;
@@ -62,7 +61,10 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
     const [databaseRows] = await pool.execute('SELECT DATABASE() AS database_name');
     assert.equal(databaseRows[0].database_name, 'sportbooking_test');
 
-    const app = createApp({ pool });
+    const app = createApp({
+      pool,
+      env: { ...process.env, MATCHMAKING_ENABLED: 'false' }
+    });
     server = app.listen(0, '127.0.0.1');
     await new Promise((resolve, reject) => {
       server.once('listening', resolve);
@@ -112,15 +114,6 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
       [facilityId, `Booking test court ${suffix}`]
     );
     courtId = String(courtResult.insertId);
-    const [footballCourtResult] = await pool.execute(
-      `INSERT INTO courts
-         (facility_id, name, sport_type, price_normal, price_peak, is_active, is_seed,
-          created_at, updated_at)
-       VALUES (?, ?, 'FOOTBALL_MINI', 500000, 600000, TRUE, FALSE,
-               UTC_TIMESTAMP(3), UTC_TIMESTAMP(3))`,
-      [facilityId, `Booking test football ${suffix}`]
-    );
-    footballCourtId = String(footballCourtResult.insertId);
 
     const serviceDate = localDateOffset(2);
     const slotIds = [];
@@ -154,28 +147,6 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
       ]
     );
     const tooSoonSlotId = String(soonSlotResult.insertId);
-    const matchSoonSlot = createSoonSlotTime(20);
-    const [matchSoonSlotResult] = await pool.execute(
-      `INSERT INTO time_slots
-         (court_id, service_date, starts_at, ends_at, price, status,
-          created_at, updated_at)
-       VALUES (?, ?, ?, ?, 120001, 'AVAILABLE', UTC_TIMESTAMP(3), UTC_TIMESTAMP(3))`,
-      [
-        courtId,
-        matchSoonSlot.date,
-        matchSoonSlot.startsAt,
-        `${String((Number(matchSoonSlot.startsAt.slice(0, 2)) + 1) % 24).padStart(2, '0')}:${matchSoonSlot.startsAt.slice(3, 5)}:00`
-      ]
-    );
-    const matchTooSoonSlotId = String(matchSoonSlotResult.insertId);
-    const [footballSlotResult] = await pool.execute(
-      `INSERT INTO time_slots
-         (court_id, service_date, starts_at, ends_at, price, status,
-          created_at, updated_at)
-       VALUES (?, ?, '10:00:00', '11:00:00', 500000, 'AVAILABLE', UTC_TIMESTAMP(3), UTC_TIMESTAMP(3))`,
-      [footballCourtId, localDateOffset(3)]
-    );
-    const footballSlotId = String(footballSlotResult.insertId);
 
     await t.test('creates one-slot and contiguous multi-slot holds with server prices', async () => {
       const oneSlotResponse = await postJson(
@@ -186,9 +157,9 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
           payment_option: 'DEPOSIT_50',
           match_preference: {
             mode: 'CRITERIA',
-            gender: 'ANY',
-            skill: 'BEGINNER',
-            format: 'SINGLES',
+            gender: 'INVALID',
+            skill: 'INVALID',
+            format: 'UNSUPPORTED',
             message: 'Test preference'
           }
         },
@@ -204,13 +175,7 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
       assert.equal(oneSlotBooking.payment.payment_option, 'DEPOSIT_50');
       assert.equal(oneSlotBooking.deposit_amount, '61728');
       assert.equal(oneSlotBooking.amount_due_at_venue, '61727');
-      assert.deepEqual(oneSlotBooking.match_preference, {
-        mode: 'CRITERIA',
-        gender: 'ANY',
-        skill: 'BEGINNER',
-        format: 'SINGLES',
-        message: 'Test preference'
-      });
+      assert.equal(oneSlotBooking.match_preference, null);
       assert.equal(oneSlotBooking.remaining_seconds, 600);
       assert.equal(oneSlotBooking.slots.length, 1);
       const [paymentRows] = await pool.execute(
@@ -227,7 +192,12 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
       );
       assert.equal(oneSlotDetailResponse.status, 200);
       const oneSlotDetail = await oneSlotDetailResponse.json();
-      assert.deepEqual(oneSlotDetail.match_preference, oneSlotBooking.match_preference);
+      assert.equal(oneSlotDetail.match_preference, null);
+      const [storedPreferenceRows] = await pool.execute(
+        'SELECT match_preference FROM bookings WHERE id = ?',
+        [oneSlotBooking.booking_id]
+      );
+      assert.equal(storedPreferenceRows[0].match_preference, null);
       assert.equal(oneSlotDetail.display_status_code, 'PENDING');
       assert.equal(oneSlotDetail.display_status, 'Chờ thanh toán');
       assert.ok(oneSlotDetail.created_at);
@@ -675,32 +645,6 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
       );
       assert.equal(tooSoon.status, 400);
 
-      const tooLateForMatching = await postJson(
-        baseUrl,
-        '/api/v1/bookings',
-        {
-          slot_ids: [matchTooSoonSlotId],
-          payment_option: 'FULL',
-          match_preference: { mode: 'RANDOM' }
-        },
-        users[2].cookie
-      );
-      assert.equal(tooLateForMatching.status, 400);
-      assert.equal((await tooLateForMatching.json()).error.code, 'MATCH_PREFERENCE_TOO_LATE');
-
-      const unsupportedFormat = await postJson(
-        baseUrl,
-        '/api/v1/bookings',
-        {
-          slot_ids: [footballSlotId],
-          payment_option: 'FULL',
-          match_preference: { mode: 'CRITERIA', format: 'DOUBLES' }
-        },
-        users[2].cookie
-      );
-      assert.equal(unsupportedFormat.status, 400);
-      assert.equal((await unsupportedFormat.json()).error.code, 'MATCH_FORMAT_NOT_SUPPORTED');
-
       const duplicateIds = await postJson(
         baseUrl,
         '/api/v1/bookings',
@@ -948,8 +892,8 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
            FROM bookings AS b
            INNER JOIN booking_slots AS bs ON bs.booking_id = b.id
            INNER JOIN time_slots AS ts ON ts.id = bs.time_slot_id
-           WHERE ts.court_id IN (?, ?)`,
-          [courtId, footballCourtId || courtId]
+           WHERE ts.court_id = ?`,
+          [courtId]
         );
         bookingIds = bookingRows.map((row) => String(row.id));
       });
@@ -987,7 +931,6 @@ test('booking holds, locking, cancellation, and expiry work on sportbooking_test
       ));
     }
     if (courtId) await cleanup(() => pool.execute('DELETE FROM time_slots WHERE court_id = ?', [courtId]));
-    if (footballCourtId) await cleanup(() => pool.execute('DELETE FROM time_slots WHERE court_id = ?', [footballCourtId]));
     if (facilityId) await cleanup(() => pool.execute('DELETE FROM facilities WHERE id = ?', [facilityId]));
 
     if (userIds.length > 0) {

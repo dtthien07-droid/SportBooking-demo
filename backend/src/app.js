@@ -1,6 +1,7 @@
 'use strict';
 
 const express = require('express');
+const compression = require('compression');
 const path = require('node:path');
 const passwordHelper = require('./auth/password.helper');
 const { createAuthService } = require('./auth/auth.service');
@@ -33,6 +34,9 @@ const { createSessionService } = require('./auth/session.service');
 const createSessionRepository = require('./auth/repositories/session.repository');
 const createUserRepository = require('./auth/repositories/user.repository');
 const healthRouter = require('./routes/health.routes');
+const STATIC_CACHEABLE_EXTENSIONS = new Set([
+  '.css', '.ico', '.jpeg', '.jpg', '.js', '.png', '.svg', '.webp', '.woff', '.woff2'
+]);
 
 function sendError(response, status, code, message, details = {}) {
   response.status(status).json({ error: { code, message, details } });
@@ -46,11 +50,12 @@ function createApp({ pool, env = process.env } = {}) {
   const userRepository = createUserRepository(pool);
   const facilitiesRepository = createFacilitiesRepository(pool);
   const sessionRepository = createSessionRepository(pool);
+  const matchmakingEnabled = String(env.MATCHMAKING_ENABLED || '').trim().toLowerCase() === 'true';
   const authService = createAuthService({ userRepository });
   const profileService = createProfileService({ userRepository, passwords: passwordHelper });
   const facilitiesService = createFacilitiesService(facilitiesRepository);
   const bookingsRepository = createBookingRepository(pool);
-  const bookingsService = createBookingsService(bookingsRepository);
+  const bookingsService = createBookingsService(bookingsRepository, { matchmakingEnabled });
   const adminRepository = createAdminRepository(pool);
   const adminFacilitiesService = createAdminFacilitiesService(pool);
   const adminSlotsService = createAdminSlotsService(pool);
@@ -82,7 +87,8 @@ function createApp({ pool, env = process.env } = {}) {
     sessionService,
     sessionRepository,
     requireAuth,
-    cookieName
+    cookieName,
+    matchmakingEnabled
   }));
   app.use('/api/v1/users', createProfileRouter({ profileService, requireAuth }));
   app.use('/api/v1/notifications', createNotificationsRouter({ notificationsService, requireAuth }));
@@ -98,7 +104,30 @@ function createApp({ pool, env = process.env } = {}) {
   app.get('/', (request, response) => {
     response.redirect(302, '/dang-nhap.html');
   });
-  app.use(express.static(path.resolve(__dirname, '../../frontend'), { index: false }));
+  const frontendRoot = path.resolve(__dirname, '../../frontend');
+  app.use(compression({
+    threshold: 1024,
+    filter(request, response) {
+      const requestPath = request.path.toLowerCase();
+      if (requestPath.startsWith('/admin/')
+          || requestPath.startsWith('/admin-')
+          || requestPath.startsWith('/quan-tri')) return false;
+      return compression.filter(request, response);
+    }
+  }));
+  app.use(express.static(frontendRoot, {
+    index: false,
+    setHeaders(response, filePath) {
+      const relativePath = path.relative(frontendRoot, filePath);
+      const topLevel = relativePath.split(path.sep)[0].toLowerCase();
+      const fileName = path.basename(filePath).toLowerCase();
+      if (topLevel === 'admin' || fileName.startsWith('admin-')
+          || fileName.startsWith('quan-tri-')) return;
+      if (STATIC_CACHEABLE_EXTENSIONS.has(path.extname(filePath).toLowerCase())) {
+        response.setHeader('Cache-Control', 'public, max-age=300');
+      }
+    }
+  }));
 
   app.use((request, response) => {
     sendError(response, 404, 'NOT_FOUND', 'Không tìm thấy đường dẫn yêu cầu.');

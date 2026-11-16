@@ -14,10 +14,11 @@
     date: dateKeys.includes(requestedDate) ? requestedDate : dateKeys[0],
     slots: [],
     dates: new Map(),
+    dateRequests: new Map(),
     selectedSlotIds: new Set(requestedSlots),
     requestSequence: 0,
+    courtSequence: 0,
     redirected: false,
-    calendarLoading: false
   };
 
   const elements = {
@@ -449,20 +450,22 @@
       const slots = state.dates.get(date);
       const checked = state.dates.has(date);
       const hasSlots = checked && Array.isArray(slots) && slots.length > 0;
+      const requestKey = `${state.court?.id}:${date}`;
+      const loading = state.dateRequests.has(requestKey);
       const button = document.createElement('button');
       button.type = 'button';
-      button.disabled = state.calendarLoading || !hasSlots;
+      button.disabled = checked && !hasSlots;
       button.setAttribute('aria-pressed', String(date === state.date));
       button.className = date === state.date
         ? 'rounded-xl border border-primary bg-primary px-2 py-2 text-xs font-bold text-white'
         : 'rounded-xl border border-gray-200 bg-white px-2 py-2 text-xs font-semibold text-on-surface disabled:cursor-not-allowed disabled:opacity-50';
       const caption = index === 0 ? 'Hôm nay' : formatDate(date);
       button.textContent = !checked
-        ? `${caption} · Đang tải`
+        ? `${caption} · ${loading ? 'Đang tải' : 'Chọn ngày'}`
         : hasSlots
           ? `${caption} · ${slots.length} khung`
           : `${caption} · Không có khung`;
-      if (hasSlots && !state.calendarLoading) {
+      if (!button.disabled) {
         button.addEventListener('click', () => {
           if (state.date === date) return;
           state.date = date;
@@ -470,7 +473,14 @@
           elements.selectionNotice.hidden = true;
           updateUrl();
           renderDateOptions();
-          refreshSelectedDate(true);
+          if (state.dates.has(date)) {
+            state.slots = state.dates.get(date);
+            elements.slotError.hidden = true;
+            elements.slotLoading.hidden = true;
+            renderSlots();
+          } else {
+            refreshSelectedDate(true);
+          }
         });
       }
       elements.dateOptions.append(button);
@@ -532,6 +542,14 @@
       date: state.date,
       slots: selectedIds.join(',')
     });
+    window.SportBookingApi?.storeBookingSelection?.(
+      { facility: state.facility, courts: state.courts },
+      {
+        court_id: String(state.court.id),
+        service_date: state.date,
+        time_slots: state.slots
+      }
+    );
     window.location.assign(`/dat-san.html?${params}`);
   }
 
@@ -630,6 +648,9 @@
 
   async function refreshSelectedDate(showLoading) {
     const requestSequence = ++state.requestSequence;
+    const date = state.date;
+    const court = state.court;
+    if (!court) return;
     if (showLoading) {
       elements.slotError.hidden = true;
       elements.slotEmpty.hidden = true;
@@ -637,10 +658,10 @@
       elements.slotLoading.hidden = false;
     }
     try {
-      const slots = await fetchDateSlots(state.court, state.date);
-      if (requestSequence !== state.requestSequence || slots === null) return;
+      const slots = await loadDateSlots(court, date);
+      renderDateOptions();
+      if (requestSequence !== state.requestSequence || state.court !== court || slots === null) return;
       state.slots = slots;
-      state.dates.set(state.date, slots);
       keepAvailableSelection();
       renderDateOptions();
       elements.slotLoading.hidden = true;
@@ -656,52 +677,42 @@
         : error.message || 'Không thể tải lịch khung giờ. Vui lòng thử lại.';
       elements.retrySlots.hidden = error.status === 404;
       elements.slotGrid.replaceChildren();
+      renderDateOptions();
       renderSelectionSummary();
     }
   }
 
-  async function loadCalendar() {
-    const requestSequence = ++state.requestSequence;
-    state.calendarLoading = true;
+  function loadDateSlots(court, date) {
+    const requestKey = `${court.id}:${date}`;
+    const existing = state.dateRequests.get(requestKey);
+    if (existing) return existing;
+    const courtSequence = state.courtSequence;
+    let request;
+    request = fetchDateSlots(court, date).then((slots) => {
+      if (slots !== null && courtSequence === state.courtSequence) {
+        state.dates.set(date, slots);
+      }
+      return slots;
+    }).finally(() => {
+      if (state.dateRequests.get(requestKey) === request) {
+        state.dateRequests.delete(requestKey);
+      }
+    });
+    state.dateRequests.set(requestKey, request);
+    return request;
+  }
+
+  function loadCalendar() {
+    state.requestSequence += 1;
     state.selectedSlotIds.clear();
     state.slots = [];
-    state.dates.clear();
     elements.slotError.hidden = true;
     elements.slotEmpty.hidden = true;
     elements.slotGrid.replaceChildren();
     elements.slotLoading.hidden = false;
     renderSelectionSummary();
-    try {
-      for (const date of dateKeys) {
-        const slots = await fetchDateSlots(state.court, date);
-        if (requestSequence !== state.requestSequence || slots === null) return;
-        state.dates.set(date, slots);
-        renderDateOptions();
-        if (date === state.date) {
-          state.slots = slots;
-          elements.slotLoading.hidden = true;
-          renderSlots();
-        }
-      }
-      state.slots = state.dates.get(state.date) || [];
-      keepAvailableSelection();
-      state.calendarLoading = false;
-      renderDateOptions();
-      elements.slotLoading.hidden = true;
-      renderSlots();
-    } catch (error) {
-      if (requestSequence !== state.requestSequence) return;
-      state.calendarLoading = false;
-      state.slots = [];
-      elements.slotLoading.hidden = true;
-      elements.slotError.hidden = false;
-      elements.slotErrorMessage.textContent = error.status === 404
-        ? 'Không tìm thấy sân con để tải lịch. Vui lòng chọn sân khác hoặc quay lại tìm sân.'
-        : error.message || 'Không thể tải lịch khung giờ. Vui lòng thử lại.';
-      elements.retrySlots.hidden = error.status === 404;
-      elements.slotGrid.replaceChildren();
-      state.calendarLoading = false;
-    }
+    renderDateOptions();
+    refreshSelectedDate(true);
   }
 
   async function loadFacility() {
@@ -748,7 +759,10 @@
     );
     if (!selectedCourt) return;
     state.court = selectedCourt;
+    state.courtSequence += 1;
+    state.requestSequence += 1;
     state.dates.clear();
+    state.dateRequests.clear();
     state.selectedSlotIds.clear();
     renderCourt(selectedCourt);
     renderFacilityImage(state.facility, selectedCourt);
@@ -758,7 +772,7 @@
 
   loadFacility();
   window.setInterval(() => {
-    if (!document.hidden && state.court && !state.calendarLoading && !elements.content.hidden) {
+    if (!document.hidden && state.court && !elements.content.hidden) {
       refreshSelectedDate(false);
     }
   }, 5000);

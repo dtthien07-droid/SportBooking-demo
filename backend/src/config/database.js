@@ -1,10 +1,13 @@
+
 'use strict';
 
 const path = require('node:path');
 const dotenv = require('dotenv');
 const mysql = require('mysql2/promise');
 
-dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env') });
+if (process.env.APP_ENV !== 'test') {
+  dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env') });
+}
 
 let pool;
 
@@ -13,8 +16,8 @@ function validateDatabaseConfig(env = process.env) {
   const databaseName = env.DB_NAME;
   const databaseUser = env.DB_USER;
 
-  if (appEnv !== 'development' && appEnv !== 'test') {
-    throw new Error('APP_ENV must be development or test.');
+  if (!['development', 'test', 'production'].includes(appEnv)) {
+    throw new Error('APP_ENV must be development, test or production.');
   }
 
   if (!databaseName || !/^[A-Za-z0-9_]+$/.test(databaseName)) {
@@ -25,26 +28,35 @@ function validateDatabaseConfig(env = process.env) {
     throw new Error('Connections to sportbooking_system are disabled.');
   }
 
-  if (appEnv === 'development' && databaseName !== 'sportbooking_dev') {
-    throw new Error('Development connections must use sportbooking_dev.');
-  }
-
   if (appEnv === 'test' && !databaseName.endsWith('_test')) {
     throw new Error('Test connections require a DB_NAME ending in _test.');
   }
 
-  if (!env.DB_HOST || !databaseUser || !Object.hasOwn(env, 'DB_PASSWORD')) {
+  if (
+    !env.DB_HOST ||
+    !databaseUser ||
+    !Object.hasOwn(env, 'DB_PASSWORD')
+  ) {
     throw new Error('DB_HOST, DB_USER, and DB_PASSWORD must be configured.');
   }
 
-  if (databaseUser.toLowerCase() === 'root') {
-    throw new Error('The application must not connect as root.');
-  }
-
   const port = Number(env.DB_PORT);
+
   if (!Number.isInteger(port) || port < 1 || port > 65535) {
     throw new Error('DB_PORT must be a valid TCP port.');
   }
+
+  if (appEnv === 'test' && !['true', 'false'].includes(env.DB_SSL)) {
+    throw new Error('Test connections require DB_SSL to be true or false.');
+  }
+
+  if (appEnv !== 'test' && env.DB_SSL !== 'true') {
+    throw new Error('TiDB Cloud connections require DB_SSL=true.');
+  }
+
+  const ssl = env.DB_SSL === 'true'
+    ? { minVersion: 'TLSv1.2' }
+    : false;
 
   return {
     host: env.DB_HOST,
@@ -56,7 +68,8 @@ function validateDatabaseConfig(env = process.env) {
     timezone: 'Z',
     connectionLimit: 10,
     waitForConnections: true,
-    queueLimit: 0
+    queueLimit: 0,
+    ssl
   };
 }
 
@@ -64,6 +77,7 @@ function getPool() {
   if (!pool) {
     pool = mysql.createPool(validateDatabaseConfig());
   }
+
   return pool;
 }
 

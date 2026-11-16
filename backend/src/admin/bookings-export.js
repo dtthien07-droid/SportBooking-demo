@@ -276,11 +276,21 @@ async function createBookingsExport({ bookings, slotsByBookingId, now = new Date
 
 const DASHBOARD_STATUS_LABELS = Object.freeze({
   PENDING: 'Chờ thanh toán',
-  CONFIRMED: 'Đã xác nhận',
+  UPCOMING: 'Sắp tới',
+  IN_PROGRESS: 'Đang trong trận',
   COMPLETED: 'Hoàn thành',
   CANCELLED: 'Đã hủy',
-  EXPIRED: 'Hết hạn'
+  EXPIRED: 'Hết hạn',
+  CONFIRMED: 'Đã xác nhận'
 });
+const DASHBOARD_STATUS_ORDER = Object.freeze([
+  'PENDING',
+  'UPCOMING',
+  'IN_PROGRESS',
+  'COMPLETED',
+  'CANCELLED',
+  'EXPIRED'
+]);
 
 async function createDashboardExport({ dashboard, now = new Date() }) {
   if (!dashboard || !dashboard.kpis || !dashboard.series
@@ -302,7 +312,7 @@ async function createDashboardExport({ dashboard, now = new Date() }) {
     ['Doanh thu kỳ trước', amountValue(kpis.net_revenue_prev), '#,##0 "đ"'],
     ['Tỷ lệ lấp đầy', Number(kpis.fill_rate_percent), '0.##"%"'],
     ['Sân đang hoạt động', Number(kpis.courts_active)],
-    ['Sân có đơn trong kỳ', Number(kpis.courts_with_bookings)],
+    ['Sân có đơn đang hiệu lực trong kỳ', Number(kpis.courts_with_bookings)],
     ['Sân tạm khóa', Number(kpis.courts_inactive)]
   ]);
 
@@ -340,11 +350,17 @@ async function createDashboardExport({ dashboard, now = new Date() }) {
     ['Trạng thái', 'status', 28],
     ['Số đơn', 'bookings', 18]
   ]);
-  for (const [status, count] of Object.entries(dashboard.bookings_by_status)) {
-    if (!Object.hasOwn(DASHBOARD_STATUS_LABELS, status)) {
-      throw new TypeError('Trạng thái đơn tổng quan không hợp lệ.');
+  const statusKeys = Object.keys(dashboard.bookings_by_status);
+  if (statusKeys.length !== DASHBOARD_STATUS_ORDER.length
+      || statusKeys.some((status) => !DASHBOARD_STATUS_ORDER.includes(status))) {
+    throw new TypeError('Trạng thái đơn tổng quan không hợp lệ.');
+  }
+  for (const status of DASHBOARD_STATUS_ORDER) {
+    const count = Number(dashboard.bookings_by_status[status]);
+    if (!Number.isSafeInteger(count) || count < 0) {
+      throw new TypeError('Số đơn theo trạng thái tổng quan không hợp lệ.');
     }
-    statusSheet.addRow([DASHBOARD_STATUS_LABELS[status], Number(count)]);
+    statusSheet.addRow([DASHBOARD_STATUS_LABELS[status], count]);
   }
 
   const top = createWorksheet(workbook, 'Top cơ sở', [

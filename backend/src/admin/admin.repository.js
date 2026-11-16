@@ -1,27 +1,95 @@
 'use strict';
 
+const ADMIN_BOOKING_PAGE_SIZE = 10;
+
 function escapeLike(value) {
   return value.replace(/[!%_]/g, (character) => `!${character}`);
 }
 
-function buildBookingWhere({ status, query, facilityId, date }, includeDisplayStatus = false) {
-  const conditions = [];
+function readBookingDataStartAt() {
+  const value = process.env.BOOKING_DATA_START_AT;
+  if (value === undefined || value === '') return null;
+
+  const parsed = typeof value === 'string' ? new Date(value) : null;
+  if (!parsed || !Number.isFinite(parsed.getTime()) || parsed.toISOString() !== value) {
+    throw new Error('BOOKING_DATA_START_AT must be a valid UTC ISO timestamp.');
+  }
+  return parsed.toISOString().slice(0, 23).replace('T', ' ');
+}
+
+function buildBookingValidityCondition(alias = 'b') {
+  if (alias !== 'b' && alias !== 'slot_booking') {
+    throw new TypeError('Unsupported booking SQL alias.');
+  }
+  const cutoff = readBookingDataStartAt();
+  const conditions = [`EXISTS (
+      SELECT 1 FROM users AS valid_booking_user
+      WHERE valid_booking_user.id = ${alias}.user_id
+    )`];
   const parameters = [];
+
+  if (cutoff) {
+    conditions.push(`${alias}.created_at >= ?`);
+    parameters.push(cutoff);
+  }
+
+  return {
+    sql: conditions.join(' AND '),
+    parameters
+  };
+}
+
+function bookingDisplayStatusSql() {
+  const localNow = 'DATE_ADD(UTC_TIMESTAMP(3), INTERVAL 7 HOUR)';
+  return `CASE
+    WHEN b.status = 'PENDING' THEN 'PENDING'
+    WHEN b.status = 'CANCELLED' THEN 'CANCELLED'
+    WHEN b.status = 'EXPIRED' THEN 'EXPIRED'
+    WHEN b.status = 'COMPLETED' THEN 'COMPLETED'
+    WHEN b.status = 'CONFIRMED' AND booking_times.first_slot_start > ${localNow}
+      THEN 'UPCOMING'
+    WHEN b.status = 'CONFIRMED'
+      AND booking_times.first_slot_start <= ${localNow}
+      AND booking_times.last_slot_end > ${localNow}
+      THEN 'IN_PROGRESS'
+    WHEN b.status = 'CONFIRMED' AND booking_times.last_slot_end <= ${localNow}
+      THEN 'COMPLETED'
+    ELSE 'UNKNOWN'
+  END`;
+}
+
+function buildBookingWhere(
+  { status, query, facilityId, date, createdFrom, createdTo },
+  includeDisplayStatus = false
+) {
+  const validity = buildBookingValidityCondition();
+  const conditions = [validity.sql];
+  const parameters = [...validity.parameters];
+  if (createdFrom) {
+    conditions.push('b.created_at >= ?');
+    parameters.push(createdFrom);
+  }
+  if (createdTo) {
+    conditions.push('b.created_at < ?');
+    parameters.push(createdTo);
+  }
   let bookingTimeJoin = '';
+  if (includeDisplayStatus) {
+    bookingTimeJoin = `LEFT JOIN (
+      SELECT bs.booking_id,
+             MIN(TIMESTAMP(ts.service_date, ts.starts_at)) AS first_slot_start,
+             MAX(CASE
+               WHEN TIME(ts.ends_at) = '24:00:00'
+               THEN TIMESTAMP(DATE_ADD(ts.service_date, INTERVAL 1 DAY), '00:00:00')
+               ELSE TIMESTAMP(ts.service_date, ts.ends_at)
+             END) AS last_slot_end
+      FROM booking_slots AS bs
+      INNER JOIN time_slots AS ts ON ts.id = bs.time_slot_id
+      GROUP BY bs.booking_id
+    ) AS booking_times ON booking_times.booking_id = b.id`;
+  }
   if (status) {
     if (includeDisplayStatus && ['UPCOMING', 'IN_PROGRESS', 'COMPLETED'].includes(status)) {
-      bookingTimeJoin = `LEFT JOIN (
-        SELECT bs.booking_id,
-               MIN(TIMESTAMP(ts.service_date, ts.starts_at)) AS first_slot_start,
-               MAX(CASE
-                 WHEN TIME(ts.ends_at) = '24:00:00'
-                 THEN TIMESTAMP(DATE_ADD(ts.service_date, INTERVAL 1 DAY), '00:00:00')
-                 ELSE TIMESTAMP(ts.service_date, ts.ends_at)
-               END) AS last_slot_end
-        FROM booking_slots AS bs
-        INNER JOIN time_slots AS ts ON ts.id = bs.time_slot_id
-        GROUP BY bs.booking_id
-      ) AS booking_times ON booking_times.booking_id = b.id`;
       const localNow = 'DATE_ADD(UTC_TIMESTAMP(3), INTERVAL 7 HOUR)';
       if (status === 'UPCOMING') {
         conditions.push(`b.status = 'CONFIRMED' AND booking_times.first_slot_start > ${localNow}`);
@@ -43,8 +111,16 @@ function buildBookingWhere({ status, query, facilityId, date }, includeDisplaySt
     }
   }
   if (query) {
-    conditions.push("b.booking_code LIKE ? ESCAPE '!'");
-    parameters.push(`%${escapeLike(query)}%`);
+    const pattern = `%${escapeLike(query)}%`;
+    conditions.push(`(b.booking_code LIKE ? ESCAPE '!'
+      OR EXISTS (
+        SELECT 1 FROM users AS search_booking_user
+        WHERE search_booking_user.id = b.user_id
+          AND (search_booking_user.full_name LIKE ? ESCAPE '!'
+            OR search_booking_user.email LIKE ? ESCAPE '!'
+            OR search_booking_user.phone LIKE ? ESCAPE '!')
+      ))`);
+    parameters.push(pattern, pattern, pattern, pattern);
   }
   if (facilityId || date) {
     const slotConditions = ['filter_bs.booking_id = b.id'];
@@ -115,6 +191,16 @@ function createAdminRepository(pool) {
       );
       const total = Number(countRows[0].total);
       if (!Number.isSafeInteger(total)) throw new RangeError('User count exceeds the supported range.');
+      const parsedLimit = Number.parseInt(pageSize, 10);
+      const safeLimit = Number.isSafeInteger(parsedLimit) && parsedLimit > 0
+        ? Math.min(parsedLimit, 100)
+        : 20;
+      const parsedPage = Number.parseInt(page, 10);
+      const safePage = Number.isSafeInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+      const parsedOffset = Number.parseInt((safePage - 1) * safeLimit, 10);
+      const safeOffset = Number.isSafeInteger(parsedOffset) && parsedOffset >= 0
+        ? parsedOffset
+        : 0;
       const [summaryRows] = await pool.execute(
         `SELECT COUNT(*) AS total_users,
                 COALESCE(SUM(CASE WHEN u.account_status = 'ACTIVE' THEN 1 ELSE 0 END), 0) AS active_users,
@@ -155,8 +241,8 @@ function createAdminRepository(pool) {
          GROUP BY u.id, u.full_name, u.email, u.phone, u.role, u.account_status,
                   u.created_at, u.updated_at
          ORDER BY u.id DESC
-         LIMIT ? OFFSET ?`,
-        [...parameters, pageSize, (page - 1) * pageSize]
+         LIMIT ${safeLimit} OFFSET ${safeOffset}`,
+        parameters
       );
       return { rows, total, summary };
     },
@@ -192,13 +278,17 @@ function createAdminRepository(pool) {
           .map((key) => [key, Number(summaryRows[0][key])])
       );
       if (total > maxRows) return { rows: [], total, summary };
+      const parsedLimit = Number.parseInt(maxRows, 10);
+      const safeLimit = Number.isSafeInteger(parsedLimit) && parsedLimit > 0
+        ? Math.min(parsedLimit, 5000)
+        : 5000;
       const [rows] = await pool.execute(
         `SELECT u.id, u.full_name, u.email, u.phone, u.account_status, u.created_at
          FROM users AS u
          ${where}
          ORDER BY u.id DESC
-         LIMIT ?`,
-        [...parameters, maxRows]
+         LIMIT ${safeLimit}`,
+        parameters
       );
       return { rows, total, summary };
     },
@@ -242,17 +332,57 @@ function createAdminRepository(pool) {
       return result.affectedRows;
     },
 
-    async listBookings({ status, query, facilityId, date, page, pageSize }) {
-      const { whereClause, parameters } = buildBookingWhere({ status, query, facilityId, date });
+    async listBookings({
+      status,
+      query,
+      facilityId,
+      date,
+      createdFrom,
+      createdTo,
+      page
+    }) {
+      const filters = { status, query, facilityId, date, createdFrom, createdTo };
+      const { bookingTimeJoin, whereClause, parameters } = buildBookingWhere(filters, true);
       const [countRows] = await pool.execute(
-        `SELECT COUNT(*) AS total
+        `SELECT COUNT(DISTINCT b.id) AS total
          FROM bookings AS b
+         ${bookingTimeJoin}
          ${whereClause}`,
         parameters
       );
       const total = Number(countRows[0].total);
       if (!Number.isSafeInteger(total)) {
         throw new RangeError('Booking count exceeds the supported range.');
+      }
+      const safeLimit = ADMIN_BOOKING_PAGE_SIZE;
+      const parsedPage = Number.parseInt(page, 10);
+      const safePage = Number.isSafeInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+      const parsedOffset = Number.parseInt((safePage - 1) * safeLimit, 10);
+      const safeOffset = Number.isSafeInteger(parsedOffset) && parsedOffset >= 0
+        ? parsedOffset
+        : 0;
+
+      const statusCountFilters = buildBookingWhere({ ...filters, status: null }, true);
+      const [statusRows] = await pool.execute(
+        `SELECT ${bookingDisplayStatusSql()} AS display_status, COUNT(DISTINCT b.id) AS total
+         FROM bookings AS b
+         ${statusCountFilters.bookingTimeJoin}
+         ${statusCountFilters.whereClause}
+         GROUP BY display_status`,
+        statusCountFilters.parameters
+      );
+      const statusCounts = {
+        PENDING: 0,
+        UPCOMING: 0,
+        IN_PROGRESS: 0,
+        COMPLETED: 0,
+        CANCELLED: 0,
+        EXPIRED: 0
+      };
+      for (const row of statusRows) {
+        if (Object.prototype.hasOwnProperty.call(statusCounts, row.display_status)) {
+          statusCounts[row.display_status] = Number(row.total);
+        }
       }
 
       const [rows] = await pool.execute(
@@ -264,18 +394,27 @@ function createAdminRepository(pool) {
          FROM bookings AS b
          INNER JOIN users AS u ON u.id = b.user_id
          LEFT JOIN payments AS p ON p.booking_id = b.id
+         ${bookingTimeJoin}
          ${whereClause}
          ORDER BY b.created_at DESC, b.id DESC
-         LIMIT ? OFFSET ?`,
-        [...parameters, pageSize, (page - 1) * pageSize]
+         LIMIT ${safeLimit} OFFSET ${safeOffset}`,
+        parameters
       );
 
-      return { rows, total };
+      return { rows, total, statusCounts };
     },
 
-    async exportBookings({ status, query, facilityId, date, maxRows }) {
+    async exportBookings({
+      status,
+      query,
+      facilityId,
+      date,
+      createdFrom,
+      createdTo,
+      maxRows
+    }) {
       const { bookingTimeJoin, whereClause, parameters } = buildBookingWhere(
-        { status, query, facilityId, date },
+        { status, query, facilityId, date, createdFrom, createdTo },
         true
       );
       const [countRows] = await pool.execute(
@@ -290,6 +429,10 @@ function createAdminRepository(pool) {
         throw new RangeError('Booking count exceeds the supported range.');
       }
       if (total > maxRows) return { rows: [], total };
+      const parsedLimit = Number.parseInt(maxRows, 10);
+      const safeLimit = Number.isSafeInteger(parsedLimit) && parsedLimit > 0
+        ? Math.min(parsedLimit, 5000)
+        : 5000;
       const [rows] = await pool.execute(
         `SELECT b.id, b.booking_code, b.status, b.total_amount, b.created_at,
                 b.cancelled_by, b.cancellation_reason,
@@ -302,8 +445,8 @@ function createAdminRepository(pool) {
          ${bookingTimeJoin}
          ${whereClause}
          ORDER BY b.created_at DESC, b.id DESC
-         LIMIT ?`,
-        [...parameters, maxRows]
+         LIMIT ${safeLimit}`,
+        parameters
       );
       return { rows, total };
     },
@@ -332,6 +475,7 @@ function createAdminRepository(pool) {
     },
 
     async getBookingDetail(bookingId) {
+      const validity = buildBookingValidityCondition();
       const [rows] = await pool.execute(
         `SELECT b.id, b.booking_code, b.status, b.total_amount, b.created_at,
                 (b.lock_expires_at > UTC_TIMESTAMP(3)) AS lock_active,
@@ -342,29 +486,38 @@ function createAdminRepository(pool) {
          FROM bookings AS b
          INNER JOIN users AS u ON u.id = b.user_id
          LEFT JOIN payments AS p ON p.booking_id = b.id
-         WHERE b.id = ?`,
-        [bookingId]
+         WHERE b.id = ? AND ${validity.sql}`,
+        [bookingId, ...validity.parameters]
       );
       return rows[0] || null;
     },
 
-    async getDashboardBookingCounts(start, end) {
+    async getDashboardBookingCounts(start, end, filters = {}) {
+      const { bookingTimeJoin, whereClause, parameters } = buildBookingWhere({
+        ...filters,
+        createdFrom: start,
+        createdTo: end
+      }, true);
       const [rows] = await pool.execute(
-        `SELECT COUNT(*) AS new_bookings,
-                COALESCE(SUM(CASE WHEN status = 'CONFIRMED' THEN 1 ELSE 0 END), 0) AS confirmed_bookings,
-                COALESCE(SUM(CASE WHEN status = 'CANCELLED' THEN 1 ELSE 0 END), 0) AS cancelled_bookings,
-                COALESCE(SUM(CASE WHEN status = 'COMPLETED' THEN 1 ELSE 0 END), 0) AS completed_bookings,
-                COALESCE(SUM(CASE WHEN status = 'PENDING' THEN 1 ELSE 0 END), 0) AS pending_bookings,
-                COALESCE(SUM(CASE WHEN status = 'EXPIRED' THEN 1 ELSE 0 END), 0) AS expired_bookings
-         FROM bookings
-         WHERE created_at >= ? AND created_at < ?`,
-        [start, end]
+        `SELECT COUNT(DISTINCT b.id) AS new_bookings,
+                COALESCE(SUM(CASE WHEN b.status = 'CONFIRMED' THEN 1 ELSE 0 END), 0) AS confirmed_bookings,
+                COALESCE(SUM(CASE WHEN b.status = 'CANCELLED' THEN 1 ELSE 0 END), 0) AS cancelled_bookings,
+                COALESCE(SUM(CASE WHEN ${bookingDisplayStatusSql()} = 'COMPLETED' THEN 1 ELSE 0 END), 0) AS completed_bookings,
+                COALESCE(SUM(CASE WHEN b.status = 'PENDING' THEN 1 ELSE 0 END), 0) AS pending_bookings,
+                COALESCE(SUM(CASE WHEN b.status = 'EXPIRED' THEN 1 ELSE 0 END), 0) AS expired_bookings,
+                COALESCE(SUM(CASE WHEN ${bookingDisplayStatusSql()} = 'UPCOMING' THEN 1 ELSE 0 END), 0) AS upcoming_bookings,
+                COALESCE(SUM(CASE WHEN ${bookingDisplayStatusSql()} = 'IN_PROGRESS' THEN 1 ELSE 0 END), 0) AS in_progress_bookings
+         FROM bookings AS b
+         ${bookingTimeJoin}
+         ${whereClause}`,
+        parameters
       );
       return {
         ...rows[0],
         bookings_by_status: {
           PENDING: Number(rows[0].pending_bookings),
-          CONFIRMED: Number(rows[0].confirmed_bookings),
+          UPCOMING: Number(rows[0].upcoming_bookings),
+          IN_PROGRESS: Number(rows[0].in_progress_bookings),
           COMPLETED: Number(rows[0].completed_bookings),
           CANCELLED: Number(rows[0].cancelled_bookings),
           EXPIRED: Number(rows[0].expired_bookings)
@@ -372,97 +525,156 @@ function createAdminRepository(pool) {
       };
     },
 
-    async getDashboardPaymentMetrics(start, end) {
+    async getDashboardPaymentMetrics(start, end, filters = {}) {
+      const where = buildBookingWhere({
+        ...filters,
+        createdFrom: start,
+        createdTo: end
+      }, true);
       const [rows] = await pool.execute(
         `SELECT
-           COALESCE(SUM(paid_amount), 0) AS gross_paid,
-           COALESCE(SUM(refunded_amount), 0) AS refunded
-         FROM payments
-         WHERE paid_at >= ? AND paid_at < ?`,
-        [start, end]
+           COALESCE(SUM(p.paid_amount), 0) AS gross_paid,
+           COALESCE(SUM(p.refunded_amount), 0) AS refunded
+         FROM payments AS p
+         INNER JOIN bookings AS b ON b.id = p.booking_id
+         ${where.bookingTimeJoin}
+         ${where.whereClause}
+           AND p.paid_at >= ? AND p.paid_at < ?`,
+        [...where.parameters, start, end]
       );
       return rows[0];
     },
 
-    async getRevenueByDay(start, end) {
+    async getRevenueByDay(start, end, filters = {}) {
+      const where = buildBookingWhere({
+        ...filters,
+        createdFrom: start,
+        createdTo: end
+      }, true);
       const [rows] = await pool.execute(
-        `SELECT DATE_FORMAT(DATE_ADD(paid_at, INTERVAL 7 HOUR), '%Y-%m-%d') AS date,
-                COALESCE(SUM(paid_amount - refunded_amount), 0) AS net_revenue
-         FROM payments
-         WHERE paid_at >= ? AND paid_at < ?
-         GROUP BY DATE(DATE_ADD(paid_at, INTERVAL 7 HOUR))
+        `SELECT DATE_FORMAT(DATE_ADD(p.paid_at, INTERVAL 7 HOUR), '%Y-%m-%d') AS date,
+                COALESCE(SUM(p.paid_amount - p.refunded_amount), 0) AS net_revenue
+         FROM payments AS p
+         INNER JOIN bookings AS b ON b.id = p.booking_id
+         ${where.bookingTimeJoin}
+         ${where.whereClause}
+           AND p.paid_at >= ? AND p.paid_at < ?
+         GROUP BY DATE_FORMAT(DATE_ADD(p.paid_at, INTERVAL 7 HOUR), '%Y-%m-%d')
          ORDER BY date ASC`,
-        [start, end]
+        [...where.parameters, start, end]
       );
       return rows;
     },
 
-    async getRevenueSeries(start, end, hourly) {
+    async getRevenueSeries(start, end, hourly, filters = {}) {
+      const where = buildBookingWhere({
+        ...filters,
+        createdFrom: start,
+        createdTo: end
+      }, true);
       const bucketExpression = hourly
-        ? "DATE_FORMAT(DATE_ADD(paid_at, INTERVAL 7 HOUR), '%Y-%m-%d %H:00:00')"
-        : "DATE_FORMAT(DATE_ADD(paid_at, INTERVAL 7 HOUR), '%Y-%m-%d 00:00:00')";
+        ? "DATE_FORMAT(DATE_ADD(p.paid_at, INTERVAL 7 HOUR), '%Y-%m-%d %H:00:00')"
+        : "DATE_FORMAT(DATE_ADD(p.paid_at, INTERVAL 7 HOUR), '%Y-%m-%d 00:00:00')";
       const [rows] = await pool.execute(
         `SELECT ${bucketExpression} AS bucket,
-                COALESCE(SUM(paid_amount - refunded_amount), 0) AS net_revenue
-         FROM payments
-         WHERE paid_at >= ? AND paid_at < ?
+                COALESCE(SUM(p.paid_amount - p.refunded_amount), 0) AS net_revenue
+         FROM payments AS p
+         INNER JOIN bookings AS b ON b.id = p.booking_id
+         ${where.bookingTimeJoin}
+         ${where.whereClause}
+           AND p.paid_at >= ? AND p.paid_at < ?
          GROUP BY bucket
          ORDER BY bucket ASC`,
-        [start, end]
+        [...where.parameters, start, end]
       );
       return rows;
     },
 
-    async getBookingSeries(start, end, hourly) {
+    async getBookingSeries(start, end, hourly, filters = {}) {
+      const { bookingTimeJoin, whereClause, parameters } = buildBookingWhere({
+        ...filters,
+        createdFrom: start,
+        createdTo: end
+      }, true);
       const bucketExpression = hourly
-        ? "DATE_FORMAT(DATE_ADD(created_at, INTERVAL 7 HOUR), '%Y-%m-%d %H:00:00')"
-        : "DATE_FORMAT(DATE_ADD(created_at, INTERVAL 7 HOUR), '%Y-%m-%d 00:00:00')";
+        ? "DATE_FORMAT(DATE_ADD(b.created_at, INTERVAL 7 HOUR), '%Y-%m-%d %H:00:00')"
+        : "DATE_FORMAT(DATE_ADD(b.created_at, INTERVAL 7 HOUR), '%Y-%m-%d 00:00:00')";
       const [rows] = await pool.execute(
-        `SELECT ${bucketExpression} AS bucket, COUNT(*) AS bookings
-         FROM bookings
-         WHERE created_at >= ? AND created_at < ?
+        `SELECT ${bucketExpression} AS bucket, COUNT(DISTINCT b.id) AS bookings
+         FROM bookings AS b
+         ${bookingTimeJoin}
+         ${whereClause}
          GROUP BY bucket
          ORDER BY bucket ASC`,
-        [start, end]
+        parameters
       );
       return rows;
     },
 
-    async getDashboardCourtCounts(start, end) {
+    async getDashboardCourtCounts(start, end, filters = {}) {
+      const where = buildBookingWhere({
+        ...filters,
+        createdFrom: start,
+        createdTo: end
+      }, true);
+      const activeBookingCondition = filters.status
+        ? ''
+        : `AND (b.status = 'PENDING' AND b.lock_expires_at > UTC_TIMESTAMP(3)
+          OR b.status = 'CONFIRMED'
+            AND TIMESTAMP(ts.service_date, ts.ends_at) > DATE_ADD(UTC_TIMESTAMP(3), INTERVAL 7 HOUR))`;
       const [rows] = await pool.execute(
         `SELECT
-           (SELECT COUNT(*) FROM courts WHERE is_active = TRUE) AS courts_active,
-           (SELECT COUNT(*) FROM courts WHERE is_active = FALSE) AS courts_inactive,
-           COUNT(DISTINCT CASE
-             WHEN b.status = 'PENDING' AND b.lock_expires_at > UTC_TIMESTAMP(3)
-               OR b.status = 'CONFIRMED'
-                 AND TIMESTAMP(ts.service_date, ts.ends_at) > DATE_ADD(UTC_TIMESTAMP(3), INTERVAL 7 HOUR)
-             THEN c.id
-           END) AS courts_with_bookings
+           (SELECT COUNT(*)
+            FROM courts AS active_court
+            INNER JOIN facilities AS active_facility
+              ON active_facility.id = active_court.facility_id
+            WHERE active_court.is_active = TRUE AND active_facility.is_active = TRUE) AS courts_active,
+           (SELECT COUNT(*)
+            FROM courts AS inactive_court
+            INNER JOIN facilities AS inactive_facility
+              ON inactive_facility.id = inactive_court.facility_id
+            WHERE inactive_court.is_active = FALSE OR inactive_facility.is_active = FALSE) AS courts_inactive,
+           COUNT(DISTINCT c.id) AS courts_with_bookings
          FROM bookings AS b
+         ${where.bookingTimeJoin}
          INNER JOIN booking_slots AS bs ON bs.booking_id = b.id
          INNER JOIN time_slots AS ts ON ts.id = bs.time_slot_id
          INNER JOIN courts AS c ON c.id = bs.court_id
-         WHERE b.created_at >= ? AND b.created_at < ?`,
-        [start, end]
+         ${where.whereClause}
+           ${activeBookingCondition}`,
+        where.parameters
       );
       return rows[0];
     },
 
     async getDashboardFillRate(fromDate, toDate) {
+      const validity = buildBookingValidityCondition('slot_booking');
       const [rows] = await pool.execute(
         `SELECT COUNT(*) AS total_slots,
-                COALESCE(SUM(CASE WHEN status = 'BOOKED' THEN 1 ELSE 0 END), 0) AS booked_slots
-         FROM time_slots
-         WHERE service_date >= ? AND service_date <= ?
-           AND status IN ('AVAILABLE', 'LOCKED', 'BOOKED')
-           AND (status <> 'LOCKED' OR lock_expires_at > UTC_TIMESTAMP(3))`,
-        [fromDate, toDate]
+                COALESCE(SUM(CASE WHEN ts.status = 'BOOKED' AND EXISTS (
+                  SELECT 1
+                  FROM bookings AS slot_booking
+                  INNER JOIN booking_slots AS bs
+                    ON bs.booking_id = slot_booking.id AND bs.time_slot_id = ts.id
+                  WHERE slot_booking.id = ts.current_booking_id
+                    AND (${validity.sql})
+                    AND slot_booking.status = 'CONFIRMED'
+                ) THEN 1 ELSE 0 END), 0) AS booked_slots
+         FROM time_slots AS ts
+         WHERE ts.service_date >= ? AND ts.service_date <= ?
+           AND ts.status IN ('AVAILABLE', 'LOCKED', 'BOOKED')
+           AND (ts.status <> 'LOCKED' OR ts.lock_expires_at > UTC_TIMESTAMP(3))`,
+        [...validity.parameters, fromDate, toDate]
       );
       return rows[0];
     },
 
-    async getTopCourts(start, end) {
+    async getTopCourts(start, end, filters = {}) {
+      const where = buildBookingWhere({
+        ...filters,
+        createdFrom: start,
+        createdTo: end
+      }, true);
       const [rows] = await pool.execute(
         `SELECT ranked.facility_name, ranked.court_name, ranked.sport_type,
                 COUNT(*) AS booking_count,
@@ -477,18 +689,26 @@ function createAdminRepository(pool) {
            INNER JOIN facilities AS f ON f.id = c.facility_id
            LEFT JOIN payments AS p
              ON p.booking_id = b.id AND p.paid_at >= ? AND p.paid_at < ?
-           WHERE b.created_at >= ? AND b.created_at < ?
+           ${where.bookingTimeJoin}
+           ${where.whereClause}
            GROUP BY c.id, b.id, f.name, c.name, c.sport_type
          ) AS ranked
          GROUP BY ranked.court_id, ranked.facility_name, ranked.court_name, ranked.sport_type
          ORDER BY booking_count DESC, revenue DESC, ranked.court_id ASC
          LIMIT 5`,
-        [start, end, start, end]
+        [start, end, ...where.parameters]
       );
       return rows;
     },
 
-    async getRecentBookings(limit) {
+    async getRecentBookings(limit, filters = {}) {
+      const parsedLimit = Number.parseInt(limit, 10);
+      const safeLimit = Number.isSafeInteger(parsedLimit) && parsedLimit > 0
+        ? parsedLimit
+        : 5;
+      const { bookingTimeJoin, whereClause, parameters } = buildBookingWhere({
+        ...filters,
+      }, true);
       const [rows] = await pool.execute(
         `SELECT b.id, b.booking_code, b.status, b.created_at,
                 (b.lock_expires_at > UTC_TIMESTAMP(3)) AS lock_active,
@@ -499,13 +719,18 @@ function createAdminRepository(pool) {
          FROM bookings AS b
          INNER JOIN users AS u ON u.id = b.user_id
          LEFT JOIN payments AS p ON p.booking_id = b.id
+         ${bookingTimeJoin}
+         ${whereClause}
          ORDER BY b.created_at DESC, b.id DESC
-         LIMIT ?`,
-        [limit]
+         LIMIT ${safeLimit}`,
+        parameters
       );
       return rows;
     }
   };
 }
+
+createAdminRepository.buildBookingValidityCondition = buildBookingValidityCondition;
+createAdminRepository.BOOKING_PAGE_SIZE = ADMIN_BOOKING_PAGE_SIZE;
 
 module.exports = createAdminRepository;

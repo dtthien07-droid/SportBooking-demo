@@ -115,3 +115,37 @@ Thực hiện theo yêu cầu đã duyệt trong phiên 2026-11-13; chỉ sửa 
 - Dùng ExcelJS đã có trong backend; chưa thêm thư viện. Chưa chạy được `npm audit` trong môi trường hiện tại.
 - Kết nối trang Đơn đặt sân với dialog hủy sự cố dùng chung; sửa lỗi khởi tạo do script bind vào form không có trong HTML.
 - Không migration/đổi schema. GĐ4–GĐ5 đã triển khai code và thêm test; lệnh test đang bị chặn bởi môi trường. Kiểm tra trình duyệt: **Chờ người dùng xác nhận**.
+
+## Kế hoạch — Loại dữ liệu trước deploy khỏi số liệu Admin
+
+**Trạng thái: Đã duyệt — hoàn tất**
+
+### Định nghĩa đã xác nhận
+
+- Booking hợp lệ khi `user_id` còn tồn tại trong `users` và `created_at >= 2026-11-15 17:00:00 UTC` (00:00 ngày 16/11/2026 giờ Việt Nam).
+- Slot chỉ được tính đang chiếm chỗ nếu booking hợp lệ và `CONFIRMED`, hoặc `PENDING` với lock chưa hết hạn.
+- Không cập nhật dữ liệu slot hay booking trong database; chỉ thay đổi truy vấn/hiển thị.
+
+### Phạm vi triển khai
+
+1. Dùng một điều kiện booking hợp lệ trong `backend/src/admin/admin.repository.js` và các truy vấn Admin phụ thuộc; kết hợp cùng kỳ tạo đơn, trạng thái, cơ sở, ngày chơi và từ khóa. Áp dụng nhất quán cho count/list/pagination, sáu nhóm trạng thái theo UTC+7, dashboard/series/top sân và các đường xuất Excel. Giữ nguyên endpoint và logic trang Người dùng.
+2. Thêm biến cấu hình mốc deploy vào `.env` và `.env.example` hiện có; không tạo file, không ghi giá trị bí mật.
+3. Chọn một page size ở backend và dùng nó cho danh sách/phân trang; đối chiếu số hàng duyệt hết trang với tổng count/tab và KPI.
+4. Đồng bộ kỳ thống kê giữa `quan-tri-tong-quan.html` và `quan-tri.html`; nêu rõ kỳ tính theo ngày tạo đơn, phân biệt với bộ lọc ngày chơi.
+5. Sửa cách xác định trạng thái slot ở `backend/src/admin/slots.service.js` để chỉ booking hợp lệ đang giữ/đã xác nhận chiếm chỗ; không ghi lại `time_slots.status`.
+6. Sửa null selector `recentBookings` trong dashboard, xử lý lỗi API có thông báo và nút thử lại; không thay đổi trang Người dùng.
+7. Chỉ sửa test trong file đã có dưới `backend/tests` và test frontend đã có; thêm trường hợp kiểm tra tổng/tab/phân trang/KPI cho `today`, `7d`, `30d`, cùng số slot hiệu lực. Test không được ghi vào database.
+8. Sau khi hoàn tất, cập nhật roadmap/changelog hiện có; không tạo tài liệu mới.
+
+### Kiểm tra
+
+- Chạy `node --check` cho file JavaScript đã sửa và test frontend hiện có.
+- Chạy test backend tập trung không ghi DB; đối chiếu các kết quả bằng SELECT trực tiếp trên `sportbooking`.
+- Xác nhận trước/sau cho từng trang, `git diff --stat`, không có file untracked, không commit.
+
+### Kết quả
+
+- `sportbooking`: 66 booking trước lọc; 4 có user còn tồn tại, 62 mồ côi; cutoff giữ lại 2 booking.
+- Với `today`, `7d`, `30d`: dashboard, tổng danh sách và tổng sáu nhóm trạng thái đều bằng 2; trang đầu hiển thị đủ 2 dòng.
+- Tuần 16–22/11: lịch hiển thị 2 slot đã đặt, khớp 2 slot của booking `CONFIRMED` hợp lệ; không có slot giữ chỗ hợp lệ.
+- Frontend tests: 231/231; backend service tests: 4/4; `node --check` các file JavaScript đã sửa đạt; đối chiếu database chỉ chạy SELECT.

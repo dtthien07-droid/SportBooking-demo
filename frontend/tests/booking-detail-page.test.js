@@ -173,6 +173,10 @@ function createDetailHarness({
     return elements.get(id);
   };
   const qrPayloads = [];
+  const intervals = new Map();
+  let bookingReads = 0;
+  let facilityReads = 0;
+  let nextIntervalId = 0;
   const retryMarkup = /<button\b[^>]*id="ticketQrRetry"[^>]*>([^<]*)<\/button>/.exec(detailHtml);
   if (retryMarkup) getElementById('ticketQrRetry').textContent = retryMarkup[1];
   getElementById('detail-loading').hidden = false;
@@ -203,10 +207,12 @@ function createDetailHarness({
     location,
     SportBookingApi: {
       async getBooking() {
+        bookingReads += 1;
         if (bookingError) throw bookingError;
         return booking;
       },
       async getFacility() {
+        facilityReads += 1;
         return facilityData;
       }
     },
@@ -216,8 +222,12 @@ function createDetailHarness({
     SportBookingFormat: { formatVietnamDateTime: () => '15/11/2026 15:00' },
     SportBookingIcons: { setIcon() {} },
     SportBookingCancellationDialog: { initialize: () => ({ open() {} }) },
-    clearInterval() {},
-    setInterval() { return 1; }
+    clearInterval(id) { intervals.delete(id); },
+    setInterval(callback, delay) {
+      const id = ++nextIntervalId;
+      intervals.set(id, { callback, delay });
+      return id;
+    }
   };
   if (hasTicketData) window.SportBookingTicketData = ticketData;
   if (hasQrRenderer) {
@@ -231,6 +241,8 @@ function createDetailHarness({
   }
   const document = {
     referrer: '',
+    hidden: false,
+    addEventListener() {},
     getElementById,
     querySelectorAll: () => []
   };
@@ -251,7 +263,14 @@ function createDetailHarness({
   vm.runInContext(pageSource, context, { filename: 'booking-detail-page.js' });
 
   return new Promise((resolve) => {
-    setImmediate(() => resolve({ elements, logs, qrPayloads }));
+    setImmediate(() => resolve({
+      elements,
+      logs,
+      qrPayloads,
+      intervals,
+      get bookingReads() { return bookingReads; },
+      get facilityReads() { return facilityReads; }
+    }));
   });
 }
 
@@ -302,6 +321,20 @@ test('detail page renders upcoming tickets and all booking states without hiding
     assert.equal(page.elements.get('displayMatchTime').textContent, '17:00 – 18:00');
     assert.equal(page.elements.get('paymentStatusSubtext').textContent.length > 0, true);
   }
+});
+
+test('detail polling reuses facility data instead of fetching it every five seconds', async () => {
+  const page = await createDetailHarness();
+  assert.equal(page.bookingReads, 1);
+  assert.equal(page.facilityReads, 1);
+  const poll = [...page.intervals.values()].find((timer) => timer.delay === 5000);
+  assert.ok(poll);
+
+  poll.callback();
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.equal(page.bookingReads, 2);
+  assert.equal(page.facilityReads, 1);
 });
 
 test('detail QR payload and every rendered module match the electronic ticket', async () => {

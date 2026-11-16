@@ -96,7 +96,7 @@ test('exports use the active page filters, dashboard period, and selected slot v
     'utf8'
   );
   const slotsPage = fs.readFileSync(path.join(frontendRoot, 'admin', 'slots-page.js'), 'utf8');
-  assert.match(dashboardPage, /api\.exportDashboard\(elements\.range\.value\)/);
+  assert.match(dashboardPage, /api\.exportDashboard\(elements\.range\.value, \{/);
   assert.match(usersPage, /api\.exportUsers\(\{ q: applied\.q, status: applied\.status \}\)/);
   assert.match(facilitiesPage, /api\.exportFacilities\(\{[\s\S]*?q: appliedFilters\.q,[\s\S]*?district: appliedFilters\.district,[\s\S]*?is_active: appliedFilters\.is_active/);
   assert.match(slotsPage, /viewMode === 'month'[\s\S]*?slotsState\.getMonthRange/);

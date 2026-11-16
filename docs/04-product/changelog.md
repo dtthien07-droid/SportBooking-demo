@@ -1,3 +1,10 @@
+## 2026-11-16 — Loại dữ liệu trước deploy khỏi số liệu Admin
+- Dùng chung điều kiện booking hợp lệ: user còn tồn tại và `created_at` từ `2026-11-15T17:00:00.000Z`; áp dụng cho danh sách, thống kê, biểu đồ, top sân, xuất Excel và slot.
+- Đồng bộ `today`/`7d`/`30d` theo ngày tạo đơn UTC+7, status sáu nhóm, page size backend 10 và kỳ thống kê giữa Tổng quan/Đơn đặt sân; ghi rõ Ngày chơi là bộ lọc riêng.
+- Lịch Khung giờ & Giá chỉ giữ trạng thái đã đặt/đang giữ của booking hợp lệ; không thay đổi dữ liệu slot. Sửa render dashboard thiếu phần tử và thêm nút thử lại khi API lỗi.
+- Đối chiếu SELECT-only trên `sportbooking`: 66 booking → 2 hợp lệ; cả ba kỳ có dashboard/danh sách/tổng status = 2; 2 slot đặt của tuần 16–22/11 khớp 2 booking hợp lệ.
+- Frontend tests: 231/231; backend service tests: 4/4; `node --check` đạt. Không migration, không ghi DB.
+
 ## 2026-11-15 — Làm mới giao diện hồ sơ cá nhân
 - Áp bố cục hai cột, thẻ hồ sơ, điều hướng và trường nhập theo mockup; giữ nguyên form/API/validation và header dùng chung.
 - Ẩn thống kê, CLB, hạng, sở thích và các trường không có API; phần tóm tắt dùng dữ liệu tài khoản thật qua `textContent`.

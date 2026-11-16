@@ -337,6 +337,16 @@ function createAdminFacilitiesService(pool) {
       const page = parsePage(query.page, 1, 'page');
       const pageSize = parsePage(query.page_size, 20, 'page_size');
       if (pageSize > MAX_PAGE_SIZE) throw failure(400, 'INVALID_QUERY', 'page_size tối đa là 50.');
+      const parsedLimit = Number.parseInt(pageSize, 10);
+      const safeLimit = Number.isSafeInteger(parsedLimit) && parsedLimit > 0
+        ? Math.min(parsedLimit, 100)
+        : 20;
+      const parsedPage = Number.parseInt(page, 10);
+      const safePage = Number.isSafeInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+      const parsedOffset = Number.parseInt((safePage - 1) * safeLimit, 10);
+      const safeOffset = Number.isSafeInteger(parsedOffset) && parsedOffset >= 0
+        ? parsedOffset
+        : 0;
       const conditions = [];
       const parameters = [];
       if (search.trim()) {
@@ -397,8 +407,8 @@ function createAdminFacilitiesService(pool) {
                AND TIMESTAMP(ts.service_date, ts.ends_at) - INTERVAL 7 HOUR > UTC_TIMESTAMP(3)))
          ${where}
          GROUP BY f.id
-         ORDER BY f.id DESC LIMIT ? OFFSET ?`,
-        [...parameters, pageSize, (page - 1) * pageSize]
+         ORDER BY f.id DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`,
+        parameters
       );
       return {
         facilities: rows.map((row) => ({
@@ -427,6 +437,10 @@ function createAdminFacilitiesService(pool) {
     },
 
     async exportFacilities(query = {}, adminUserId) {
+      const parsedLimit = Number.parseInt(5001, 10);
+      const safeLimit = Number.isSafeInteger(parsedLimit) && parsedLimit > 0
+        ? Math.min(parsedLimit, 5001)
+        : 5001;
       const search = query.q === undefined ? '' : query.q;
       if (typeof search !== 'string' || search.length > 120) {
         throw failure(400, 'INVALID_QUERY', 'q không được vượt quá 120 ký tự.');
@@ -502,8 +516,8 @@ function createAdminFacilitiesService(pool) {
          ${where}
          GROUP BY f.id
          ORDER BY f.id DESC
-         LIMIT ?`,
-        [...parameters, 5001]
+         LIMIT ${safeLimit}`,
+        parameters
       );
       const facilityIds = facilityRows.map((facility) => String(facility.id));
       const courts = [];
@@ -516,8 +530,8 @@ function createAdminFacilitiesService(pool) {
            INNER JOIN facilities AS f ON f.id = c.facility_id
            WHERE c.facility_id IN (${placeholders})
            ORDER BY c.facility_id ASC, c.id ASC
-           LIMIT ?`,
-          [...facilityIds, 5001]
+           LIMIT ${safeLimit}`,
+          facilityIds
         );
         if (courtRows.length > 5000) {
           throw failure(400, 'EXPORT_TOO_MANY_ROWS', 'Quá nhiều dòng, hãy lọc thu hẹp');

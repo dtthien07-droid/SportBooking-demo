@@ -58,6 +58,7 @@
   let pollTimer = null;
   let loadingRequest = false;
   let refreshAfterCurrentRequest = false;
+  const facilityCache = new Map();
   const cancellationDialog = window.SportBookingCancellationDialog.initialize({
     onCancelled: async (_result, message) => {
       elements.cancelResult.textContent = message;
@@ -298,6 +299,30 @@
     }, 250);
   }
 
+  async function getFacility(facilityId) {
+    const key = String(facilityId || '');
+    if (!key) return null;
+    if (!facilityCache.has(key)) {
+      const request = window.SportBookingApi.getFacility(key).catch((error) => {
+        if (error?.status === 404) return null;
+        facilityCache.delete(key);
+        throw error;
+      });
+      facilityCache.set(key, request);
+    }
+    return facilityCache.get(key);
+  }
+
+  function startPolling() {
+    if (document.hidden || pollTimer || elements.content.hidden) return;
+    pollTimer = window.setInterval(() => loadBooking({ quiet: true }), 5000);
+  }
+
+  function stopPolling() {
+    window.clearInterval(pollTimer);
+    pollTimer = null;
+  }
+
   function renderBooking(booking, facilityData) {
     const presentation = state.getBookingPresentation(
       booking,
@@ -341,7 +366,7 @@
       return;
     }
     window.clearInterval(countdownTimer);
-    window.clearInterval(pollTimer);
+    stopPolling();
     elements.loading.hidden = true;
     elements.content.hidden = true;
     elements.errorTitle.textContent = view.title;
@@ -386,17 +411,10 @@
       const booking = await window.SportBookingApi.getBooking(bookingId);
       if (!booking) return;
       const facilityId = booking.slots?.[0]?.facility_id;
-      let facilityData = null;
-      if (facilityId) {
-        try {
-          facilityData = await window.SportBookingApi.getFacility(facilityId);
-        } catch (error) {
-          if (error?.status !== 404) throw error;
-        }
-      }
+      const facilityData = await getFacility(facilityId);
       if (!booking) return;
       renderBooking(booking, facilityData);
-      if (!pollTimer) pollTimer = window.setInterval(() => loadBooking({ quiet: true }), 5000);
+      startPolling();
     } catch (error) {
       showError(error);
     } finally {
@@ -411,5 +429,13 @@
   elements.retry.addEventListener('click', () => loadBooking());
   elements.ticketQrRetry.addEventListener('click', () => window.location.reload());
   elements.cancelAction.addEventListener('click', () => cancellationDialog.open(bookingId));
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      stopPolling();
+      return;
+    }
+    startPolling();
+    if (!elements.content.hidden) loadBooking({ quiet: true, forceRefresh: true });
+  });
   loadBooking();
 })();

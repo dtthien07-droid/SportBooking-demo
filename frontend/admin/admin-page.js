@@ -41,15 +41,21 @@
     refreshButtons: [...document.querySelectorAll('#refreshBookings, #refreshBookingsIcon')],
     notice: document.getElementById('adminNotice')
   };
-  const PAGE_SIZE = 10;
+  let pageSize = 10;
   const COUNT_FILTERS = Object.freeze([
     { key: 'all', status: '' },
     { key: 'pending', status: 'PENDING' },
+    { key: 'upcoming', status: 'UPCOMING' },
+    { key: 'in-progress', status: 'IN_PROGRESS' },
     { key: 'completed', status: 'COMPLETED' },
     { key: 'cancelled', status: 'CANCELLED' },
     { key: 'expired', status: 'EXPIRED' }
   ]);
   let filterState = state.restoreFilterState(window.location.search);
+  const requestedPeriod = new URLSearchParams(window.location.search).get('range');
+  const validPeriods = new Set(['today', '7d', '30d']);
+  let selectedPeriod = validPeriods.has(requestedPeriod) ? requestedPeriod : 'today';
+  if (elements.period) elements.period.value = selectedPeriod;
   let totalPages = 1;
   let facilities = [];
   let noticeTimer = null;
@@ -91,10 +97,14 @@
   }
 
   function syncFilterUrl() {
+    const params = new URLSearchParams(
+      state.serializeFilterState(filterState.applied).replace(/^\?/, '')
+    );
+    params.set('range', selectedPeriod);
     window.history.replaceState(
       window.history.state,
       '',
-      `${window.location.pathname}${state.serializeFilterState(filterState.applied)}${window.location.hash}`
+      `${window.location.pathname}?${params.toString()}${window.location.hash}`
     );
   }
 
@@ -122,6 +132,14 @@
       );
       if (active) link.setAttribute('aria-current', 'location');
       else link.removeAttribute('aria-current');
+      const targetPath = link.dataset.adminNav === 'overview'
+        ? '/quan-tri-tong-quan.html'
+        : link.dataset.adminNav === 'bookings'
+          ? '/quan-tri.html'
+          : null;
+      if (link.tagName === 'A' && targetPath) {
+        link.href = `${targetPath}?range=${encodeURIComponent(selectedPeriod)}`;
+      }
     }
   }
 
@@ -272,54 +290,33 @@
     elements.dashboardMessage.dataset.kind = 'info';
     if (!isPolling) elements.dashboardMessage.textContent = 'Đang tải số liệu...';
     try {
-      const result = await api.getDashboard(elements.period?.value || '7d');
+      const result = await api.getDashboard(
+        selectedPeriod,
+        state.buildQuery(filterState.applied)
+      );
       if (requestId !== dashboardRequestId) return;
       setMetric('new_bookings', result.new_bookings);
       setMetric('net_revenue', result.net_revenue, true);
       setMetric('cancelled_bookings', result.cancelled_bookings);
       setMetric('completed_bookings', result.completed_bookings);
       elements.dashboardMessage.textContent = dashboardHasData(result)
-        ? 'Các thẻ số liệu là toàn hệ thống; bộ lọc danh sách không áp dụng.'
-        : 'Chưa có dữ liệu trong khoảng thời gian này. Các thẻ số liệu là toàn hệ thống.';
+        ? 'Kỳ thống kê theo ngày tạo đơn; Ngày chơi là bộ lọc riêng.'
+        : 'Chưa có dữ liệu theo ngày tạo đơn trong kỳ đã chọn.';
       delete elements.dashboardMessage.dataset.kind;
     } catch (error) {
       if (redirectForStatus(error.status)) return;
-      if (requestId === dashboardRequestId && !isPolling) {
-        elements.dashboardMessage.textContent = '';
-        delete elements.dashboardMessage.dataset.kind;
+      if (requestId === dashboardRequestId) {
+        elements.dashboardMessage.dataset.kind = 'error';
+        elements.dashboardMessage.replaceChildren(document.createTextNode(
+          `${error.message || 'Không thể tải số liệu.'} `
+        ));
+        const retry = makeElement('button', 'admin-button admin-button--quiet', 'Thử lại');
+        retry.type = 'button';
+        retry.addEventListener('click', () => loadDashboard());
+        elements.dashboardMessage.append(retry);
       }
       if (isPolling) throw error;
     }
-  }
-
-  async function getAllBookingsByStatus(status, applied) {
-    const firstPage = await api.getBookings({
-      ...state.buildQuery({ ...applied, status, page: 1 }),
-      page_size: 50
-    });
-    if (!Array.isArray(firstPage.bookings) || !hasValidPagination(firstPage)) {
-      throw new Error('Máy chủ trả về danh sách đơn không hợp lệ.');
-    }
-    const totalPages = safeCount(firstPage.pagination.total_pages);
-    if (totalPages <= 1) return firstPage.bookings;
-
-    const remainingPages = await Promise.all(Array.from(
-      { length: totalPages - 1 },
-      (_, index) => api.getBookings({
-        ...state.buildQuery({ ...applied, status, page: index + 2 }),
-        page_size: 50
-      })
-    ));
-    for (const result of remainingPages) {
-      if (!Array.isArray(result.bookings) || !hasValidPagination(result)) {
-        throw new Error('Máy chủ trả về danh sách đơn không hợp lệ.');
-      }
-    }
-    return firstPage.bookings.concat(...remainingPages.map((result) => result.bookings));
-  }
-
-  function getAllConfirmedBookings(applied) {
-    return getAllBookingsByStatus('CONFIRMED', applied);
   }
 
   function appendEmptyState(message, actionLabel = '', actionHandler = null) {
@@ -432,10 +429,9 @@
       filterState = state.setAppliedPage(filterState, page);
       syncFilterUrl();
     }
-    const start = (page - 1) * PAGE_SIZE;
-    const visibleBookings = result.clientPaginated
-      ? bookings.slice(start, start + PAGE_SIZE)
-      : bookings;
+    pageSize = safeCount(pagination.page_size) || pageSize;
+    const start = (page - 1) * pageSize;
+    const visibleBookings = bookings;
     const total = safeCount(pagination.total);
     const firstVisible = total === 0 ? 0 : start + 1;
     const lastVisible = total === 0 ? 0 : Math.min(start + visibleBookings.length, total);
@@ -502,27 +498,19 @@
     const requestId = ++countsRequestId;
     const applied = filterState.applied;
     try {
-      const [results, confirmedBookings] = await Promise.all([
-        Promise.all(COUNT_FILTERS.map((filter) => (
-          api.getBookings({
-            ...state.buildQuery({ ...applied, status: filter.status, page: 1 }),
-            page_size: 1
-          })
-        ))),
-        getAllConfirmedBookings(applied)
-      ]);
+      const result = await api.getBookings({
+        ...state.buildQuery({ ...applied, status: '', page: 1 }),
+        range: selectedPeriod
+      });
       if (requestId !== countsRequestId) return;
       const values = {};
-      results.forEach((result, index) => {
-        if (!hasValidPagination(result)) {
-          throw new Error('Máy chủ trả về số lượng đơn không hợp lệ.');
-        }
-        values[COUNT_FILTERS[index].key] = result.pagination?.total;
-      });
-      const activeCounts = state.countDisplayStatuses(confirmedBookings);
-      values.upcoming = activeCounts.UPCOMING;
-      values['in-progress'] = activeCounts.IN_PROGRESS;
-      values.completed += activeCounts.COMPLETED;
+      if (!hasValidPagination(result) || !result.status_counts) {
+        throw new Error('Máy chủ trả về số lượng đơn không hợp lệ.');
+      }
+      values.all = result.pagination.total;
+      for (const filter of COUNT_FILTERS.slice(1)) {
+        values[filter.key] = result.status_counts[filter.status];
+      }
       setTabCounts(values);
     } catch (error) {
       if (redirectForStatus(error.status)) return;
@@ -559,49 +547,16 @@
     }
     const countsPromise = loadTabCounts(isPolling);
     try {
-      let result;
-      if (applied.status === 'UPCOMING' || applied.status === 'IN_PROGRESS'
-          || applied.status === 'COMPLETED') {
-        const status = applied.status;
-        const [matchingBookings, confirmedBookings] = await Promise.all([
-          status === 'COMPLETED'
-            ? getAllBookingsByStatus('COMPLETED', applied)
-            : Promise.resolve([]),
-          getAllConfirmedBookings(applied)
-        ]);
-        if (requestId !== bookingsRequestId) return;
-        const confirmedMatches = state.filterBookingsByDisplayStatus(confirmedBookings, status);
-        const filteredBookings = status === 'COMPLETED'
-          ? matchingBookings.concat(confirmedMatches).sort((first, second) => (
-            String(second.created_at || '').localeCompare(String(first.created_at || ''))
-            || String(second.booking_id || '').localeCompare(String(first.booking_id || ''), undefined, { numeric: true })
-          ))
-          : confirmedMatches;
-        const totalPages = Math.ceil(filteredBookings.length / PAGE_SIZE);
-        result = {
-          bookings: filteredBookings,
-          clientPaginated: true,
-          pagination: {
-            page: applied.page,
-            page_size: PAGE_SIZE,
-            total: filteredBookings.length,
-            total_pages: totalPages
-          }
-        };
-      } else {
-        result = await api.getBookings({
-          ...state.buildQuery({
-            ...applied,
-            status: state.getApiStatusForFilter(applied.status)
-          }),
-          page_size: PAGE_SIZE
-        });
-      }
+      const result = await api.getBookings({
+        ...state.buildQuery(applied),
+        range: selectedPeriod
+      });
       if (requestId !== bookingsRequestId) return;
       if (!Array.isArray(result.bookings) || !hasValidPagination(result)) {
         throw new Error('Máy chủ trả về danh sách đơn không hợp lệ.');
       }
       const lastPage = Math.max(1, safeCount(result.pagination.total_pages));
+      pageSize = safeCount(result.pagination.page_size) || pageSize;
       if (applied.page > lastPage) {
         filterState = state.setAppliedPage(filterState, lastPage);
         visibleBookingIds = null;
@@ -610,10 +565,7 @@
         await loadBookings(isPolling);
         return;
       }
-      const start = (applied.page - 1) * PAGE_SIZE;
-      const visibleBookings = result.clientPaginated
-        ? result.bookings.slice(start, start + PAGE_SIZE)
-        : result.bookings;
+      const visibleBookings = result.bookings;
       const currentIds = visibleBookings.map((booking) => String(booking.booking_id || '')).filter(Boolean);
       const newBookingIds = isPolling && visibleBookingIds
         ? new Set(state.getNewBookingIds(currentIds, visibleBookingIds))
@@ -670,7 +622,10 @@
     return exportDownload.download(
       elements.exportButton,
       elements.notice,
-      () => api.exportBookings(state.buildExportFilters(filterState)),
+      () => api.exportBookings({
+        ...state.buildExportFilters(filterState),
+        range: selectedPeriod
+      }),
       {
         successMessage: 'Đã tải tệp Excel đơn đặt sân.',
         onSuccess: () => showNotice('Đã tải tệp Excel đơn đặt sân.'),
@@ -694,6 +649,9 @@
 
   function restoreFromUrl() {
     filterState = state.restoreFilterState(window.location.search);
+    const urlPeriod = new URLSearchParams(window.location.search).get('range');
+    selectedPeriod = validPeriods.has(urlPeriod) ? urlPeriod : 'today';
+    if (elements.period) elements.period.value = selectedPeriod;
     if (filterState.applied.facilityId && facilities.length > 0
         && !facilities.some((facility) => (
           String(facility.id ?? facility.facility_id) === filterState.applied.facilityId
@@ -710,7 +668,14 @@
     Promise.all([loadDashboard(), loadBookings()]);
   }
 
-  if (elements.period) elements.period.addEventListener('change', loadDashboard);
+  if (elements.period) elements.period.addEventListener('change', () => {
+    selectedPeriod = validPeriods.has(elements.period.value) ? elements.period.value : 'today';
+    filterState = state.setAppliedPage(filterState, 1);
+    api.clearCache();
+    syncFilterUrl();
+    renderAdminNavigation(window.location.hash === '#adminOverview' ? 'overview' : 'bookings');
+    Promise.all([loadDashboard(), loadBookings()]);
+  });
   elements.navigationLinks.forEach((link) => {
     link.addEventListener('click', () => renderAdminNavigation(link.dataset.adminNav));
   });

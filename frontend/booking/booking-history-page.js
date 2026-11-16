@@ -65,6 +65,9 @@
     requestSequence: 0,
     loading: false
   };
+  let summaryRefreshedAt = 0;
+  let countdownTimer = null;
+  let historyPollTimer = null;
   function initializeCancelResultToast() {
     const toast = document.createElement('div');
     toast.id = 'cancel-result-message';
@@ -540,7 +543,7 @@
     return true;
   }
 
-  async function loadBookings({ quiet = false } = {}) {
+  async function loadBookings({ quiet = false, refreshSummary = false } = {}) {
     if (current.loading && quiet) return;
     current.loading = true;
     const requestSequence = ++current.requestSequence;
@@ -548,20 +551,30 @@
     current.countdowns.clear();
     updateUrl();
     try {
-      const result = await window.SportBookingApi.listBookings({
-        status: filterStatuses[current.filter],
-        page: current.page,
-        pageSize,
-        q: current.q,
-        sport: current.sport === 'all' ? undefined : current.sport
-      });
+      const shouldRefreshSummary = refreshSummary
+        || !quiet
+        || Date.now() - summaryRefreshedAt >= 30000;
+      const [result, summary] = await Promise.all([
+        window.SportBookingApi.listBookings({
+          status: filterStatuses[current.filter],
+          page: current.page,
+          pageSize,
+          q: current.q,
+          sport: current.sport === 'all' ? undefined : current.sport
+        }),
+        shouldRefreshSummary
+          ? window.SportBookingApi.getBookingSummary()
+          : Promise.resolve(null)
+      ]);
       if (requestSequence !== current.requestSequence || !result) return;
-      const summary = await window.SportBookingApi.getBookingSummary();
-      if (requestSequence !== current.requestSequence || !summary) return;
+      if (shouldRefreshSummary && !summary) return;
       if (!Array.isArray(result.bookings) || !result.pagination) {
         throw new TypeError('Máy chủ trả về lịch sử đặt sân không hợp lệ.');
       }
-      renderSummary(summary);
+      if (summary) {
+        renderSummary(summary);
+        summaryRefreshedAt = Date.now();
+      }
       if (result.pagination.total_pages > 0 && current.page > result.pagination.total_pages) {
         current.page = result.pagination.total_pages;
         current.loading = false;
@@ -653,7 +666,9 @@
     loadBookings();
   });
 
-  window.setInterval(() => {
+  function startPageTimers() {
+    if (document.hidden) return;
+    if (!countdownTimer) countdownTimer = window.setInterval(() => {
     for (const [node, timer] of current.countdowns) {
       const elapsed = Math.floor((Date.now() - timer.updatedAt) / 1000);
       if (elapsed < 1) continue;
@@ -665,9 +680,29 @@
         countdownText(node, timer.remaining);
       }
     }
-  }, 250);
-  window.setInterval(() => loadBookings({ quiet: true }), 5000);
+    }, 250);
+    if (!historyPollTimer) {
+      historyPollTimer = window.setInterval(() => loadBookings({ quiet: true }), 5000);
+    }
+  }
+
+  function stopPageTimers() {
+    window.clearInterval(countdownTimer);
+    window.clearInterval(historyPollTimer);
+    countdownTimer = null;
+    historyPollTimer = null;
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      stopPageTimers();
+      return;
+    }
+    startPageTimers();
+    loadBookings({ quiet: true, refreshSummary: true });
+  });
 
   setTabStyle(elements.tabs.find((tab) => tab.dataset.filter === current.filter));
+  startPageTimers();
   loadBookings();
 })();

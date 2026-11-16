@@ -1,6 +1,8 @@
 'use strict';
 
 const assert = require('node:assert/strict');
+const { spawnSync } = require('node:child_process');
+const path = require('node:path');
 const test = require('node:test');
 const {
   loadSurvey,
@@ -11,11 +13,59 @@ const {
   parseRating
 } = require('../../infra/database/seed-facilities');
 const { assertAllowedDatabase } = require('../../infra/database/facilities-db');
+const { validateDatabaseConfig } = require('../src/config/database');
+
+test('test database configuration supports local MariaDB without TLS', () => {
+  const config = validateDatabaseConfig({
+    APP_ENV: 'test',
+    DB_NAME: 'sportbooking_test',
+    DB_HOST: '127.0.0.1',
+    DB_PORT: '3306',
+    DB_USER: 'root',
+    DB_PASSWORD: '',
+    DB_SSL: 'false'
+  });
+
+  assert.equal(config.ssl, false);
+  assert.throws(
+    () => validateDatabaseConfig({
+      APP_ENV: 'production',
+      DB_NAME: 'sportbooking',
+      DB_HOST: '127.0.0.1',
+      DB_PORT: '3306',
+      DB_USER: 'root',
+      DB_PASSWORD: '',
+      DB_SSL: 'false'
+    }),
+    /TiDB Cloud connections require DB_SSL=true/
+  );
+});
 
 test('facility seed accepts only the two approved database names', () => {
   assert.doesNotThrow(() => assertAllowedDatabase('sportbooking_dev'));
   assert.doesNotThrow(() => assertAllowedDatabase('sportbooking_test'));
-  assert.throws(() => assertAllowedDatabase('sportbooking_system'), /must be sportbooking_dev or sportbooking_test/);
+  assert.throws(
+    () => assertAllowedDatabase('sportbooking_system'),
+    /must be sportbooking, sportbooking_dev or sportbooking_test/
+  );
+});
+
+test('backend test runner refuses a database name other than sportbooking_test', () => {
+  const result = spawnSync(
+    process.execPath,
+    [path.resolve(__dirname, '..', 'run-tests.js')],
+    {
+      env: {
+        ...process.env,
+        APP_ENV: 'test',
+        DB_NAME: 'sportbooking'
+      },
+      encoding: 'utf8'
+    }
+  );
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /DB_NAME must be exactly sportbooking_test/);
 });
 
 test('survey telephone normalization preserves an existing zero and restores a missing one', () => {

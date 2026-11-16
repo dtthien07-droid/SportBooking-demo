@@ -105,7 +105,12 @@ const pendingBooking = {
   ]
 };
 
-function createHarness({ attemptError = null, attemptResult = {}, initialBooking = pendingBooking } = {}) {
+function createHarness({
+  attemptError = null,
+  attemptResult = {},
+  initialBooking = pendingBooking,
+  cachedFacilityData = null
+} = {}) {
   const elements = new Map();
   const stepperMount = new FakeElement('stepper');
   for (const [tag] of pageHtml.matchAll(/<[^>]*\bid="[^"]+"[^>]*>/g)) {
@@ -125,6 +130,8 @@ function createHarness({ attemptError = null, attemptResult = {}, initialBooking
   const redirects = [];
   const replacements = [];
   const assignments = [];
+  let currentUserReads = 0;
+  let facilityReads = 0;
   let bookingReads = 0;
   const api = {
     async getBooking() {
@@ -138,9 +145,14 @@ function createHarness({ attemptError = null, attemptResult = {}, initialBooking
       return { payment: { amount_due: '150000' } };
     },
     async getCurrentUser() {
+      currentUserReads += 1;
       return { user: { fullName: 'Người đặt thật', phone: '0912345678' } };
     },
+    consumeBookingSelection() {
+      return cachedFacilityData ? { facilityData: cachedFacilityData } : null;
+    },
     async getFacility() {
+      facilityReads += 1;
       return {
         facility: { name: 'Cơ sở thật', image_url: null, hotline: '' },
         courts: [{ id: '9', sport_type: 'BADMINTON', name: 'Sân thật' }]
@@ -165,6 +177,10 @@ function createHarness({ attemptError = null, attemptResult = {}, initialBooking
       replace(url) { replacements.push(url); redirects.push(url); }
     },
     SportBookingApi: api,
+    SportBookingHeaderReady: Promise.resolve({
+      fullName: 'Người đặt thật',
+      phone: '0912345678'
+    }),
     SportBookingFormat,
     SportBookingPaymentData: {
       buildPaymentAttemptPayload: (method, result) => ({ method, simulation_result: result }),
@@ -211,7 +227,18 @@ function createHarness({ attemptError = null, attemptResult = {}, initialBooking
     assert.fail('Payment page did not finish loading.');
   }
 
-  return { elements, methods, calls, redirects, replacements, assignments, waitForLoad, stepperMount };
+  return {
+    elements,
+    methods,
+    calls,
+    redirects,
+    replacements,
+    assignments,
+    get currentUserReads() { return currentUserReads; },
+    get facilityReads() { return facilityReads; },
+    waitForLoad,
+    stepperMount
+  };
 }
 
 test('loads flat PENDING booking data and renders every real booking field', async () => {
@@ -226,9 +253,22 @@ test('loads flat PENDING booking data and renders every real booking field', asy
   assert.equal(page.elements.get('displaySidebarRemainingPrice').textContent, '150.000 đ');
   assert.equal(page.elements.get('displaySidebarDepositPrice').textContent, '150.000 đ');
   assert.equal(page.elements.get('displaySidebarUser').textContent, 'Người đặt thật (*******678)');
+  assert.equal(page.currentUserReads, 0);
   assert.equal(page.elements.get('paymentStep1Back').href, '/dat-san.html?facility_id=8&court_id=9&date=2026-11-20&slots=101%2C102');
   assert.match(page.stepperMount.innerHTML, /href="\/dat-san\.html\?facility_id=8&amp;court_id=9&amp;date=2026-11-20&amp;slots=101%2C102"/);
   assert.match(page.elements.get('transferQr').insertedHtml.html, /SPORTBOOKING\|SPB-0123456789ABCDEF0123456789ABCDEF\|150000/);
+});
+
+test('payment reuses the recently selected facility instead of requesting it again', async () => {
+  const cachedFacilityData = {
+    facility: { id: '8', name: 'Cơ sở thật', image_url: null, hotline: '' },
+    courts: [{ id: '9', sport_type: 'BADMINTON', name: 'Sân thật' }]
+  };
+  const page = createHarness({ cachedFacilityData });
+  await page.waitForLoad();
+
+  assert.equal(page.facilityReads, 0);
+  assert.equal(page.elements.get('paymentContent').hidden, false);
 });
 
 test('selects each payment method and submits SUCCESS', async (t) => {

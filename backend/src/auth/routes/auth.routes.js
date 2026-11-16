@@ -4,7 +4,14 @@ const express = require('express');
 const { cookieOptions } = require('../session.cookie');
 const { SESSION_DURATION_MS } = require('../session.service');
 
-function createAuthRouter({ authService, sessionService, sessionRepository, requireAuth, cookieName }) {
+function createAuthRouter({
+  authService,
+  sessionService,
+  sessionRepository,
+  requireAuth,
+  cookieName,
+  matchmakingEnabled = false
+}) {
   const router = express.Router();
 
   router.post('/register', async (request, response) => {
@@ -29,7 +36,10 @@ function createAuthRouter({ authService, sessionService, sessionRepository, requ
   });
 
   router.get('/me', requireAuth, (request, response) => {
-    response.json({ user: request.auth.user });
+    response.json({
+      user: request.auth.user,
+      features: { matchmakingEnabled }
+    });
   });
 
   return router;
