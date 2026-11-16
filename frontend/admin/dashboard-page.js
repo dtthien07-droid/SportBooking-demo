@@ -622,11 +622,19 @@
         target.textContent = String(Number(metrics[target.dataset.adminCourtCount]) || 0);
       });
       const fillRate = Number(metrics.fill_rate_percent) || 0;
+      const occupiedSlots = Number(metrics.fill_rate_occupied_slots);
+      const totalSlots = Number(metrics.fill_rate_total_slots);
+      if (!Number.isSafeInteger(occupiedSlots) || occupiedSlots < 0
+          || !Number.isSafeInteger(totalSlots) || totalSlots < occupiedSlots) {
+        throw new Error('Số khung giờ trong dữ liệu tổng quan không hợp lệ.');
+      }
       const fillLabel = document.querySelector('[data-admin-fill-ring-label]');
       const fillText = document.querySelector('[data-admin-fill-label]');
+      const fillCount = document.querySelector('[data-admin-fill-count]');
       const fillRing = document.querySelector('[data-admin-fill-ring]');
       if (fillLabel) fillLabel.textContent = dashboardState.formatPercent(fillRate);
       if (fillText) fillText.textContent = `${dashboardState.formatPercent(fillRate)} lấp đầy`;
+      if (fillCount) fillCount.textContent = `${occupiedSlots}/${totalSlots} khung`;
       if (fillRing) fillRing.setAttribute('stroke-dasharray', `${Math.min(100, Math.max(0, fillRate))}, 100`);
       const previousRevenue = BigInt(metrics.net_revenue_prev || '0');
       const previousTarget = document.querySelector('[data-admin-revenue-prev]');

@@ -54,7 +54,11 @@ test('dashboard shows all six display statuses in order and explains court metri
   ]);
   assert.doesNotMatch(dashboardHtml, /data-admin-booking-status="CONFIRMED"/);
   assert.match(dashboardHtml, /Sân có đơn đang hiệu lực trong kỳ/);
-  assert.match(dashboardHtml, /Mẫu số: mọi khung AVAILABLE, BOOKED và LOCKED chưa hết hạn, trên mọi sân/);
+  assert.match(
+    dashboardHtml,
+    /Mẫu số: mọi khung AVAILABLE, BOOKED và LOCKED theo ngày chơi, kể cả khung đã qua giờ bắt đầu/
+  );
+  assert.match(dashboardHtml, /data-admin-fill-count/);
   assert.match(dashboardHtml, /Top sân theo lượt đặt trong kỳ/);
 });
 

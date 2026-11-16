@@ -24,6 +24,7 @@ test('axis ticks use rounded 1, 2, 5 steps and compact Vietnamese labels', () =>
   assert.equal(dashboardState.formatAxisValue(500000n), '500k');
   assert.equal(dashboardState.formatMoney('1250000'), '1.250.000 đ');
   assert.equal(dashboardState.formatPercent(0.7), '0,7%');
+  assert.equal(dashboardState.formatPercent(0.2188), '0,2%');
   assert.equal(dashboardState.formatPercent(0), '0%');
 });
 

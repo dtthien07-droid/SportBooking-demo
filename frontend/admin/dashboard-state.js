@@ -68,7 +68,7 @@
   function formatPercent(value) {
     const number = Number(value);
     if (!Number.isFinite(number)) return '0%';
-    return `${number.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%`;
+    return `${number.toLocaleString('vi-VN', { maximumFractionDigits: 1 })}%`;
   }
 
   function formatDate(value) {
