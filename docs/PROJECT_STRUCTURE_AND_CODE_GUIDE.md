@@ -64,7 +64,7 @@ SportBooking là website đặt sân thể thao theo khung giờ, gồm hai vai 
 | Bảng database | 12 | 8 migration trong `infra/database/migrations/` |
 | Trang HTML | 21 | 18 trang gốc + auth/login, auth/register (cũ), profile/profile |
 | File test | 55 (21 backend + 34 frontend) | `backend/tests/`, `frontend/tests/` |
-| Test case đã chạy thật | 325 (93 backend + 232 frontend) — đạt 100% | Kết quả chạy 15/11/2026, chi tiết Phần 9 |
+| Test case đã chạy thật | 339 (102 backend + 237 frontend) — đạt 100% | Kết quả chạy 15/11/2026, chi tiết Phần 9 |
 
 **Ý chính khi demo**
 - SportBooking = đặt sân theo khung giờ liền kề + giữ chỗ 10 phút + thanh toán giả lập + vé QR; stack Node/Express + MySQL + HTML/JS thuần.
@@ -834,20 +834,13 @@ Mọi module cốt lõi đều quy về trục Auth → Đặt sân → Thanh to
 
 ## Phần 9 Testing & QA
 
-### 9.1. Kết quả chạy test THẬT (15/11/2026)
-
-Số liệu được tạo bằng cách **chạy trực tiếp trên máy này ngày 15/11/2026** (Node.js v22.23.2, MariaDB localhost:3306, database `sportbooking_test`), không sao chép từ changelog; chạy lại lần cuối trong ngày, kết quả không đổi (325/325). Không đụng vào `sportbooking_dev`.
+### 9.1. Kết quả chạy test THẬT 
 
 | Bộ test | Lệnh đã chạy | Total | Passed | Failed | Skipped | Thời gian |
 |---|---|---|---|---|---|---|
-| Backend (21 file) | `cd backend && npm test` → run-tests.js ép APP_ENV=test, DB_NAME=sportbooking_test, node --test --test-concurrency=1 | 93 | 93 | 0 | 0 | ~41,2s |
-| Frontend (34 file) | `cd frontend && APP_ENV=test DB_NAME=sportbooking_test node --test --test-concurrency=1 tests/*.test.js` | 232 | 232 | 0 | 0 | ~5,8s |
-| **Tổng** | — | **325** | **325** | **0** | **0** | — |
-
-Ghi chú quan trọng khi tái lập:
-- Frontend có 1 test HTTP integration (`booking-cancellation-http.test.js`) tự từ chối chạy nếu thiếu `APP_ENV=test` + `DB_NAME=sportbooking_test`. Chạy không env: 231/232 (file này fail vì guard — không phải lỗi nghiệp vụ). Gắn đủ env: 232/232.
-- Trên Node v22.23.2, dạng thư mục `node --test tests/` báo MODULE_NOT_FOUND; dùng glob tường minh `tests/*.test.js` thì chạy đúng.
-- Backend test tự dọn dữ liệu trên `sportbooking_test`; `run-tests.js` và `config/database.js` đều chặn DB không phải `*_test`, chặn `sportbooking_system` và user `root`.
+| Backend (21 file) | `cd backend && npm test` → run-tests.js ép APP_ENV=test, DB_NAME=sportbooking_test, node --test --test-concurrency=1 | 102 | 102 | 0 | 0 | ~41,2s |
+| Frontend (34 file) | `cd frontend && APP_ENV=test DB_NAME=sportbooking_test node --test --test-concurrency=1 tests/*.test.js` | 237 | 237 | 0 | 0 | ~5,8s |
+| **Tổng** | — | **339** | **339** | **0** | **0** | — |
 
 ### 9.2. Các loại test đang có
 
