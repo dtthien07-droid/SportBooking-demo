@@ -64,6 +64,7 @@
     slotIds: parseSlotIds(query.get('slots')),
     slots: [],
     facility: null,
+    facilityData: null,
     court: null,
     bookingId: query.get('booking_id'),
     timerRemaining: 0,
@@ -503,11 +504,19 @@
       return;
     }
     try {
-      const [facilityData, slotData] = await Promise.all([
-        window.SportBookingApi.getFacility(state.facilityId),
-        window.SportBookingApi.getCourtSlots(state.courtId, state.serviceDate)
-      ]);
+      const cachedSelection = window.SportBookingApi.consumeBookingSelection?.(
+        state.facilityId,
+        state.courtId,
+        state.serviceDate
+      );
+      const [facilityData, slotData] = cachedSelection
+        ? [cachedSelection.facilityData, cachedSelection.slotData]
+        : await Promise.all([
+          window.SportBookingApi.getFacility(state.facilityId),
+          window.SportBookingApi.getCourtSlots(state.courtId, state.serviceDate)
+        ]);
       if (!facilityData || !slotData) return;
+      state.facilityData = facilityData;
       const court = facilityData.courts.find((item) => String(item.id) === state.courtId);
       if (!court || String(slotData.court_id) !== state.courtId
           || slotData.service_date !== state.serviceDate
@@ -638,6 +647,16 @@
       if (!booking) return;
       const bookingId = booking.booking_id || booking.id;
       if (!bookingId) throw new Error('Máy chủ không trả về mã đơn đặt sân.');
+      if (state.facilityData) {
+        window.SportBookingApi.storeBookingSelection(
+          state.facilityData,
+          {
+            court_id: state.courtId,
+            service_date: state.serviceDate,
+            time_slots: state.slots
+          }
+        );
+      }
       window.location.assign(`/thanh-toan.html?booking_id=${encodeURIComponent(bookingId)}`);
     } catch (error) {
       if (error.status === 401) return;

@@ -269,10 +269,17 @@
       const firstSlot = loadedBooking.slots?.[0];
       if (!firstSlot) throw new Error('Đơn đặt sân không có thông tin sân.');
       step1Url = createStep1Url(loadedBooking);
+      const cachedSelection = window.SportBookingApi.consumeBookingSelection?.(
+        firstSlot.facility_id,
+        firstSlot.court_id,
+        firstSlot.service_date
+      );
       const [payments, currentUser, facilityData] = await Promise.all([
         window.SportBookingApi.getPayments(bookingId),
-        window.SportBookingApi.getCurrentUser(),
-        window.SportBookingApi.getFacility(firstSlot.facility_id)
+        window.SportBookingHeaderReady,
+        cachedSelection
+          ? Promise.resolve(cachedSelection.facilityData)
+          : window.SportBookingApi.getFacility(firstSlot.facility_id)
       ]);
       if (!payments || !currentUser || !facilityData) return;
       const payment = loadedBooking.payment;
@@ -284,7 +291,7 @@
       const facility = facilityData.facility || facilityData;
       const court = facilityData.courts?.find((item) => String(item.id) === String(firstSlot.court_id));
       const sportType = String(firstSlot.sport_type || court?.sport_type || '').toUpperCase();
-      const user = currentUser.user || currentUser;
+      const user = currentUser;
       const amountDue = String(payment.amount_due);
       const amountAtVenue = (
         BigInt(String(loadedBooking.total_amount)) - BigInt(amountDue)

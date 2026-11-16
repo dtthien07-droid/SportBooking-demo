@@ -385,6 +385,8 @@ function createHistoryPageRuntime(record, facilityImageUrl = null) {
     SportBookingIcons: { setIcon(node, icon) { node.icon = icon; } }
   };
   const document = {
+    hidden: false,
+    addEventListener() {},
     querySelectorAll: () => [],
     getElementById: (id) => elements.get(id),
     createElement: (tagName) => new FakeNode(tagName)

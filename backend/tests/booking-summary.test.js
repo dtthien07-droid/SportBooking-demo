@@ -84,3 +84,60 @@ test('booking summary derives all counts from the shared display status function
     }
   });
 });
+
+test('booking creation ignores match preferences when matchmaking is disabled', async () => {
+  const slot = {
+    id: '22',
+    status: 'AVAILABLE',
+    current_booking_id: null,
+    lock_expired: 0,
+    court_is_active: 1,
+    facility_is_active: 1,
+    starts_at: '12:00:00',
+    ends_at: '13:00:00',
+    opening_time: '08:00:00',
+    closing_time: '22:00:00',
+    starts_in_time: 1,
+    court_id: '4',
+    service_date: '2026-12-01',
+    price: '120000',
+    sport_type: 'BADMINTON',
+    court_name: 'Court',
+    facility_id: '3',
+    facility_name: 'Venue'
+  };
+  let storedBookingInput;
+  const repository = {
+    async withTransaction(work) { return work({}); },
+    async lockUser() { return { id: '42' }; },
+    async lockPendingBookingsForUser() { return []; },
+    async findRequestedSlotStates() { return [slot]; },
+    async lockBookings() { return []; },
+    async findSlotIdsForBookings() { return []; },
+    async lockTimeSlots() { return [slot]; },
+    async createHoldDeadline() { return new Date('2026-11-10T12:10:00.000Z'); },
+    async createBooking(_connection, input) {
+      storedBookingInput = input;
+      return '100';
+    },
+    async createPayment() {},
+    async createBookingSlots() {},
+    async lockTimeSlotsForBooking() { return 1; },
+    isBookingCodeConflict() { return false; }
+  };
+  const service = createBookingsService(repository, { matchmakingEnabled: false });
+
+  const booking = await service.createBooking('42', {
+    slot_ids: ['22'],
+    payment_option: 'DEPOSIT_50',
+    match_preference: {
+      mode: 'NOT_A_MODE',
+      gender: 'NOT_A_GENDER',
+      format: 'NOT_A_FORMAT',
+      message: { unexpected: true }
+    }
+  });
+
+  assert.equal(booking.match_preference, null);
+  assert.equal(storedBookingInput.matchPreference, null);
+});

@@ -94,7 +94,9 @@
 
   async function createBooking(slotIds, paymentOption, matchPreference) {
     const payload = { slot_ids: slotIds, payment_option: paymentOption };
-    if (matchPreference) payload.match_preference = matchPreference;
+    if (window.SportBookingConfig?.matchmakingEnabled === true && matchPreference) {
+      payload.match_preference = matchPreference;
+    }
     const booking = await requestJson('/api/v1/bookings', {
       method: 'POST',
       body: JSON.stringify(payload)
@@ -165,8 +167,57 @@
     return requestJson(`/api/v1/bookings/${encodeURIComponent(bookingId)}/payments`);
   }
 
+  function storeBookingSelection(facilityData, slotData) {
+    try {
+      window.sessionStorage.setItem('sportbooking.booking-selection.v1', JSON.stringify({
+        savedAt: Date.now(),
+        facilityId: String(facilityData.facility.id),
+        courtId: String(slotData.court_id),
+        serviceDate: slotData.service_date,
+        facilityData,
+        slotData
+      }));
+    } catch (error) {
+      window.console?.warn('Không thể lưu tạm dữ liệu lựa chọn sân.', error);
+    }
+  }
+
+  function consumeBookingSelection(facilityId, courtId, serviceDate) {
+    let raw;
+    try {
+      raw = window.sessionStorage.getItem('sportbooking.booking-selection.v1');
+      if (raw) window.sessionStorage.removeItem('sportbooking.booking-selection.v1');
+    } catch (error) {
+      window.console?.warn('Không thể đọc dữ liệu lựa chọn sân đã lưu tạm.', error);
+      return null;
+    }
+    if (!raw) return null;
+
+    try {
+      const cached = JSON.parse(raw);
+      const age = Date.now() - cached.savedAt;
+      if (!Number.isFinite(cached.savedAt) || age < 0 || age > 10000
+          || cached.facilityId !== String(facilityId)
+          || cached.courtId !== String(courtId)
+          || cached.serviceDate !== serviceDate
+          || !cached.facilityData?.facility
+          || String(cached.facilityData.facility.id) !== String(facilityId)
+          || !Array.isArray(cached.facilityData.courts)
+          || !Array.isArray(cached.slotData?.time_slots)
+          || String(cached.slotData.court_id) !== String(courtId)
+          || cached.slotData.service_date !== serviceDate) {
+        return null;
+      }
+      return { facilityData: cached.facilityData, slotData: cached.slotData };
+    } catch (error) {
+      window.console?.warn('Dữ liệu lựa chọn sân đã lưu tạm không hợp lệ.', error);
+      return null;
+    }
+  }
+
   window.SportBookingApi = {
     cancelBooking,
+    consumeBookingSelection,
     createPaymentAttempt,
     createBooking,
     getBooking,
@@ -178,6 +229,7 @@
     getCurrentUser,
     getFacility,
     getPayments,
+    storeBookingSelection,
     logout
   };
 })();

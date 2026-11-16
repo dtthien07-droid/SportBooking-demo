@@ -671,6 +671,23 @@
         if (!response.ok) throw new Error('Không thể tải thông tin tài khoản.');
         const result = await response.json();
         if (!result?.user) throw new Error('Không thể tải thông tin tài khoản.');
+        const matchmakingEnabled = result.features?.matchmakingEnabled === true;
+        window.SportBookingConfig = Object.freeze({ matchmakingEnabled });
+        document.querySelectorAll('[data-matchmaking-controls]').forEach((control) => {
+          control.hidden = !matchmakingEnabled;
+          if (control.tagName === 'A') {
+            if (matchmakingEnabled) {
+              control.removeAttribute('aria-disabled');
+              control.removeAttribute('tabindex');
+            } else {
+              control.setAttribute('aria-disabled', 'true');
+              control.tabIndex = -1;
+            }
+          }
+        });
+        document.querySelectorAll('[data-matchmaking-coming-soon]').forEach((notice) => {
+          notice.hidden = matchmakingEnabled;
+        });
         render(result.user);
         window.SportBookingCurrentUser = result.user;
         window.dispatchEvent(new CustomEvent('sportbooking:user-ready', { detail: result.user }));

@@ -77,19 +77,19 @@
                     <div class="flex flex-col items-center max-w-5xl mx-auto gap-4 pt-2">
                         <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-xs md:text-sm font-bold border border-primary/20 shadow-sm">
                             <svg class="text-primary text-[18px]" data-sb-icon="verified"></svg>
-                            <span>Nền tảng đặt sân &amp; ghép đối thể thao số 1 Hà Nội</span>
+                            <span>Nền tảng đặt sân thể thao tại Hà Nội</span>
                         </div>
                        
                         <div class="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-2xl sm:text-3xl md:text-4xl lg:text-[44px] font-black text-slate-900 tracking-tight leading-snug">
                             <span>Đặt sân dễ dàng</span>
                             <span class="text-primary font-black mx-1">•</span>
-                            <span>Ghép kèo thần tốc</span>
+                            <span>Giữ sân linh hoạt</span>
                             <span class="text-primary font-black mx-1">•</span>
                             <span>Thỏa mãn đam mê</span>
                         </div>
                        
                         <p class="text-sm md:text-base text-on-surface-variant max-w-2xl font-normal leading-relaxed">
-                            Khảo sát chuẩn thực tế <span data-stat-total></span> tại <span data-district-count></span> quận Hà Nội. Đặt lịch giữ slot tức thì và kết nối đồng đội giao lưu mỗi ngày.
+                            Khảo sát chuẩn thực tế <span data-stat-total></span> tại <span data-district-count></span> quận Hà Nội. Đặt lịch giữ slot tức thì và quản lý lịch chơi dễ dàng.
                         </p>
                     </div>
 
@@ -165,7 +165,7 @@
             <!-- ==========================================
                  SECTION 4: KÈO GIAO LƯU HÔM NAY
                  ========================================== -->
-            <section id="matchmakingSection" class="w-full py-12 px-margin bg-surface-container-low/60 border-y border-gray-100">
+            <section id="matchmakingSection" data-matchmaking-controls hidden class="w-full py-12 px-margin bg-surface-container-low/60 border-y border-gray-100">
                 <div class="max-w-[1280px] mx-auto flex flex-col gap-8">
                     <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
                         <div>
@@ -184,6 +184,12 @@
                         <svg class="text-3xl" data-sb-icon="groups"></svg>
                         <p class="mt-2">Chưa có dữ liệu trận giao lưu để hiển thị.</p>
                     </div>
+                </div>
+            </section>
+            <section data-matchmaking-coming-soon class="w-full px-margin py-5">
+                <div class="mx-auto flex max-w-[1280px] items-center justify-between rounded-xl bg-surface-container-low px-4 py-3 text-sm text-on-surface-variant">
+                    <span>Tìm đối và ghép kèo</span>
+                    <span class="rounded-full bg-surface-container px-2.5 py-1 text-xs font-bold">Sắp có</span>
                 </div>
             </section>
 
