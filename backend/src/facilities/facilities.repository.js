@@ -81,7 +81,15 @@ function createFacilitiesRepository(pool) {
          ${query.where}`,
         query.parameters
       );
-      const offset = (filters.page - 1) * filters.pageSize;
+      const parsedLimit = Number.parseInt(filters.pageSize, 10);
+      const safeLimit = Number.isSafeInteger(parsedLimit) && parsedLimit > 0
+        ? Math.min(parsedLimit, 100)
+        : 20;
+      const parsedPage = Number.parseInt(filters.page, 10);
+      const parsedOffset = Number.parseInt((parsedPage - 1) * safeLimit, 10);
+      const safeOffset = Number.isSafeInteger(parsedOffset) && parsedOffset >= 0
+        ? parsedOffset
+        : 0;
       const [rows] = await pool.execute(
         `SELECT f.id, f.name, f.address, f.district, f.opening_time, f.closing_time,
                 f.hotline, f.latitude, f.longitude, f.map_url, f.description,
@@ -96,8 +104,8 @@ function createFacilitiesRepository(pool) {
          ${query.where}
          GROUP BY f.id
          ORDER BY f.is_active DESC, f.name ASC, f.id ASC
-         LIMIT ? OFFSET ?`,
-        [...query.parameters, filters.pageSize, offset]
+         LIMIT ${safeLimit} OFFSET ${safeOffset}`,
+        query.parameters
       );
       return {
         rows,

@@ -17,13 +17,22 @@ function createNotificationsRepository(pool) {
       if (!Number.isSafeInteger(total)) {
         throw new RangeError('Notification count exceeds the supported range.');
       }
-      const offset = (page - 1) * pageSize;
+      const parsedLimit = Number.parseInt(pageSize, 10);
+      const safeLimit = Number.isSafeInteger(parsedLimit) && parsedLimit > 0
+        ? Math.min(parsedLimit, 100)
+        : 10;
+      const parsedPage = Number.parseInt(page, 10);
+      const safePage = Number.isSafeInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+      const parsedOffset = Number.parseInt((safePage - 1) * safeLimit, 10);
+      const safeOffset = Number.isSafeInteger(parsedOffset) && parsedOffset >= 0
+        ? parsedOffset
+        : 0;
       const [rows] = await pool.execute(
         `SELECT id, category, title, body, resource_type, resource_id, read_at, created_at
          FROM notifications ${where}
          ORDER BY created_at DESC, id DESC
-         LIMIT ? OFFSET ?`,
-        [...values, pageSize, offset]
+         LIMIT ${safeLimit} OFFSET ${safeOffset}`,
+        values
       );
       return { rows, total };
     },

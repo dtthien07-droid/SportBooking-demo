@@ -115,6 +115,16 @@ function createAdminRepository(pool) {
       );
       const total = Number(countRows[0].total);
       if (!Number.isSafeInteger(total)) throw new RangeError('User count exceeds the supported range.');
+      const parsedLimit = Number.parseInt(pageSize, 10);
+      const safeLimit = Number.isSafeInteger(parsedLimit) && parsedLimit > 0
+        ? Math.min(parsedLimit, 100)
+        : 20;
+      const parsedPage = Number.parseInt(page, 10);
+      const safePage = Number.isSafeInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+      const parsedOffset = Number.parseInt((safePage - 1) * safeLimit, 10);
+      const safeOffset = Number.isSafeInteger(parsedOffset) && parsedOffset >= 0
+        ? parsedOffset
+        : 0;
       const [summaryRows] = await pool.execute(
         `SELECT COUNT(*) AS total_users,
                 COALESCE(SUM(CASE WHEN u.account_status = 'ACTIVE' THEN 1 ELSE 0 END), 0) AS active_users,
@@ -155,8 +165,8 @@ function createAdminRepository(pool) {
          GROUP BY u.id, u.full_name, u.email, u.phone, u.role, u.account_status,
                   u.created_at, u.updated_at
          ORDER BY u.id DESC
-         LIMIT ? OFFSET ?`,
-        [...parameters, pageSize, (page - 1) * pageSize]
+         LIMIT ${safeLimit} OFFSET ${safeOffset}`,
+        parameters
       );
       return { rows, total, summary };
     },
@@ -192,13 +202,17 @@ function createAdminRepository(pool) {
           .map((key) => [key, Number(summaryRows[0][key])])
       );
       if (total > maxRows) return { rows: [], total, summary };
+      const parsedLimit = Number.parseInt(maxRows, 10);
+      const safeLimit = Number.isSafeInteger(parsedLimit) && parsedLimit > 0
+        ? Math.min(parsedLimit, 5000)
+        : 5000;
       const [rows] = await pool.execute(
         `SELECT u.id, u.full_name, u.email, u.phone, u.account_status, u.created_at
          FROM users AS u
          ${where}
          ORDER BY u.id DESC
-         LIMIT ?`,
-        [...parameters, maxRows]
+         LIMIT ${safeLimit}`,
+        parameters
       );
       return { rows, total, summary };
     },
@@ -254,6 +268,16 @@ function createAdminRepository(pool) {
       if (!Number.isSafeInteger(total)) {
         throw new RangeError('Booking count exceeds the supported range.');
       }
+      const parsedLimit = Number.parseInt(pageSize, 10);
+      const safeLimit = Number.isSafeInteger(parsedLimit) && parsedLimit > 0
+        ? Math.min(parsedLimit, 100)
+        : 10;
+      const parsedPage = Number.parseInt(page, 10);
+      const safePage = Number.isSafeInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+      const parsedOffset = Number.parseInt((safePage - 1) * safeLimit, 10);
+      const safeOffset = Number.isSafeInteger(parsedOffset) && parsedOffset >= 0
+        ? parsedOffset
+        : 0;
 
       const [rows] = await pool.execute(
         `SELECT b.id, b.booking_code, b.status, b.total_amount, b.created_at,
@@ -266,8 +290,8 @@ function createAdminRepository(pool) {
          LEFT JOIN payments AS p ON p.booking_id = b.id
          ${whereClause}
          ORDER BY b.created_at DESC, b.id DESC
-         LIMIT ? OFFSET ?`,
-        [...parameters, pageSize, (page - 1) * pageSize]
+         LIMIT ${safeLimit} OFFSET ${safeOffset}`,
+        parameters
       );
 
       return { rows, total };
@@ -290,6 +314,10 @@ function createAdminRepository(pool) {
         throw new RangeError('Booking count exceeds the supported range.');
       }
       if (total > maxRows) return { rows: [], total };
+      const parsedLimit = Number.parseInt(maxRows, 10);
+      const safeLimit = Number.isSafeInteger(parsedLimit) && parsedLimit > 0
+        ? Math.min(parsedLimit, 5000)
+        : 5000;
       const [rows] = await pool.execute(
         `SELECT b.id, b.booking_code, b.status, b.total_amount, b.created_at,
                 b.cancelled_by, b.cancellation_reason,
@@ -302,8 +330,8 @@ function createAdminRepository(pool) {
          ${bookingTimeJoin}
          ${whereClause}
          ORDER BY b.created_at DESC, b.id DESC
-         LIMIT ?`,
-        [...parameters, maxRows]
+         LIMIT ${safeLimit}`,
+        parameters
       );
       return { rows, total };
     },
@@ -489,6 +517,10 @@ function createAdminRepository(pool) {
     },
 
     async getRecentBookings(limit) {
+      const parsedLimit = Number.parseInt(limit, 10);
+      const safeLimit = Number.isSafeInteger(parsedLimit) && parsedLimit > 0
+        ? parsedLimit
+        : 5;
       const [rows] = await pool.execute(
         `SELECT b.id, b.booking_code, b.status, b.created_at,
                 (b.lock_expires_at > UTC_TIMESTAMP(3)) AS lock_active,
@@ -500,8 +532,8 @@ function createAdminRepository(pool) {
          INNER JOIN users AS u ON u.id = b.user_id
          LEFT JOIN payments AS p ON p.booking_id = b.id
          ORDER BY b.created_at DESC, b.id DESC
-         LIMIT ?`,
-        [limit]
+         LIMIT ${safeLimit}`,
+        []
       );
       return rows;
     }

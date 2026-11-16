@@ -192,6 +192,10 @@ function createAdminSlotsService(pool) {
     async exportTimeSlots(rawCourtId, rawFrom, rawTo, adminUserId) {
       const courtId = parseId(rawCourtId);
       const { from, to } = getDateRange(rawFrom, rawTo);
+      const parsedLimit = Number.parseInt(5001, 10);
+      const safeLimit = Number.isSafeInteger(parsedLimit) && parsedLimit > 0
+        ? Math.min(parsedLimit, 5001)
+        : 5001;
       const [courtRows] = await pool.execute(
         `SELECT c.id, c.name, c.price_normal, c.price_peak, f.name AS facility_name
          FROM courts AS c
@@ -214,8 +218,8 @@ function createAdminSlotsService(pool) {
          FROM time_slots AS ts
          WHERE ts.court_id = ? AND ts.service_date >= ? AND ts.service_date <= ?
          ORDER BY ts.service_date ASC, ts.starts_at ASC, ts.id ASC
-         LIMIT ?`,
-        [courtId, from, to, 5001]
+         LIMIT ${safeLimit}`,
+        [courtId, from, to]
       );
       if (rows.length > 5000) {
         throw failure(400, 'EXPORT_TOO_MANY_ROWS', 'Quá nhiều dòng, hãy lọc thu hẹp');

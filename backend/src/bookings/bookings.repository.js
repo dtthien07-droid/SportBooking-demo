@@ -671,6 +671,16 @@ function createBookingRepository(pool) {
       if (!Number.isSafeInteger(total)) {
         throw new RangeError('Số lượng đơn đặt sân vượt quá phạm vi cho phép.');
       }
+      const parsedLimit = Number.parseInt(pageSize, 10);
+      const safeLimit = Number.isSafeInteger(parsedLimit) && parsedLimit > 0
+        ? Math.min(parsedLimit, 100)
+        : 10;
+      const parsedPage = Number.parseInt(page, 10);
+      const safePage = Number.isSafeInteger(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+      const parsedOffset = Number.parseInt((safePage - 1) * safeLimit, 10);
+      const safeOffset = Number.isSafeInteger(parsedOffset) && parsedOffset >= 0
+        ? parsedOffset
+        : 0;
       const [rows] = await pool.execute(
         `SELECT b.id, b.booking_code, b.user_id, b.status, b.total_amount, b.created_at,
                 b.lock_expires_at, p.status AS payment_status,
@@ -693,8 +703,8 @@ function createBookingRepository(pool) {
          LEFT JOIN booking_tickets AS bt ON bt.booking_id = b.id
          WHERE ${whereClause}
          ORDER BY b.created_at DESC, b.id DESC
-         LIMIT ? OFFSET ?`,
-        [...parameters, pageSize, (page - 1) * pageSize]
+         LIMIT ${safeLimit} OFFSET ${safeOffset}`,
+        parameters
       );
       return { rows, total };
     },
