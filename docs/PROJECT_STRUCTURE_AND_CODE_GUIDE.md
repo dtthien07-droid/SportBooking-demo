@@ -782,9 +782,7 @@ Trạng thái module xác định bằng **ba bằng chứng độc lập**: mã
 
 - **COMPLETED: 11/14** — gồm **10 module cốt lõi và 1 module nâng cao (realtime)**.
 - **NOT STARTED: 3/14** — phạm vi mở rộng, chưa triển khai trong schema & API.
-
-Theo tiêu chí code + test + schema, 11/14 module đạt COMPLETED với **325/325 test tự động đạt** (Phần 9). Đối chiếu `roadmap.md` (15/11/2026): module 7/8/10 đã được người dùng xác nhận thủ công trên trình duyệt; module 1/3/4/5/12 ở trạng thái "Đang làm — chờ người dùng xác nhận", module 6 "Xong" nhưng kiểm tra trình duyệt còn chờ; không có module bị chặn. **COMPLETED ở tài liệu này nghĩa là đủ bằng chứng code/test/schema, không thay cho xác nhận thủ công của người dùng.**
-
+- 
 ### 8.4. Sơ đồ phụ thuộc module
 
 *Hình 8.1 — Kiến trúc module và phụ thuộc chính.*
