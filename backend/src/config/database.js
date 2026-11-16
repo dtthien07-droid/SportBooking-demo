@@ -5,7 +5,9 @@ const path = require('node:path');
 const dotenv = require('dotenv');
 const mysql = require('mysql2/promise');
 
-dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env') });
+if (process.env.APP_ENV !== 'test') {
+  dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env') });
+}
 
 let pool;
 
@@ -44,9 +46,17 @@ function validateDatabaseConfig(env = process.env) {
     throw new Error('DB_PORT must be a valid TCP port.');
   }
 
-  if (env.DB_SSL !== 'true') {
+  if (appEnv === 'test' && !['true', 'false'].includes(env.DB_SSL)) {
+    throw new Error('Test connections require DB_SSL to be true or false.');
+  }
+
+  if (appEnv !== 'test' && env.DB_SSL !== 'true') {
     throw new Error('TiDB Cloud connections require DB_SSL=true.');
   }
+
+  const ssl = env.DB_SSL === 'true'
+    ? { minVersion: 'TLSv1.2' }
+    : false;
 
   return {
     host: env.DB_HOST,
@@ -59,9 +69,7 @@ function validateDatabaseConfig(env = process.env) {
     connectionLimit: 10,
     waitForConnections: true,
     queueLimit: 0,
-    ssl: {
-      minVersion: 'TLSv1.2'
-    }
+    ssl
   };
 }
 

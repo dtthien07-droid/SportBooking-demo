@@ -281,6 +281,20 @@ test('booking list count, status counts, rows and slot display share the booking
   }
 });
 
+test('booking validity keeps user checks and omits the deployment cutoff when unset', () => {
+  const previousCutoff = process.env.BOOKING_DATA_START_AT;
+  delete process.env.BOOKING_DATA_START_AT;
+  try {
+    const validity = createAdminRepository.buildBookingValidityCondition();
+    assert.match(validity.sql, /valid_booking_user\.id = b\.user_id/);
+    assert.doesNotMatch(validity.sql, /created_at/);
+    assert.deepEqual(validity.parameters, []);
+  } finally {
+    if (previousCutoff === undefined) delete process.env.BOOKING_DATA_START_AT;
+    else process.env.BOOKING_DATA_START_AT = previousCutoff;
+  }
+});
+
 test('dashboard status totals and exported workbook match for today, 7d, and 30d', async () => {
   const timestamp = new Date('2026-11-16T03:00:00.000Z');
   const statusCounts = {

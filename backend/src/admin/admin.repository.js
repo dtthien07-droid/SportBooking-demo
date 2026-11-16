@@ -8,6 +8,8 @@ function escapeLike(value) {
 
 function readBookingDataStartAt() {
   const value = process.env.BOOKING_DATA_START_AT;
+  if (value === undefined || value === '') return null;
+
   const parsed = typeof value === 'string' ? new Date(value) : null;
   if (!parsed || !Number.isFinite(parsed.getTime()) || parsed.toISOString() !== value) {
     throw new Error('BOOKING_DATA_START_AT must be a valid UTC ISO timestamp.');
@@ -19,12 +21,21 @@ function buildBookingValidityCondition(alias = 'b') {
   if (alias !== 'b' && alias !== 'slot_booking') {
     throw new TypeError('Unsupported booking SQL alias.');
   }
-  return {
-    sql: `EXISTS (
+  const cutoff = readBookingDataStartAt();
+  const conditions = [`EXISTS (
       SELECT 1 FROM users AS valid_booking_user
       WHERE valid_booking_user.id = ${alias}.user_id
-    ) AND ${alias}.created_at >= ?`,
-    parameters: [readBookingDataStartAt()]
+    )`];
+  const parameters = [];
+
+  if (cutoff) {
+    conditions.push(`${alias}.created_at >= ?`);
+    parameters.push(cutoff);
+  }
+
+  return {
+    sql: conditions.join(' AND '),
+    parameters
   };
 }
 
