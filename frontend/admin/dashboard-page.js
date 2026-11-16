@@ -408,6 +408,32 @@
     container.replaceChildren(previous, label, next);
   }
 
+  function exportDashboardReport() {
+    return exportDownload.download(
+      elements.exportButton,
+      elements.exportStatus,
+      () => api.exportDashboard(elements.range.value, {
+        status: bookingStatusFilter,
+        q: bookingSearchQuery
+      }),
+      {
+        onError(error) {
+          const retry = element('button', 'admin-button admin-button--quiet', 'Thử lại');
+          retry.type = 'button';
+          retry.addEventListener('click', exportDashboardReport);
+          elements.exportStatus.replaceChildren(
+            document.createTextNode(`${error.message || 'Không thể xuất báo cáo Excel. Vui lòng thử lại.'} `),
+            retry
+          );
+          elements.exportStatus.setAttribute('role', 'alert');
+          elements.exportStatus.dataset.kind = 'error';
+          elements.exportStatus.hidden = false;
+          return true;
+        }
+      }
+    );
+  }
+
   function renderMockupBookings() {
     const body = document.getElementById('mockupBookingRows');
     if (!body) return;
@@ -655,14 +681,7 @@
     api.clearCache();
     Promise.all([loadDashboard(), loadBookings()]);
   });
-  elements.exportButton.addEventListener('click', () => exportDownload.download(
-    elements.exportButton,
-    elements.exportStatus,
-    () => api.exportDashboard(elements.range.value, {
-      status: bookingStatusFilter,
-      q: bookingSearchQuery
-    })
-  ));
+  elements.exportButton.addEventListener('click', exportDashboardReport);
   document.querySelectorAll('[data-admin-range]').forEach((button) => {
     button.addEventListener('click', () => {
       elements.range.value = button.dataset.adminRange;

@@ -39,6 +39,32 @@ test('dashboard uses the shared admin guard and API-backed mockup regions', () =
   assert.doesNotMatch(dashboardHtml, /Theo dữ liệu API|data-admin-revenue-total/);
 });
 
+test('dashboard shows all six display statuses in order and explains court metrics', () => {
+  const statuses = Array.from(
+    dashboardHtml.matchAll(/data-admin-booking-status="([^"]+)"/g),
+    (match) => match[1]
+  );
+  assert.deepEqual(statuses, [
+    'PENDING',
+    'UPCOMING',
+    'IN_PROGRESS',
+    'COMPLETED',
+    'CANCELLED',
+    'EXPIRED'
+  ]);
+  assert.doesNotMatch(dashboardHtml, /data-admin-booking-status="CONFIRMED"/);
+  assert.match(dashboardHtml, /Sân có đơn đang hiệu lực trong kỳ/);
+  assert.match(dashboardHtml, /Mẫu số: mọi khung AVAILABLE, BOOKED và LOCKED chưa hết hạn, trên mọi sân/);
+  assert.match(dashboardHtml, /Top sân theo lượt đặt trong kỳ/);
+});
+
+test('dashboard Excel errors show a retry action', () => {
+  assert.match(dashboardPage, /function exportDashboardReport\(\)/);
+  assert.match(dashboardPage, /onError\(error\)/);
+  assert.match(dashboardPage, /'Thử lại'/);
+  assert.match(dashboardPage, /retry\.addEventListener\('click', exportDashboardReport\)/);
+});
+
 test('dashboard loads period-filtered booking pages and uses backend pagination', () => {
   assert.match(dashboardHtml, /data-admin-booking-pagination/);
   assert.doesNotMatch(dashboardHtml, /data-admin-booking-page="unused"|>12<\/button>/);

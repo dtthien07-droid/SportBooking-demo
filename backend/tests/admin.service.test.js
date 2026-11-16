@@ -2,6 +2,7 @@
 
 const assert = require('node:assert/strict');
 const test = require('node:test');
+const ExcelJS = require('exceljs');
 const { createAdminService } = require('../src/admin/admin.service');
 const createAdminRepository = require('../src/admin/admin.repository');
 const { createAdminSlotsService } = require('../src/admin/slots.service');
@@ -274,6 +275,132 @@ test('booking list count, status counts, rows and slot display share the booking
     await slots.getMonthlySummary('1', '2026-11');
     const monthlyQuery = slotQueries.find(({ sql }) => sql.includes('AS booked'));
     assert.match(monthlyQuery.sql, /active_booking\.status IN \('CONFIRMED', 'COMPLETED'\)/);
+  } finally {
+    if (previousCutoff === undefined) delete process.env.BOOKING_DATA_START_AT;
+    else process.env.BOOKING_DATA_START_AT = previousCutoff;
+  }
+});
+
+test('dashboard status totals and exported workbook match for today, 7d, and 30d', async () => {
+  const timestamp = new Date('2026-11-16T03:00:00.000Z');
+  const statusCounts = {
+    PENDING: 1,
+    UPCOMING: 1,
+    IN_PROGRESS: 1,
+    COMPLETED: 0,
+    CANCELLED: 1,
+    EXPIRED: 0
+  };
+  const repository = {
+    async listBookings() { return { rows: [], total: 0 }; },
+    async findBookingSlots() { return []; },
+    async getDashboardBookingCounts() {
+      return {
+        new_bookings: 4,
+        confirmed_bookings: 2,
+        cancelled_bookings: 1,
+        completed_bookings: 0,
+        pending_bookings: 1,
+        expired_bookings: 0,
+        bookings_by_status: statusCounts
+      };
+    },
+    async getDashboardPaymentMetrics() { return { gross_paid: '12000', refunded: '2000' }; },
+    async getRevenueByDay() { return []; },
+    async getRevenueSeries() { return []; },
+    async getBookingSeries() { return []; },
+    async getDashboardFillRate() { return { total_slots: 457, booked_slots: 1 }; },
+    async getDashboardCourtCounts() {
+      return { courts_active: 28, courts_inactive: 1, courts_with_bookings: 2 };
+    },
+    async getTopCourts() { return []; },
+    async getRecentBookings() { return []; },
+    async withTransaction() { return null; }
+  };
+  const service = createAdminService({
+    adminRepository: repository,
+    bookingsRepository: { async withTransaction() { return null; } },
+    now: () => timestamp,
+    notifyIncidentCancellation: async () => {},
+    notifyPendingIncidentCancellation: async () => {},
+    writeAudit: async () => {}
+  });
+  const statusLabels = [
+    'Chờ thanh toán',
+    'Sắp tới',
+    'Đang trong trận',
+    'Hoàn thành',
+    'Đã hủy',
+    'Hết hạn'
+  ];
+
+  for (const range of ['today', '7d', '30d']) {
+    const dashboard = await service.getDashboard(range);
+    assert.equal(
+      Object.values(dashboard.bookings_by_status).reduce((total, count) => total + count, 0),
+      dashboard.kpis.new_bookings
+    );
+
+    const exported = await service.exportDashboard({ range }, 1);
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(exported.buffer);
+    const overview = workbook.getWorksheet('Tổng quan kỳ');
+    const metric = (label) => {
+      const row = overview.getColumn(1).values.findIndex((value) => value === label);
+      assert.ok(row > 0, `Missing dashboard metric: ${label}`);
+      return overview.getCell(row, 2).value;
+    };
+    assert.equal(metric('Đơn trong kỳ'), dashboard.kpis.new_bookings);
+    assert.equal(metric('Tỷ lệ lấp đầy'), dashboard.kpis.fill_rate_percent);
+    assert.equal(metric('Sân đang hoạt động'), dashboard.kpis.courts_active);
+    assert.equal(
+      metric('Sân có đơn đang hiệu lực trong kỳ'),
+      dashboard.kpis.courts_with_bookings
+    );
+    assert.equal(metric('Sân tạm khóa'), dashboard.kpis.courts_inactive);
+
+    const statusSheet = workbook.getWorksheet('Theo trạng thái');
+    const workbookLabels = statusSheet.getColumn(1).values.slice(2);
+    const workbookCounts = statusSheet.getColumn(2).values.slice(2);
+    assert.deepEqual(workbookLabels, statusLabels);
+    assert.equal(workbookCounts.reduce((total, count) => total + count, 0), metric('Đơn trong kỳ'));
+    assert.equal(statusSheet.rowCount, 7);
+  }
+});
+
+test('dashboard court counts classify a court under a locked facility as inactive', async () => {
+  const previousCutoff = process.env.BOOKING_DATA_START_AT;
+  process.env.BOOKING_DATA_START_AT = '2026-11-15T17:00:00.000Z';
+  try {
+    const queries = [];
+    const repository = createAdminRepository({
+      async execute(sql, parameters) {
+        queries.push({ sql, parameters });
+        return [[{
+          courts_active: '28',
+          courts_inactive: '1',
+          courts_with_bookings: '2'
+        }], []];
+      }
+    });
+    const counts = await repository.getDashboardCourtCounts(
+      new Date('2026-11-15T17:00:00.000Z'),
+      new Date('2026-11-16T17:00:00.000Z')
+    );
+    assert.equal(counts.courts_active, '28');
+    assert.equal(counts.courts_inactive, '1');
+    assert.equal(queries.length, 1);
+    assert.match(
+      queries[0].sql,
+      /active_court\.is_active = TRUE AND active_facility\.is_active = TRUE/
+    );
+    assert.match(
+      queries[0].sql,
+      /inactive_court\.is_active = FALSE OR inactive_facility\.is_active = FALSE/
+    );
+    assert.match(queries[0].sql, /COUNT\(DISTINCT c\.id\) AS courts_with_bookings/);
+    assert.match(queries[0].sql, /valid_booking_user\.id = b\.user_id/);
+    assert.ok(queries[0].parameters.includes('2026-11-15 17:00:00.000'));
   } finally {
     if (previousCutoff === undefined) delete process.env.BOOKING_DATA_START_AT;
     else process.env.BOOKING_DATA_START_AT = previousCutoff;

@@ -295,14 +295,17 @@
 </div>
 <!-- Status Indicators -->
 <div class="flex flex-col gap-1.5 text-[11px]">
-<div class="flex items-center justify-between text-slate-600"><span>Đã xác nhận</span>
-<span class="font-bold text-emerald-600" data-admin-booking-status="CONFIRMED">0</span>
+<div class="flex items-center justify-between text-slate-600"><span>Chờ thanh toán</span>
+<span class="font-semibold text-slate-500" data-admin-booking-status="PENDING">0</span>
+</div>
+<div class="flex items-center justify-between text-slate-600"><span>Sắp tới</span>
+<span class="font-bold text-blue-600" data-admin-booking-status="UPCOMING">0</span>
+</div>
+<div class="flex items-center justify-between text-slate-600"><span>Đang trong trận</span>
+<span class="font-bold text-emerald-600" data-admin-booking-status="IN_PROGRESS">0</span>
 </div>
 <div class="flex items-center justify-between text-slate-600"><span>Hoàn thành</span>
 <span class="font-semibold text-slate-500" data-admin-booking-status="COMPLETED">0</span>
-</div>
-<div class="flex items-center justify-between text-slate-600"><span>Chờ thanh toán</span>
-<span class="font-semibold text-slate-500" data-admin-booking-status="PENDING">0</span>
 </div>
 <div class="flex items-center justify-between text-slate-600"><span>Đã hủy</span>
 <span class="font-semibold text-slate-500" data-admin-booking-status="CANCELLED">0</span>
@@ -350,14 +353,14 @@
 </div>
 <div class="flex flex-col">
 <span class="text-[13px] font-bold text-slate-900 leading-tight" data-admin-fill-label>0% lấp đầy</span>
-<span class="text-[11px] text-slate-500">Khung đã đặt trên khung hiệu lực</span>
+<span class="text-[11px] text-slate-500" title="Tử số: khung BOOKED gắn đơn CONFIRMED hợp lệ. Mẫu số: mọi khung AVAILABLE, BOOKED và LOCKED chưa hết hạn, trên mọi sân trong kỳ theo ngày chơi.">Khung đã đặt hợp lệ / khung hiệu lực (mọi sân)</span>
 </div>
 </div>
 <div class="space-y-1.5 text-[11px] pt-2 border-t border-slate-100">
 <div class="flex items-center justify-between text-slate-600"><span>Sân đang hoạt động</span>
 <span class="font-semibold text-slate-800" data-admin-court-count="courts_active">0</span>
 </div>
-<div class="flex items-center justify-between text-slate-600"><span>Sân có đơn trong kỳ</span>
+<div class="flex items-center justify-between text-slate-600"><span>Sân có đơn đang hiệu lực trong kỳ</span>
 <span class="font-semibold text-slate-800" data-admin-court-count="courts_with_bookings">0</span>
 </div>
 <div class="flex items-center justify-between text-slate-600"><span>Sân tạm khóa</span>
@@ -374,12 +377,13 @@
 <div class="flex items-center justify-between mb-4">
 <div class="flex items-center gap-2">
 <svg class="h-5 w-5 text-primary" data-sb-icon="leaderboard" aria-hidden="true"></svg>
-<h2 class="font-headline-sm text-[16px] text-slate-900 font-bold">Top cụm sân &amp; Sân có nhu cầu cao</h2>
+<h2 class="font-headline-sm text-[16px] text-slate-900 font-bold">Top sân theo lượt đặt trong kỳ</h2>
 </div>
 <button class="text-primary hover:underline text-[12px] font-semibold flex items-center gap-0.5" id="manageFacilities" type="button">
                 Quản lý cơ sở →
               </button>
 </div>
+<p class="mb-2 text-[11px] text-slate-500">Mỗi dòng là một sân; bộ lọc trạng thái hiện tại được áp dụng.</p>
 <!-- List of Featured Arenas -->
 <div class="divide-y divide-slate-100" id="topCourts">
 <!-- Item 1: CLB Ngôi Sao Cầu Giấy -->

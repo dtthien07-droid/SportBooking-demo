@@ -613,8 +613,16 @@ function createAdminRepository(pool) {
             AND TIMESTAMP(ts.service_date, ts.ends_at) > DATE_ADD(UTC_TIMESTAMP(3), INTERVAL 7 HOUR))`;
       const [rows] = await pool.execute(
         `SELECT
-           (SELECT COUNT(*) FROM courts WHERE is_active = TRUE) AS courts_active,
-           (SELECT COUNT(*) FROM courts WHERE is_active = FALSE) AS courts_inactive,
+           (SELECT COUNT(*)
+            FROM courts AS active_court
+            INNER JOIN facilities AS active_facility
+              ON active_facility.id = active_court.facility_id
+            WHERE active_court.is_active = TRUE AND active_facility.is_active = TRUE) AS courts_active,
+           (SELECT COUNT(*)
+            FROM courts AS inactive_court
+            INNER JOIN facilities AS inactive_facility
+              ON inactive_facility.id = inactive_court.facility_id
+            WHERE inactive_court.is_active = FALSE OR inactive_facility.is_active = FALSE) AS courts_inactive,
            COUNT(DISTINCT c.id) AS courts_with_bookings
          FROM bookings AS b
          ${where.bookingTimeJoin}
