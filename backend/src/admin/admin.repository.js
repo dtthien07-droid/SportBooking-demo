@@ -651,19 +651,24 @@ function createAdminRepository(pool) {
       const validity = buildBookingValidityCondition('slot_booking');
       const [rows] = await pool.execute(
         `SELECT COUNT(*) AS total_slots,
-                COALESCE(SUM(CASE WHEN ts.status = 'BOOKED' AND EXISTS (
+                COALESCE(SUM(CASE WHEN EXISTS (
                   SELECT 1
                   FROM bookings AS slot_booking
                   INNER JOIN booking_slots AS bs
                     ON bs.booking_id = slot_booking.id AND bs.time_slot_id = ts.id
                   WHERE slot_booking.id = ts.current_booking_id
                     AND (${validity.sql})
-                    AND slot_booking.status = 'CONFIRMED'
-                ) THEN 1 ELSE 0 END), 0) AS booked_slots
+                    AND (slot_booking.status IN ('CONFIRMED', 'COMPLETED')
+                      OR slot_booking.status = 'PENDING'
+                        AND slot_booking.lock_expires_at > UTC_TIMESTAMP(3))
+                ) THEN 1 ELSE 0 END), 0) AS occupied_slots
          FROM time_slots AS ts
+         INNER JOIN courts AS c ON c.id = ts.court_id
+         INNER JOIN facilities AS f ON f.id = c.facility_id
          WHERE ts.service_date >= ? AND ts.service_date <= ?
            AND ts.status IN ('AVAILABLE', 'LOCKED', 'BOOKED')
-           AND (ts.status <> 'LOCKED' OR ts.lock_expires_at > UTC_TIMESTAMP(3))`,
+           AND TIME(ts.starts_at) >= f.opening_time
+           AND TIME(ts.ends_at) <= f.closing_time`,
         [...validity.parameters, fromDate, toDate]
       );
       return rows[0];

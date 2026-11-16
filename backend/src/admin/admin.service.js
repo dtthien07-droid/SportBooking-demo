@@ -547,6 +547,8 @@ function createAdminService({
       ]);
       const grossPaid = BigInt(String(revenue.gross_paid || 0));
       const refunded = BigInt(String(revenue.refunded || 0));
+      const occupiedSlots = Number(fillRate.occupied_slots);
+      const totalSlots = Number(fillRate.total_slots);
       const previousNetRevenue = BigInt(String(previousRevenue.gross_paid || 0))
         - BigInt(String(previousRevenue.refunded || 0));
       const revenueByDate = new Map(revenueByDayRows.map((row) => [
@@ -613,9 +615,11 @@ function createAdminService({
           net_revenue_prev: previousNetRevenue.toString(),
           gross_paid: grossPaid.toString(),
           refunded: refunded.toString(),
-          fill_rate_percent: Number(fillRate.total_slots) === 0
+          fill_rate_percent: totalSlots === 0
             ? 0
-            : Number((Number(fillRate.booked_slots) * 100 / Number(fillRate.total_slots)).toFixed(2)),
+            : occupiedSlots * 100 / totalSlots,
+          fill_rate_occupied_slots: occupiedSlots,
+          fill_rate_total_slots: totalSlots,
           courts_active: Number(courtCounts.courts_active),
           courts_with_bookings: Number(courtCounts.courts_with_bookings),
           courts_inactive: Number(courtCounts.courts_inactive),

@@ -49,7 +49,7 @@ test('admin dashboard returns a zero-filled date range and metrics when no data 
         return { courts_active: 0, courts_inactive: 0, courts_with_bookings: 0 };
       },
       async getDashboardFillRate() {
-        return { total_slots: 0, booked_slots: 0 };
+        return { total_slots: 0, occupied_slots: 0 };
       },
       async getTopCourts() {
         return [];
@@ -82,6 +82,8 @@ test('admin dashboard returns a zero-filled date range and metrics when no data 
       gross_paid: '0',
       refunded: '0',
       fill_rate_percent: 0,
+      fill_rate_occupied_slots: 0,
+      fill_rate_total_slots: 0,
       courts_active: 0,
       courts_with_bookings: 0,
       courts_inactive: 0,
@@ -323,7 +325,7 @@ test('dashboard status totals and exported workbook match for today, 7d, and 30d
     async getRevenueByDay() { return []; },
     async getRevenueSeries() { return []; },
     async getBookingSeries() { return []; },
-    async getDashboardFillRate() { return { total_slots: 457, booked_slots: 1 }; },
+    async getDashboardFillRate() { return { total_slots: 457, occupied_slots: 1 }; },
     async getDashboardCourtCounts() {
       return { courts_active: 28, courts_inactive: 1, courts_with_bookings: 2 };
     },
@@ -350,6 +352,9 @@ test('dashboard status totals and exported workbook match for today, 7d, and 30d
 
   for (const range of ['today', '7d', '30d']) {
     const dashboard = await service.getDashboard(range);
+    assert.equal(dashboard.kpis.fill_rate_percent, 100 / 457);
+    assert.equal(dashboard.kpis.fill_rate_occupied_slots, 1);
+    assert.equal(dashboard.kpis.fill_rate_total_slots, 457);
     assert.equal(
       Object.values(dashboard.bookings_by_status).reduce((total, count) => total + count, 0),
       dashboard.kpis.new_bookings
@@ -397,6 +402,7 @@ test('dashboard court counts classify a court under a locked facility as inactiv
         }], []];
       }
     });
+
     const counts = await repository.getDashboardCourtCounts(
       new Date('2026-11-15T17:00:00.000Z'),
       new Date('2026-11-16T17:00:00.000Z')
@@ -415,6 +421,39 @@ test('dashboard court counts classify a court under a locked facility as inactiv
     assert.match(queries[0].sql, /COUNT\(DISTINCT c\.id\) AS courts_with_bookings/);
     assert.match(queries[0].sql, /valid_booking_user\.id = b\.user_id/);
     assert.ok(queries[0].parameters.includes('2026-11-15 17:00:00.000'));
+  } finally {
+    if (previousCutoff === undefined) delete process.env.BOOKING_DATA_START_AT;
+    else process.env.BOOKING_DATA_START_AT = previousCutoff;
+  }
+});
+
+test('dashboard fill rate counts the same effective occupied statuses as the slot page', async () => {
+  const previousCutoff = process.env.BOOKING_DATA_START_AT;
+  delete process.env.BOOKING_DATA_START_AT;
+  try {
+    const queries = [];
+    const repository = createAdminRepository({
+      async execute(sql, parameters) {
+        queries.push({ sql, parameters });
+        return [[{ total_slots: '457', occupied_slots: '1' }], []];
+      }
+    });
+    const metrics = await repository.getDashboardFillRate('2026-11-16', '2026-11-16');
+
+    assert.deepEqual(metrics, { total_slots: '457', occupied_slots: '1' });
+    assert.equal(queries.length, 1);
+    assert.deepEqual(queries[0].parameters, ['2026-11-16', '2026-11-16']);
+    assert.match(queries[0].sql, /slot_booking\.status IN \('CONFIRMED', 'COMPLETED'\)/);
+    assert.match(
+      queries[0].sql,
+      /slot_booking\.status = 'PENDING'[\s\S]*?slot_booking\.lock_expires_at > UTC_TIMESTAMP\(3\)/
+    );
+    assert.match(queries[0].sql, /ts\.status IN \('AVAILABLE', 'LOCKED', 'BOOKED'\)/);
+    assert.match(queries[0].sql, /INNER JOIN courts AS c ON c\.id = ts\.court_id/);
+    assert.match(queries[0].sql, /INNER JOIN facilities AS f ON f\.id = c\.facility_id/);
+    assert.match(queries[0].sql, /TIME\(ts\.starts_at\) >= f\.opening_time/);
+    assert.match(queries[0].sql, /TIME\(ts\.ends_at\) <= f\.closing_time/);
+    assert.doesNotMatch(queries[0].sql, /ts\.status <> 'LOCKED'/);
   } finally {
     if (previousCutoff === undefined) delete process.env.BOOKING_DATA_START_AT;
     else process.env.BOOKING_DATA_START_AT = previousCutoff;
