@@ -49,7 +49,7 @@ test('admin dashboard returns a zero-filled date range and metrics when no data 
         return { courts_active: 0, courts_inactive: 0, courts_with_bookings: 0 };
       },
       async getDashboardFillRate() {
-        return { total_slots: 0, occupied_slots: 0 };
+        return { total_slots: 0, occupied_slots: 0, days_with_slots: 0 };
       },
       async getTopCourts() {
         return [];
@@ -84,6 +84,8 @@ test('admin dashboard returns a zero-filled date range and metrics when no data 
       fill_rate_percent: 0,
       fill_rate_occupied_slots: 0,
       fill_rate_total_slots: 0,
+      fill_rate_days_with_slots: 0,
+      fill_rate_period_days: 1,
       courts_active: 0,
       courts_with_bookings: 0,
       courts_inactive: 0,
@@ -325,7 +327,13 @@ test('dashboard status totals and exported workbook match for today, 7d, and 30d
     async getRevenueByDay() { return []; },
     async getRevenueSeries() { return []; },
     async getBookingSeries() { return []; },
-    async getDashboardFillRate() { return { total_slots: 457, occupied_slots: 1 }; },
+    async getDashboardFillRate(fromDate) {
+      return {
+        '2026-11-16': { total_slots: 457, occupied_slots: 3, days_with_slots: 1 },
+        '2026-11-10': { total_slots: 3199, occupied_slots: 7, days_with_slots: 7 },
+        '2026-10-18': { total_slots: 4570, occupied_slots: 7, days_with_slots: 10 }
+      }[fromDate];
+    },
     async getDashboardCourtCounts() {
       return { courts_active: 28, courts_inactive: 1, courts_with_bookings: 2 };
     },
@@ -350,11 +358,22 @@ test('dashboard status totals and exported workbook match for today, 7d, and 30d
     'Hết hạn'
   ];
 
+  const expectedFillRates = {
+    today: { occupied: 3, total: 457, scheduledDays: 1, periodDays: 1 },
+    '7d': { occupied: 7, total: 3199, scheduledDays: 7, periodDays: 7 },
+    '30d': { occupied: 7, total: 4570, scheduledDays: 10, periodDays: 30 }
+  };
   for (const range of ['today', '7d', '30d']) {
     const dashboard = await service.getDashboard(range);
-    assert.equal(dashboard.kpis.fill_rate_percent, 100 / 457);
-    assert.equal(dashboard.kpis.fill_rate_occupied_slots, 1);
-    assert.equal(dashboard.kpis.fill_rate_total_slots, 457);
+    const fillRate = expectedFillRates[range];
+    assert.equal(
+      dashboard.kpis.fill_rate_percent,
+      fillRate.occupied * 100 / fillRate.total
+    );
+    assert.equal(dashboard.kpis.fill_rate_occupied_slots, fillRate.occupied);
+    assert.equal(dashboard.kpis.fill_rate_total_slots, fillRate.total);
+    assert.equal(dashboard.kpis.fill_rate_days_with_slots, fillRate.scheduledDays);
+    assert.equal(dashboard.kpis.fill_rate_period_days, fillRate.periodDays);
     assert.equal(
       Object.values(dashboard.bookings_by_status).reduce((total, count) => total + count, 0),
       dashboard.kpis.new_bookings
@@ -369,8 +388,19 @@ test('dashboard status totals and exported workbook match for today, 7d, and 30d
       assert.ok(row > 0, `Missing dashboard metric: ${label}`);
       return overview.getCell(row, 2).value;
     };
-    assert.equal(metric('Đơn trong kỳ'), dashboard.kpis.new_bookings);
-    assert.equal(metric('Tỷ lệ lấp đầy'), dashboard.kpis.fill_rate_percent);
+    assert.equal(metric('Đơn trong kỳ (theo ngày tạo đơn)'), dashboard.kpis.new_bookings);
+    assert.equal(
+      metric('Doanh thu thuần (theo ngày tạo đơn)'),
+      Number(dashboard.kpis.net_revenue)
+    );
+    assert.equal(
+      metric('Tỷ lệ lấp đầy theo ngày chơi trong kỳ'),
+      dashboard.kpis.fill_rate_percent
+    );
+    assert.equal(
+      metric('Khung đã đặt / tổng khung theo NGÀY CHƠI trong kỳ'),
+      `${fillRate.occupied}/${fillRate.total} khung (${fillRate.scheduledDays}/${fillRate.periodDays} ngày có lịch)`
+    );
     assert.equal(metric('Sân đang hoạt động'), dashboard.kpis.courts_active);
     assert.equal(
       metric('Sân có đơn đang hiệu lực trong kỳ'),
@@ -382,7 +412,10 @@ test('dashboard status totals and exported workbook match for today, 7d, and 30d
     const workbookLabels = statusSheet.getColumn(1).values.slice(2);
     const workbookCounts = statusSheet.getColumn(2).values.slice(2);
     assert.deepEqual(workbookLabels, statusLabels);
-    assert.equal(workbookCounts.reduce((total, count) => total + count, 0), metric('Đơn trong kỳ'));
+    assert.equal(
+      workbookCounts.reduce((total, count) => total + count, 0),
+      metric('Đơn trong kỳ (theo ngày tạo đơn)')
+    );
     assert.equal(statusSheet.rowCount, 7);
   }
 });
@@ -435,12 +468,20 @@ test('dashboard fill rate counts the same effective occupied statuses as the slo
     const repository = createAdminRepository({
       async execute(sql, parameters) {
         queries.push({ sql, parameters });
-        return [[{ total_slots: '457', occupied_slots: '1' }], []];
+        return [[{
+          total_slots: '457',
+          occupied_slots: '1',
+          days_with_slots: '1'
+        }], []];
       }
     });
     const metrics = await repository.getDashboardFillRate('2026-11-16', '2026-11-16');
 
-    assert.deepEqual(metrics, { total_slots: '457', occupied_slots: '1' });
+    assert.deepEqual(metrics, {
+      total_slots: '457',
+      days_with_slots: '1',
+      occupied_slots: '1'
+    });
     assert.equal(queries.length, 1);
     assert.deepEqual(queries[0].parameters, ['2026-11-16', '2026-11-16']);
     assert.match(queries[0].sql, /slot_booking\.status IN \('CONFIRMED', 'COMPLETED'\)/);
@@ -451,6 +492,9 @@ test('dashboard fill rate counts the same effective occupied statuses as the slo
     assert.match(queries[0].sql, /ts\.status IN \('AVAILABLE', 'LOCKED', 'BOOKED'\)/);
     assert.match(queries[0].sql, /INNER JOIN courts AS c ON c\.id = ts\.court_id/);
     assert.match(queries[0].sql, /INNER JOIN facilities AS f ON f\.id = c\.facility_id/);
+    assert.match(queries[0].sql, /c\.is_active = TRUE/);
+    assert.match(queries[0].sql, /f\.is_active = TRUE/);
+    assert.match(queries[0].sql, /COUNT\(DISTINCT ts\.service_date\) AS days_with_slots/);
     assert.match(queries[0].sql, /TIME\(ts\.starts_at\) >= f\.opening_time/);
     assert.match(queries[0].sql, /TIME\(ts\.ends_at\) <= f\.closing_time/);
     assert.doesNotMatch(queries[0].sql, /ts\.status <> 'LOCKED'/);

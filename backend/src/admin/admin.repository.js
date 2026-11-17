@@ -651,6 +651,7 @@ function createAdminRepository(pool) {
       const validity = buildBookingValidityCondition('slot_booking');
       const [rows] = await pool.execute(
         `SELECT COUNT(*) AS total_slots,
+                COUNT(DISTINCT ts.service_date) AS days_with_slots,
                 COALESCE(SUM(CASE WHEN EXISTS (
                   SELECT 1
                   FROM bookings AS slot_booking
@@ -667,6 +668,8 @@ function createAdminRepository(pool) {
          INNER JOIN facilities AS f ON f.id = c.facility_id
          WHERE ts.service_date >= ? AND ts.service_date <= ?
            AND ts.status IN ('AVAILABLE', 'LOCKED', 'BOOKED')
+           AND c.is_active = TRUE
+           AND f.is_active = TRUE
            AND TIME(ts.starts_at) >= f.opening_time
            AND TIME(ts.ends_at) <= f.closing_time`,
         [...validity.parameters, fromDate, toDate]

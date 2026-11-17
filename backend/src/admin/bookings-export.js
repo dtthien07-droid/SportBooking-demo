@@ -307,10 +307,14 @@ async function createDashboardExport({ dashboard, now = new Date() }) {
     ['Giá trị', 'value', 22]
   ]);
   valueRows(summary, [
-    ['Đơn trong kỳ', Number(kpis.new_bookings)],
-    ['Doanh thu thuần', amountValue(kpis.net_revenue), '#,##0 "đ"'],
-    ['Doanh thu kỳ trước', amountValue(kpis.net_revenue_prev), '#,##0 "đ"'],
-    ['Tỷ lệ lấp đầy', Number(kpis.fill_rate_percent), '0.##"%"'],
+    ['Đơn trong kỳ (theo ngày tạo đơn)', Number(kpis.new_bookings)],
+    ['Doanh thu thuần (theo ngày tạo đơn)', amountValue(kpis.net_revenue), '#,##0 "đ"'],
+    ['Doanh thu kỳ trước (theo ngày tạo đơn)', amountValue(kpis.net_revenue_prev), '#,##0 "đ"'],
+    ['Tỷ lệ lấp đầy theo ngày chơi trong kỳ', Number(kpis.fill_rate_percent), '0.##"%"'],
+    [
+      'Khung đã đặt / tổng khung theo NGÀY CHƠI trong kỳ',
+      `${Number(kpis.fill_rate_occupied_slots)}/${Number(kpis.fill_rate_total_slots)} khung (${Number(kpis.fill_rate_days_with_slots)}/${Number(kpis.fill_rate_period_days)} ngày có lịch)`
+    ],
     ['Sân đang hoạt động', Number(kpis.courts_active)],
     ['Sân có đơn đang hiệu lực trong kỳ', Number(kpis.courts_with_bookings)],
     ['Sân tạm khóa', Number(kpis.courts_inactive)]

@@ -624,17 +624,20 @@
       const fillRate = Number(metrics.fill_rate_percent) || 0;
       const occupiedSlots = Number(metrics.fill_rate_occupied_slots);
       const totalSlots = Number(metrics.fill_rate_total_slots);
+      const daysWithSlots = Number(metrics.fill_rate_days_with_slots);
+      const periodDays = Number(metrics.fill_rate_period_days);
       if (!Number.isSafeInteger(occupiedSlots) || occupiedSlots < 0
-          || !Number.isSafeInteger(totalSlots) || totalSlots < occupiedSlots) {
+          || !Number.isSafeInteger(totalSlots) || totalSlots < occupiedSlots
+          || !Number.isSafeInteger(daysWithSlots) || daysWithSlots < 0
+          || !Number.isSafeInteger(periodDays) || periodDays < 1
+          || daysWithSlots > periodDays) {
         throw new Error('Số khung giờ trong dữ liệu tổng quan không hợp lệ.');
       }
       const fillLabel = document.querySelector('[data-admin-fill-ring-label]');
       const fillText = document.querySelector('[data-admin-fill-label]');
-      const fillCount = document.querySelector('[data-admin-fill-count]');
       const fillRing = document.querySelector('[data-admin-fill-ring]');
       if (fillLabel) fillLabel.textContent = dashboardState.formatPercent(fillRate);
       if (fillText) fillText.textContent = `${dashboardState.formatPercent(fillRate)} lấp đầy`;
-      if (fillCount) fillCount.textContent = `${occupiedSlots}/${totalSlots} khung`;
       if (fillRing) fillRing.setAttribute('stroke-dasharray', `${Math.min(100, Math.max(0, fillRate))}, 100`);
       const previousRevenue = BigInt(metrics.net_revenue_prev || '0');
       const previousTarget = document.querySelector('[data-admin-revenue-prev]');
@@ -658,7 +661,7 @@
       }[elements.range.value]}`;
       renderTopCourts(result.top_courts || []);
       elements.message.dataset.kind = '';
-      elements.message.textContent = `Kỳ theo ngày tạo đơn: ${dashboardState.formatDate(result.range.from)} – ${dashboardState.formatDate(result.range.to)}. Ngày chơi là bộ lọc riêng.`;
+      elements.message.textContent = `Đơn và doanh thu theo ngày tạo đơn; công suất theo ngày chơi: ${dashboardState.formatDate(result.range.from)} – ${dashboardState.formatDate(result.range.to)}.`;
     } catch (error) {
       if (error.status === 401) window.location.replace('/dang-nhap.html');
       else if (error.status === 403) window.location.replace(state.USER_HOME);

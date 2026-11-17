@@ -56,10 +56,25 @@ test('dashboard shows all six display statuses in order and explains court metri
   assert.match(dashboardHtml, /Sân có đơn đang hiệu lực trong kỳ/);
   assert.match(
     dashboardHtml,
-    /Mẫu số: mọi khung AVAILABLE, BOOKED và LOCKED theo ngày chơi, kể cả khung đã qua giờ bắt đầu/
+    /% = khung đang sử dụng \/ tổng khung của sân hoạt động có ngày chơi trong kỳ; đơn hủy và hết hạn không tính\./
   );
-  assert.match(dashboardHtml, /data-admin-fill-count/);
+  assert.match(dashboardHtml, /data-admin-fill-label[^>]*title=/);
+  assert.doesNotMatch(dashboardHtml, /data-admin-fill-count|Khung đã đặt \/ tổng khung/);
   assert.match(dashboardHtml, /Top sân theo lượt đặt trong kỳ/);
+});
+
+test('dashboard labels date bases, shares fill rate, and hides slot details', () => {
+  assert.match(dashboardHtml, /Đơn, doanh thu và biểu đồ: theo ngày tạo đơn; công suất: theo ngày chơi\./);
+  assert.match(dashboardHtml, /Đơn &amp; doanh thu theo ngày tạo đơn/);
+  assert.match(dashboardHtml, /đơn trong kỳ · theo ngày tạo đơn/);
+  assert.match(dashboardHtml, /Doanh thu trong kỳ/);
+  assert.match(dashboardHtml, /theo ngày tạo đơn/);
+  assert.match(dashboardHtml, /Tỷ lệ lấp đầy theo ngày chơi trong kỳ/);
+  assert.doesNotMatch(dashboardHtml, /data-admin-fill-count|Khung đã đặt \/ tổng khung/);
+  assert.doesNotMatch(dashboardPage, /fillCount\.textContent/);
+  assert.match(dashboardPage, /const fillRate = Number\(metrics\.fill_rate_percent\)/);
+  assert.match(dashboardPage, /key === 'fill_rate_percent' \? dashboardState\.formatPercent\(value\)/);
+  assert.match(dashboardPage, /fillText\.textContent = `\$\{dashboardState\.formatPercent\(fillRate\)\} lấp đầy`/);
 });
 
 test('dashboard Excel errors show a retry action', () => {
@@ -76,7 +91,7 @@ test('dashboard loads period-filtered booking pages and uses backend pagination'
   assert.match(dashboardPage, /bookingTotalPages = Math\.max\(0, Number\(result\.pagination\.total_pages\)/);
   assert.match(dashboardPage, /loadBookings\(true\)/);
   assert.match(dashboardPage, /link\.href = `\/quan-tri\.html\?range=/);
-  assert.match(dashboardHtml, /Thống kê theo ngày tạo đơn; Ngày chơi là bộ lọc riêng/);
+  assert.match(dashboardHtml, /Đơn, doanh thu và biểu đồ: theo ngày tạo đơn; công suất: theo ngày chơi\./);
   assert.match(bookingsPage, /range: selectedPeriod/);
   assert.match(bookingsPage, /params\.set\('range', selectedPeriod\)/);
   assert.doesNotMatch(dashboardPage, /\.innerHTML\b/);

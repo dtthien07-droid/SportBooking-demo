@@ -234,7 +234,7 @@
             Tổng quan hoạt động hôm nay
           </h1>
 <p class="text-[13px] text-slate-500">
-            Thống kê theo ngày tạo đơn; Ngày chơi là bộ lọc riêng. Theo dõi hoạt động hệ thống SportBooking.
+            Đơn, doanh thu và biểu đồ: theo ngày tạo đơn; công suất: theo ngày chơi.
           </p>
 </div>
 <!-- Date Selector & CTA -->
@@ -265,12 +265,12 @@
 <div>
 <div class="flex items-center gap-2">
 <span class="w-2 h-2 rounded-full bg-primary"></span>
-<span class="text-[12px] font-bold text-slate-500 uppercase tracking-wider">Xu hướng đặt sân &amp; Tỷ lệ lấp đầy</span>
+<span class="text-[12px] font-bold text-slate-500 uppercase tracking-wider">Đơn &amp; doanh thu theo ngày tạo đơn</span>
 </div>
 <div class="flex items-baseline gap-2 mt-1">
 <span class="font-display-lg text-display-lg text-slate-900 font-bold tracking-tight" data-admin-kpi="fill_rate_percent">0%</span>
 <span class="inline-flex items-center text-slate-500 text-[12px] font-medium">
-                Tỷ lệ trong kỳ được chọn
+                Tỷ lệ lấp đầy theo ngày chơi trong kỳ
                 </span>
 </div>
 </div>
@@ -290,7 +290,7 @@
 </div>
 <div class="mt-2">
 <div class="font-display-lg text-display-lg text-slate-900 font-bold tracking-tight" data-admin-kpi="new_bookings">0</div>
-<span class="text-[12px] text-slate-500">đơn trong kỳ</span>
+<span class="text-[12px] text-slate-500">đơn trong kỳ · theo ngày tạo đơn</span>
 </div>
 </div>
 <!-- Status Indicators -->
@@ -326,6 +326,7 @@
 </div>
 <div class="mt-2">
 <div class="font-display-lg text-[22px] lg:text-[24px] text-slate-900 font-bold tracking-tight leading-tight" data-admin-kpi="net_revenue">0 đ</div>
+<span class="text-[11px] text-slate-500">theo ngày tạo đơn</span>
 </div>
 </div>
 <div class="mt-3 pt-3 border-t border-slate-100 flex flex-col gap-1.5 text-[11px]">
@@ -352,9 +353,7 @@
 <div class="absolute inset-0 flex items-center justify-center text-[11px] font-bold text-slate-800" data-admin-fill-ring-label>0%</div>
 </div>
 <div class="flex flex-col">
-<span class="text-[13px] font-bold text-slate-900 leading-tight" data-admin-fill-label>0% lấp đầy</span>
-<span class="text-[11px] text-slate-500" title="Tử số: khung BOOKED gắn đơn CONFIRMED/COMPLETED hợp lệ và khung LOCKED còn hạn. Mẫu số: mọi khung AVAILABLE, BOOKED và LOCKED theo ngày chơi, kể cả khung đã qua giờ bắt đầu.">Khung đang sử dụng / tổng khung (mọi sân)</span>
-<span class="text-[11px] text-slate-500" data-admin-fill-count>0/0 khung</span>
+<span class="text-[13px] font-bold text-slate-900 leading-tight" data-admin-fill-label title="% = khung đang sử dụng / tổng khung của sân hoạt động có ngày chơi trong kỳ; đơn hủy và hết hạn không tính.">0% lấp đầy</span>
 </div>
 </div>
 <div class="space-y-1.5 text-[11px] pt-2 border-t border-slate-100">
@@ -384,7 +383,7 @@
                 Quản lý cơ sở →
               </button>
 </div>
-<p class="mb-2 text-[11px] text-slate-500">Mỗi dòng là một sân; bộ lọc trạng thái hiện tại được áp dụng.</p>
+<p class="mb-2 text-[11px] text-slate-500">Lượt đặt tính theo ngày tạo đơn; bộ lọc trạng thái hiện tại được áp dụng.</p>
 <!-- List of Featured Arenas -->
 <div class="divide-y divide-slate-100" id="topCourts">
 <!-- Item 1: CLB Ngôi Sao Cầu Giấy -->

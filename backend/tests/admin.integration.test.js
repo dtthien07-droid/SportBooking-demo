@@ -1953,10 +1953,26 @@ test('admin APIs enforce roles, cancel incidents transactionally, and report das
           assert.ok(row > 0, `Missing dashboard metric: ${label}`);
           return overview.getCell(row, 2).value;
         };
-        assert.equal(metricValue('Đơn trong kỳ'), dashboard.kpis.new_bookings);
-        assert.equal(metricValue('Doanh thu thuần'), Number(dashboard.kpis.net_revenue));
-        assert.equal(metricValue('Doanh thu kỳ trước'), Number(dashboard.kpis.net_revenue_prev));
-        assert.equal(metricValue('Tỷ lệ lấp đầy'), dashboard.kpis.fill_rate_percent);
+        assert.equal(
+          metricValue('Đơn trong kỳ (theo ngày tạo đơn)'),
+          dashboard.kpis.new_bookings
+        );
+        assert.equal(
+          metricValue('Doanh thu thuần (theo ngày tạo đơn)'),
+          Number(dashboard.kpis.net_revenue)
+        );
+        assert.equal(
+          metricValue('Doanh thu kỳ trước (theo ngày tạo đơn)'),
+          Number(dashboard.kpis.net_revenue_prev)
+        );
+        assert.equal(
+          metricValue('Tỷ lệ lấp đầy theo ngày chơi trong kỳ'),
+          dashboard.kpis.fill_rate_percent
+        );
+        assert.equal(
+          metricValue('Khung đã đặt / tổng khung theo NGÀY CHƠI trong kỳ'),
+          `${dashboard.kpis.fill_rate_occupied_slots}/${dashboard.kpis.fill_rate_total_slots} khung (${dashboard.kpis.fill_rate_days_with_slots}/${dashboard.kpis.fill_rate_period_days} ngày có lịch)`
+        );
         const series = dashboardWorkbook.getWorksheet('Theo ngày');
         assert.equal(series.rowCount, dashboard.series.buckets.length + 1);
         dashboard.series.buckets.forEach((bucket, index) => {
