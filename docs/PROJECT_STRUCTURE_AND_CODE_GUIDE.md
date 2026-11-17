@@ -931,7 +931,7 @@ Soát xét toàn bộ trang khách + trang admin ngày 15/11/2026. Đây là kho
 | 1 | Chưa có 2 trang pháp lý công khai riêng (business-flow §3, §8) | shared/footer.js:34,36 | Footer render span disabled "Điều khoản sử dụng · Sắp có" / "Chính sách bảo mật · Sắp có" — KHÔNG phải link "#". Văn bản pháp lý nhúng trong dang-ky.html:401–459 (anchor #legal-terms/#legal-privacy tại 518–519) |
 | 2 | Trang hồ sơ trỏ về trang đăng nhập CŨ | profile/profile.html:22 | href="/auth/login.html" (trang cũ) thay vì /dang-nhap.html hiện hành |
 | 3 | 3 trang cũ vẫn tồn tại và được tham chiếu | auth/login.html, auth/register.html, admin-bookings.html; auth-step6-8.test.js:163; admin-page.test.js:13 | auth/login + auth/register còn được test static phục vụ; admin-bookings.html vẫn nạp admin-page.js (không redirect). Chưa gỡ; chỉ profile.html:22 là link thật từ trang hiện hành |
-| 4 | Link tới trang tìm đối không tồn tại | lich-su-dat-san.html:91; chi-tiet-don-dat-san.html:93 | href="tim-doi-choi.html" — file không có trong frontend (module 11 chưa làm) |
+| 4 | Link tới trang tìm đối không tồn tại | lich-su-dat-san.html:91; chi-tiet-don-dat-san.html:103 | href="tim-doi-choi.html" — file không có trong frontend (module 11 chưa làm) |
 | 5 | Chữ mockup ngoài phạm vi trên trang đăng nhập | dang-nhap.html:47,61,65,108,119,121,130,141,143 | "Quên mật khẩu?", "Ghi nhớ đăng nhập", "Bảo mật 256-bit", "15.000+", "Hơn 50+", "Tennis", "Tìm đối chơi", "Ưu đãi VIP", "Gold & Diamond…25%" — không có backend tương ứng; demo chạy HTTP nên "256-bit" là nói quá. Trang cũ auth/login + auth/register cũng còn chữ tương tự |
 | 6 | "Bán kính 5km" trái business-flow (không có ghép đối theo bán kính) | dat-san.html:123,126,155,166; chi-tiet-don-dat-san.html:314; trangchu-user.html:80 | Module 11 chưa làm; business-flow không có tiêu chí bán kính. Khối ghép đối ở chi tiết đơn đã gắn nhãn "Sắp có"; chữ ở dat-san/trangchu chưa gắn nhãn |
 | 7 | Văn bản pháp lý nhúng nói quá so với hiện trạng | dang-ky.html:413,442 | "Dữ liệu tìm đối (MatchMaker)", "HTTPS/SSL 256-bit" — chưa có tính năng tìm đối; demo HTTP localhost (production mới bật HTTPS + COOKIE_SECURE=true) |
@@ -939,7 +939,7 @@ Soát xét toàn bộ trang khách + trang admin ngày 15/11/2026. Đây là kho
 | 9 | Hàng mẫu Tennis/VIP trong HTML trang admin | quan-tri-tong-quan.html:442–462,702; quan-tri-nguoi-dung.html:371,505–509; quan-tri-san.html:452,455,462,589,727; quan-tri-khung-gio-gia.html:272,489 | KHÔNG phải dữ liệu hiển thị thường trực: JS thay toàn bộ bằng dữ liệu API khi tải (replaceChildren). Khối "Ghép đối — Sắp có" là placeholder trung thực. Rủi ro còn lại: lộ hàng mẫu nếu JS lỗi/tắt |
 
 **Ý chính khi demo**
-- 340/340 test đạt trong lần chạy thật 15/11/2026 (93 backend + 232 frontend) — có thể chạy lại ngay trên lớp bằng 2 lệnh trong Phần 11.
+- 340/340 test đạt trong lần chạy thật 15/11/2026 (103 backend + 237 frontend) — có thể chạy lại ngay trên lớp bằng 2 lệnh trong Phần 11.
 - Test đáng giá nhất: hai người cùng đặt một khung, SUCCESS đồng thời chỉ 1 vé, rollback khi lỗi giữa transaction.
 - HTTP integration chạy trên DB test thật (không mock) nên luồng đặt → thanh toán → hủy → đặt lại được kiểm chứng end-to-end ở tầng API.
 
@@ -1145,9 +1145,9 @@ Nguồn: `backend/.env.example`. File `.env` thật đã nằm trong `.gitignore
 Chạy test (Git Bash / bash):
 
 ```bash
-cd backend  && npm test          # 93 test — run-tests.js tự ép APP_ENV=test + sportbooking_test
+cd backend  && npm test          # 103 test — run-tests.js tự ép APP_ENV=test + sportbooking_test
 cd frontend && APP_ENV=test DB_NAME=sportbooking_test \
-  node --test --test-concurrency=1 tests/*.test.js    # 232 test
+  node --test --test-concurrency=1 tests/*.test.js    # 237 test
 ```
 
 Chạy test frontend (PowerShell — cú pháp env khác):
